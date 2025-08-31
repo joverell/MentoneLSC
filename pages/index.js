@@ -4,6 +4,7 @@ import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import styles from '../styles/Home.module.css';
 import Weather from '../components/Weather';
+import BottomNav from '../components/BottomNav';
 
 export default function Home() {
   const [events, setEvents] = useState([]);
@@ -11,6 +12,7 @@ export default function Home() {
   const [error, setError] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('events');
 
   useEffect(() => {
     fetch('https://mentonelsc.com/wp-json/tribe/events/v1/events')
@@ -49,6 +51,7 @@ export default function Home() {
 
   const handleDateChange = date => {
     setSelectedDate(date);
+    setActiveTab('events');
   };
 
   const filteredEvents = events
@@ -86,95 +89,105 @@ export default function Home() {
 
       <div className={styles.container}>
         <Weather />
-        <div id="calendar" className={styles.section}>
-          <h2>Upcoming Activities</h2>
-          <Calendar
-            onClickDay={handleDateChange}
-            tileClassName={tileClassName}
-          />
-        </div>
 
-        <div id="events" className={styles.section}>
-          <h2>Bar and Kitchen Events</h2>
-          <div className={styles.eventControls}>
-            <input
-              type="text"
-              placeholder="Search events..."
-              className={styles.searchInput}
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
+        {activeTab === 'calendar' && (
+          <div id="calendar" className={styles.section}>
+            <h2>Upcoming Activities</h2>
+            <Calendar
+              onClickDay={handleDateChange}
+              tileClassName={tileClassName}
             />
-            {selectedDate && (
-              <button onClick={() => setSelectedDate(null)} className={styles.clearFilterBtn}>
-                Clear Filter
-              </button>
-            )}
           </div>
-          <div className={styles.eventsContainer}>
-            {loading && <p>Loading events...</p>}
-            {error && <p>{error}</p>}
-            {!loading && !error && filteredEvents.length > 0 ? (
-              filteredEvents.map(event => (
-                <div key={event.id} className={styles.event}>
-                  {event.image && event.image.sizes && event.image.sizes.medium && (
-                    <img
-                      src={event.image.sizes.medium.url}
-                      alt={event.title}
-                      className={styles.eventImage}
-                    />
-                  )}
-                  <div className={styles.eventContent}>
-                    <h3 dangerouslySetInnerHTML={{ __html: event.title }} />
-                    <p>
-                      <strong>Date:</strong>{' '}
-                      {new Date(event.start_date).toLocaleDateString('en-AU', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })}{' '}
-                      at{' '}
-                      {new Date(event.start_date).toLocaleTimeString('en-AU', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </p>
-                    <div dangerouslySetInnerHTML={{ __html: event.description }} />
-                    {event.url && (
-                      <a href={event.url} target="_blank" rel="noopener noreferrer">
-                        Find out more
-                      </a>
+        )}
+
+        {activeTab === 'events' && (
+          <div id="events" className={styles.section}>
+            <h2>Bar and Kitchen Events</h2>
+            <div className={styles.eventControls}>
+              <input
+                type="text"
+                placeholder="Search events..."
+                className={styles.searchInput}
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+              />
+              {selectedDate && (
+                <button onClick={() => setSelectedDate(null)} className={styles.clearFilterBtn}>
+                  Clear Date Filter
+                </button>
+              )}
+            </div>
+            <div className={styles.eventsContainer}>
+              {loading && <p>Loading events...</p>}
+              {error && <p>{error}</p>}
+              {!loading && !error && filteredEvents.length > 0 ? (
+                filteredEvents.map(event => (
+                  <div key={event.id} className={styles.event}>
+                    {event.image && event.image.sizes && event.image.sizes.medium && (
+                      <img
+                        src={event.image.sizes.medium.url}
+                        alt={event.title}
+                        className={styles.eventImage}
+                      />
                     )}
+                    <div className={styles.eventContent}>
+                      <h3 dangerouslySetInnerHTML={{ __html: event.title }} />
+                      <p>
+                        <strong>Date:</strong>{' '}
+                        {new Date(event.start_date).toLocaleDateString('en-AU', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                        })}{' '}
+                        at{' '}
+                        {new Date(event.start_date).toLocaleTimeString('en-AU', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                      <div dangerouslySetInnerHTML={{ __html: event.description }} />
+                      {event.url && (
+                        <a href={event.url} target="_blank" rel="noopener noreferrer">
+                          Find out more
+                        </a>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))
-            ) : (
-              !loading && !error && <p>{selectedDate ? 'No events found for this date.' : 'No upcoming events found.'}</p>
-            )}
+                ))
+              ) : (
+                !loading && !error && <p>{selectedDate ? 'No events found for this date.' : 'No upcoming events found.'}</p>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
-        <div id="membership" className={styles.section}>
-          <h2>Membership</h2>
-          <div className={styles.links}>
-            <a href="https://mentonelsc.com/new-member/" target="_blank" rel="noopener noreferrer">
-              New Member
-            </a>
-            <a href="https://mentonelsc.com/renewing-member/" target="_blank" rel="noopener noreferrer">
-              Renewing Member
-            </a>
-          </div>
-        </div>
+        {activeTab === 'info' && (
+          <>
+            <div id="membership" className={styles.section}>
+              <h2>Membership</h2>
+              <div className={styles.links}>
+                <a href="https://mentonelsc.com/new-member/" target="_blank" rel="noopener noreferrer">
+                  New Member
+                </a>
+                <a href="https://mentonelsc.com/renewing-member/" target="_blank" rel="noopener noreferrer">
+                  Renewing Member
+                </a>
+              </div>
+            </div>
 
-        <div id="teamapp" className={styles.section}>
-          <h2>TeamApp</h2>
-          <div className={styles.links}>
-            <a href="https://www.teamapp.com/v2/clubs/163380?_detail=v1" target="_blank" rel="noopener noreferrer">
-              Visit TeamApp
-            </a>
-          </div>
-        </div>
+            <div id="teamapp" className={styles.section}>
+              <h2>TeamApp</h2>
+              <div className={styles.links}>
+                <a href="https://www.teamapp.com/v2/clubs/163380?_detail=v1" target="_blank" rel="noopener noreferrer">
+                  Visit TeamApp
+                </a>
+              </div>
+            </div>
+          </>
+        )}
       </div>
+      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
     </div>
   );
 }
