@@ -1,5 +1,7 @@
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/router';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import styles from '../styles/Home.module.css';
@@ -7,12 +9,14 @@ import Weather from '../components/Weather';
 import BottomNav from '../components/BottomNav';
 
 export default function Home() {
+  const router = useRouter();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState('events');
+
+  const activeTab = router.query.tab || 'events';
 
   useEffect(() => {
     fetch('https://mentonelsc.com/wp-json/tribe/events/v1/events')
@@ -51,7 +55,7 @@ export default function Home() {
 
   const handleDateChange = date => {
     setSelectedDate(date);
-    setActiveTab('events');
+    router.push('/?tab=events', undefined, { shallow: true });
   };
 
   const filteredEvents = events
@@ -163,31 +167,21 @@ export default function Home() {
         )}
 
         {activeTab === 'info' && (
-          <>
-            <div id="membership" className={styles.section}>
-              <h2>Membership</h2>
-              <div className={styles.links}>
-                <a href="https://mentonelsc.com/new-member/" target="_blank" rel="noopener noreferrer">
-                  New Member
-                </a>
-                <a href="https://mentonelsc.com/renewing-member/" target="_blank" rel="noopener noreferrer">
-                  Renewing Member
-                </a>
-              </div>
+          <div id="info-section" className={styles.section}>
+            <h2>Club Information</h2>
+            <p>Important club documents and links can be found here.</p>
+            <div className={styles.links}>
+              <a href="https://mentonelsc.com/new-member/" target="_blank" rel="noopener noreferrer">
+                New Member Information
+              </a>
+              <a href="https://mentonelsc.com/renewing-member/" target="_blank" rel="noopener noreferrer">
+                Renewing Member Information
+              </a>
             </div>
-
-            <div id="teamapp" className={styles.section}>
-              <h2>TeamApp</h2>
-              <div className={styles.links}>
-                <a href="https://www.teamapp.com/v2/clubs/163380?_detail=v1" target="_blank" rel="noopener noreferrer">
-                  Visit TeamApp
-                </a>
-              </div>
-            </div>
-          </>
+          </div>
         )}
       </div>
-      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
+      <BottomNav />
     </div>
   );
 }
