@@ -1,5 +1,7 @@
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
+import Calendar from 'react-calendar';
+import 'react-calendar/dist/Calendar.css';
 
 export default function Home() {
   const [events, setEvents] = useState([]);
@@ -25,6 +27,21 @@ export default function Home() {
       });
   }, []);
 
+  const tileClassName = ({ date, view }) => {
+    if (view === 'month') {
+      const hasEvent = events.some(event => {
+        const eventDate = new Date(event.start_date);
+        return (
+          date.getFullYear() === eventDate.getFullYear() &&
+          date.getMonth() === eventDate.getMonth() &&
+          date.getDate() === eventDate.getDate()
+        );
+      });
+      return hasEvent ? 'event-day' : null;
+    }
+    return null;
+  };
+
   return (
     <div>
       <Head>
@@ -38,6 +55,11 @@ export default function Home() {
       </header>
 
       <div className="container">
+        <div id="calendar" className="section">
+          <h2>Upcoming Activities</h2>
+          <Calendar tileClassName={tileClassName} />
+        </div>
+
         <div id="events" className="section">
           <h2>Bar and Kitchen Events</h2>
           <div id="events-container">
@@ -189,6 +211,11 @@ export default function Home() {
         }
         .links a:hover {
           background-color: #ec971f;
+        }
+        .event-day {
+          background-color: #d9534f !important;
+          color: white !important;
+          border-radius: 50%;
         }
       `}</style>
     </div>
