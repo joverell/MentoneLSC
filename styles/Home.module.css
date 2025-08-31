@@ -159,3 +159,98 @@
     width: 100%;
   }
 }
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.createEventBtn {
+  background-color: #0070f3;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  text-decoration: none;
+  font-weight: bold;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.createEventBtn:hover {
+  background-color: #005bb5;
+}
+
+/* News Feed Styles */
+.newsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.newsArticle {
+  border: 1px solid #e0e0e0;
+  padding: 1.5rem;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+
+.newsArticle h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.articleMeta {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+/* RSVP Styles */
+.rsvpContainer {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+}
+
+.rsvpContainer h4 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  color: #333;
+}
+
+.rsvpButtons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.rsvpButtons button {
+  flex-grow: 1;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  background-color: #f0f0f0;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.rsvpButtons button:hover {
+  background-color: #e0e0e0;
+}
+
+.rsvpButtons .rsvpActive {
+  background-color: #d9534f;
+  color: white;
+  border-color: #d43f3a;
+}
+
+.rsvpTally {
+  margin-top: 1rem;
+  padding: 0.5rem;
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  color: #555;
+}
