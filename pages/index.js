@@ -7,10 +7,48 @@ import 'react-calendar/dist/Calendar.css';
 import styles from '../styles/Home.module.css';
 import Weather from '../components/Weather';
 import BottomNav from '../components/BottomNav';
+import { useAuth } from '../context/AuthContext';
+
+// Helper function to decode HTML entities
+function decode(str) {
+    if (typeof window !== 'undefined') {
+        const txt = document.createElement("textarea");
+        txt.innerHTML = str;
+        return txt.value;
+    }
+    return str;
+}
+
+
+const normalizeWordPressEvent = (event) => ({
+  id: `wp-${event.id}`,
+  title: decode(event.title),
+  description: event.description, // Keep as HTML
+  startTime: new Date(event.start_date.replace(' ', 'T')), // More reliable parsing
+  endTime: new Date(event.end_date.replace(' ', 'T')),
+  location: event.venue ? event.venue.venue : 'See details',
+  imageUrl: event.image ? event.image.sizes.medium.url : null,
+  source: 'wordpress',
+  externalUrl: event.url,
+});
+
+const normalizeInternalEvent = (event) => ({
+  id: `internal-${event.id}`,
+  title: event.title,
+  description: `<p>${event.description.replace(/\n/g, '<br>')}</p>`, // Basic formatting
+  startTime: new Date(event.start_time),
+  endTime: new Date(event.end_time),
+  location: event.location,
+  imageUrl: null, // No image support for internal events yet
+  source: 'internal',
+  externalUrl: null,
+});
+
 
 export default function Home() {
+  const { user } = useAuth();
   const router = useRouter();
-  const [events, setEvents] = useState([]);
+  const [allEvents, setAllEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
@@ -19,36 +57,56 @@ export default function Home() {
   const activeTab = router.query.tab || 'events';
 
   useEffect(() => {
-    fetch('https://mentonelsc.com/wp-json/tribe/events/v1/events')
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
+    const fetchEvents = async () => {
+      try {
+        const [wpRes, internalRes] = await Promise.all([
+          fetch('https://mentonelsc.com/wp-json/tribe/events/v1/events').catch(e => { console.error("WP fetch error:", e); return { ok: false }; }),
+          fetch('/api/events').catch(e => { console.error("Internal fetch error:", e); return { ok: false }; })
+        ]);
+
+        let wordpressEvents = [];
+        if (wpRes.ok) {
+          const data = await wpRes.json();
+          wordpressEvents = (data.events || []).map(normalizeWordPressEvent);
+        } else {
+          console.warn("Could not fetch WordPress events.");
         }
-        return response.json();
-      })
-      .then(data => {
-        setEvents(data.events || []);
-        setLoading(false);
-      })
-      .catch(error => {
-        console.error('Error fetching events:', error);
+
+        let internalEvents = [];
+        if (internalRes.ok) {
+          const data = await internalRes.json();
+          internalEvents = data.map(normalizeInternalEvent);
+        } else {
+          console.warn("Could not fetch internal events.");
+        }
+
+        const combinedEvents = [...wordpressEvents, ...internalEvents];
+        combinedEvents.sort((a, b) => a.startTime - b.startTime);
+
+        setAllEvents(combinedEvents);
+
+      } catch (err) {
+        console.error('Error processing events:', err);
         setError('Could not load events. Please try again later.');
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+
+    fetchEvents();
   }, []);
 
   const tileClassName = ({ date, view }) => {
     if (view === 'month') {
-      const hasEvent = events.some(event => {
-        const eventDate = new Date(event.start_date);
+      const hasEvent = allEvents.some(event => {
+        const eventDate = event.startTime;
         return (
           date.getFullYear() === eventDate.getFullYear() &&
           date.getMonth() === eventDate.getMonth() &&
           date.getDate() === eventDate.getDate()
         );
       });
-      // This class is styled globally in Home.module.css because it's applied by an external library
-      return hasEvent ? 'event-day' : null;
+      return hasEvent ? styles.eventDay : null;
     }
     return null;
   };
@@ -58,10 +116,10 @@ export default function Home() {
     router.push('/?tab=events', undefined, { shallow: true });
   };
 
-  const filteredEvents = events
+  const filteredEvents = allEvents
     .filter(event => {
       if (!selectedDate) return true;
-      const eventDate = new Date(event.start_date);
+      const eventDate = event.startTime;
       return (
         eventDate.getFullYear() === selectedDate.getFullYear() &&
         eventDate.getMonth() === selectedDate.getMonth() &&
@@ -71,10 +129,18 @@ export default function Home() {
     .filter(event => {
       if (!searchTerm) return true;
       const searchLower = searchTerm.toLowerCase();
-      // Basic search in title and description. Note: description is HTML.
       const titleLower = event.title.toLowerCase();
-      const descriptionLower = event.description.toLowerCase();
-      return titleLower.includes(searchLower) || descriptionLower.includes(searchLower);
+
+      // Client-side only: Create a temporary div to strip HTML for searching description
+      if (typeof window !== 'undefined') {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = event.description;
+        const descriptionText = tempDiv.textContent || tempDiv.innerText || "";
+        return titleLower.includes(searchLower) || descriptionText.toLowerCase().includes(searchLower);
+      }
+
+      // SSR fallback: only search title
+      return titleLower.includes(searchLower);
     });
 
   return (
@@ -106,7 +172,14 @@ export default function Home() {
 
         {activeTab === 'events' && (
           <div id="events" className={styles.section}>
-            <h2>Bar and Kitchen Events</h2>
+            <div className={styles.sectionHeader}>
+              <h2>Club Events</h2>
+              {user && (
+                <Link href="/create-event" className={styles.createEventBtn}>
+                  + Create Event
+                </Link>
+              )}
+            </div>
             <div className={styles.eventControls}>
               <input
                 type="text"
@@ -127,32 +200,32 @@ export default function Home() {
               {!loading && !error && filteredEvents.length > 0 ? (
                 filteredEvents.map(event => (
                   <div key={event.id} className={styles.event}>
-                    {event.image && event.image.sizes && event.image.sizes.medium && (
+                    {event.imageUrl && (
                       <img
-                        src={event.image.sizes.medium.url}
+                        src={event.imageUrl}
                         alt={event.title}
                         className={styles.eventImage}
                       />
                     )}
                     <div className={styles.eventContent}>
-                      <h3 dangerouslySetInnerHTML={{ __html: event.title }} />
+                      <h3>{event.title}</h3>
                       <p>
                         <strong>Date:</strong>{' '}
-                        {new Date(event.start_date).toLocaleDateString('en-AU', {
+                        {event.startTime.toLocaleDateString('en-AU', {
                           weekday: 'long',
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric',
                         })}{' '}
                         at{' '}
-                        {new Date(event.start_date).toLocaleTimeString('en-AU', {
+                        {event.startTime.toLocaleTimeString('en-AU', {
                           hour: '2-digit',
                           minute: '2-digit',
                         })}
                       </p>
                       <div dangerouslySetInnerHTML={{ __html: event.description }} />
-                      {event.url && (
-                        <a href={event.url} target="_blank" rel="noopener noreferrer">
+                      {event.externalUrl && (
+                        <a href={event.externalUrl} target="_blank" rel="noopener noreferrer">
                           Find out more
                         </a>
                       )}

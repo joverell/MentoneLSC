@@ -159,3 +159,24 @@
     width: 100%;
   }
 }
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.createEventBtn {
+  background-color: #0070f3;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  text-decoration: none;
+  font-weight: bold;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.createEventBtn:hover {
+  background-color: #005bb5;
+}
