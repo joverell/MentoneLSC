@@ -1,10 +1,13 @@
 import Head from 'next/head';
 import { useEffect, useState } from 'react';
+import CalendarComponent from '../components/Calendar';
+import Event from '../components/Event';
 
 export default function Home() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(null);
 
   useEffect(() => {
     fetch('https://mentonelsc.com/wp-json/tribe/events/v1/events')
@@ -25,6 +28,17 @@ export default function Home() {
       });
   }, []);
 
+  const handleDateChange = date => {
+    setSelectedDate(date);
+  };
+
+  const filteredEvents = selectedDate
+    ? events.filter(event => {
+        const eventDate = new Date(event.start_date);
+        return eventDate.toDateString() === selectedDate.toDateString();
+      })
+    : events;
+
   return (
     <div>
       <Head>
@@ -38,39 +52,29 @@ export default function Home() {
       </header>
 
       <div className="container">
+        <div id="calendar-section" className="section">
+          <h2>Events Calendar</h2>
+          <CalendarComponent onDateChange={handleDateChange} />
+        </div>
+
         <div id="events" className="section">
-          <h2>Bar and Kitchen Events</h2>
+          <h2>
+            {selectedDate
+              ? `Events for ${selectedDate.toLocaleDateString('en-AU', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}`
+              : 'All Events'}
+          </h2>
           <div id="events-container">
             {loading && <p>Loading events...</p>}
             {error && <p>{error}</p>}
-            {!loading && !error && events.length > 0 ? (
-              events.map(event => (
-                <div key={event.id} className="event">
-                  <h3 dangerouslySetInnerHTML={{ __html: event.title }} />
-                  <p>
-                    <strong>Date:</strong>{' '}
-                    {new Date(event.start_date).toLocaleDateString('en-AU', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    })}{' '}
-                    at{' '}
-                    {new Date(event.start_date).toLocaleTimeString('en-AU', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </p>
-                  <div dangerouslySetInnerHTML={{ __html: event.description }} />
-                  {event.url && (
-                    <a href={event.url} target="_blank" rel="noopener noreferrer">
-                      Find out more
-                    </a>
-                  )}
-                </div>
-              ))
+            {!loading && !error && filteredEvents.length > 0 ? (
+              filteredEvents.map(event => <Event key={event.id} event={event} />)
             ) : (
-              !loading && !error && <p>No upcoming events found.</p>
+              !loading && !error && <p>No events found for this date.</p>
             )}
           </div>
         </div>
@@ -151,6 +155,9 @@ export default function Home() {
         .event {
           border: 1px solid #ddd;
           border-radius: 8px;
+          padding:.event {
+          border: 1px solid #ddd;
+          border-radius: 8px;
           padding: 20px;
           background-color: #fff;
           box-shadow: 0 2px 5px rgba(0,0,0,0.1);
@@ -189,6 +196,35 @@ export default function Home() {
         }
         .links a:hover {
           background-color: #ec971f;
+        }
+        .calendar-container {
+          display: flex;
+          justify-content: center;
+          margin-bottom: 20px;
+        }
+        .react-calendar {
+          width: 100%;
+          max-width: 450px;
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          font-family: 'Montserrat', sans-serif;
+        }
+        .read-more-btn {
+          background-color: #f0ad4e;
+          color: white;
+          border: none;
+          padding: 8px 12px;
+          border-radius: 4px;
+          cursor: pointer;
+          margin-top: 10px;
+        }
+        .read-more-btn:hover {
+          background-color: #ec971f;
+        }
+        .find-out-more-btn {
+          display: inline-block;
+          margin-top: 10px;
+          margin-left: 10px;
         }
       `}</style>
     </div>
