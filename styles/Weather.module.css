@@ -1,0 +1,31 @@
+.weatherWidget {
+  background: linear-gradient(to right, #6dd5ed, #2193b0);
+  color: white;
+  padding: 15px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.weatherWidget h4 {
+  margin: 0 0 10px 0;
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+.weatherInfo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+}
+
+.weatherIcon {
+  font-size: 2.5rem;
+}
+
+.weatherTemp {
+  font-size: 1.8rem;
+  font-weight: bold;
+}
