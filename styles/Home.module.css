@@ -205,3 +205,52 @@
   color: #666;
   margin-bottom: 1rem;
 }
+
+/* RSVP Styles */
+.rsvpContainer {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+}
+
+.rsvpContainer h4 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  color: #333;
+}
+
+.rsvpButtons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.rsvpButtons button {
+  flex-grow: 1;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  background-color: #f0f0f0;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.rsvpButtons button:hover {
+  background-color: #e0e0e0;
+}
+
+.rsvpButtons .rsvpActive {
+  background-color: #d9534f;
+  color: white;
+  border-color: #d43f3a;
+}
+
+.rsvpTally {
+  margin-top: 1rem;
+  padding: 0.5rem;
+  background-color: #f9f9f9;
+  border: 1px solid #eee;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  color: #555;
+}

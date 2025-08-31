@@ -15,11 +15,47 @@ export default function handler(req, res) {
   }
 }
 
-// Function to get all events
+// Function to get all events, including RSVP data
 function getEvents(req, res) {
+  let userId = null;
   try {
-    const stmt = db.prepare('SELECT * FROM events ORDER BY start_time ASC');
-    const events = stmt.all();
+    const cookies = parse(req.headers.cookie || '');
+    const token = cookies.auth_token;
+    if (token) {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      userId = decoded.userId;
+    }
+  } catch (err) {
+    // Ignore errors if token is invalid, user is just not logged in
+  }
+
+  try {
+    const sql = `
+      SELECT
+        e.*,
+        u.name as authorName,
+        r.status as currentUserRsvpStatus,
+        (SELECT COUNT(*) FROM rsvps WHERE event_id = e.id AND status = 'Yes') as yes_count,
+        (SELECT COUNT(*) FROM rsvps WHERE event_id = e.id AND status = 'No') as no_count,
+        (SELECT COUNT(*) FROM rsvps WHERE event_id = e.id AND status = 'Maybe') as maybe_count
+      FROM
+        events e
+      JOIN
+        users u ON e.created_by = u.id
+      LEFT JOIN
+        rsvps r ON e.id = r.event_id AND r.user_id = ?
+      ORDER BY
+        e.start_time ASC
+    `;
+    const stmt = db.prepare(sql);
+    const events = stmt.all(userId).map(event => ({
+      ...event,
+      rsvpTally: {
+        yes: event.yes_count,
+        no: event.no_count,
+        maybe: event.maybe_count,
+      }
+    }));
     return res.status(200).json(events);
   } catch (error) {
     console.error('Failed to fetch events:', error);

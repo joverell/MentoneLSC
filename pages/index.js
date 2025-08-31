@@ -1,5 +1,5 @@
 import Head from 'next/head';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import Calendar from 'react-calendar';
@@ -30,6 +30,8 @@ const normalizeWordPressEvent = (event) => ({
   imageUrl: event.image ? event.image.sizes.medium.url : null,
   source: 'wordpress',
   externalUrl: event.url,
+  rsvpTally: null,
+  currentUserRsvpStatus: null,
 });
 
 const normalizeInternalEvent = (event) => ({
@@ -42,6 +44,8 @@ const normalizeInternalEvent = (event) => ({
   imageUrl: null, // No image support for internal events yet
   source: 'internal',
   externalUrl: null,
+  rsvpTally: event.rsvpTally,
+  currentUserRsvpStatus: event.currentUserRsvpStatus,
 });
 
 
@@ -57,48 +61,68 @@ export default function Home() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const activeTab = router.query.tab || 'news';
+  const activeTab = router.query.tab || 'events';
 
-  // Effect for fetching events
-  useEffect(() => {
-    const fetchEvents = async () => {
-      setLoading(true);
-      try {
-        const [wpRes, internalRes] = await Promise.all([
-          fetch('https://mentonelsc.com/wp-json/tribe/events/v1/events').catch(e => { console.error("WP fetch error:", e); return { ok: false }; }),
-          fetch('/api/events').catch(e => { console.error("Internal fetch error:", e); return { ok: false }; })
-        ]);
+  const fetchEvents = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [wpRes, internalRes] = await Promise.all([
+        fetch('https://mentonelsc.com/wp-json/tribe/events/v1/events').catch(e => { console.error("WP fetch error:", e); return { ok: false }; }),
+        fetch('/api/events').catch(e => { console.error("Internal fetch error:", e); return { ok: false }; })
+      ]);
 
-        let wordpressEvents = [];
-        if (wpRes.ok) {
-          const data = await wpRes.json();
-          wordpressEvents = (data.events || []).map(normalizeWordPressEvent);
-        } else {
-          console.warn("Could not fetch WordPress events.");
-        }
-
-        let internalEvents = [];
-        if (internalRes.ok) {
-          const data = await internalRes.json();
-          internalEvents = data.map(normalizeInternalEvent);
-        } else {
-          console.warn("Could not fetch internal events.");
-        }
-
-        const combinedEvents = [...wordpressEvents, ...internalEvents];
-        combinedEvents.sort((a, b) => a.startTime - b.startTime);
-
-        setAllEvents(combinedEvents);
-        setError(null);
-      } catch (err) {
-        console.error('Error processing events:', err);
-        setError('Could not load events. Please try again later.');
-      } finally {
-        setLoading(false);
+      let wordpressEvents = [];
+      if (wpRes.ok) {
+        const data = await wpRes.json();
+        wordpressEvents = (data.events || []).map(normalizeWordPressEvent);
+      } else {
+        console.warn("Could not fetch WordPress events.");
       }
-    };
-    fetchEvents();
+
+      let internalEvents = [];
+      if (internalRes.ok) {
+        const data = await internalRes.json();
+        internalEvents = data.map(normalizeInternalEvent);
+      } else {
+        console.warn("Could not fetch internal events.");
+      }
+
+      const combinedEvents = [...wordpressEvents, ...internalEvents];
+      combinedEvents.sort((a, b) => a.startTime - b.startTime);
+
+      setAllEvents(combinedEvents);
+      setError(null);
+    } catch (err) {
+      console.error('Error processing events:', err);
+      setError('Could not load events. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchEvents();
+  }, [fetchEvents]);
+
+  const handleRsvpSubmit = async (eventId, status) => {
+    // Note: eventId here is the normalized one, e.g., "internal-123"
+    const internalId = eventId.replace('internal-', '');
+    try {
+      const res = await fetch(`/api/events/${internalId}/rsvp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }), // Comment field can be added later
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || 'Failed to submit RSVP');
+      }
+      // Refresh events to show the new RSVP status
+      fetchEvents();
+    } catch (err) {
+      alert(`Error: ${err.message}`); // Simple error feedback for now
+    }
+  };
 
   // Effect for fetching news
   useEffect(() => {
@@ -282,6 +306,38 @@ export default function Home() {
                         <a href={event.externalUrl} target="_blank" rel="noopener noreferrer">
                           Find out more
                         </a>
+                      )}
+
+                      {event.source === 'internal' && user && (
+                        <div className={styles.rsvpContainer}>
+                          <h4>Your RSVP:</h4>
+                          <div className={styles.rsvpButtons}>
+                            <button
+                              onClick={() => handleRsvpSubmit(event.id, 'Yes')}
+                              className={event.currentUserRsvpStatus === 'Yes' ? styles.rsvpActive : ''}
+                            >
+                              Yes
+                            </button>
+                            <button
+                              onClick={() => handleRsvpSubmit(event.id, 'No')}
+                              className={event.currentUserRsvpStatus === 'No' ? styles.rsvpActive : ''}
+                            >
+                              No
+                            </button>
+                            <button
+                              onClick={() => handleRsvpSubmit(event.id, 'Maybe')}
+                              className={event.currentUserRsvpStatus === 'Maybe' ? styles.rsvpActive : ''}
+                            >
+                              Maybe
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {event.source === 'internal' && user && user.roles.includes('Admin') && event.rsvpTally && (
+                        <div className={styles.rsvpTally}>
+                          <strong>Tally:</strong> {event.rsvpTally.yes} Yes, {event.rsvpTally.no} No, {event.rsvpTally.maybe} Maybe
+                        </div>
                       )}
                     </div>
                   </div>
