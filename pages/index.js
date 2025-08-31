@@ -46,7 +46,7 @@ export default function Home() {
             {!loading && !error && events.length > 0 ? (
               events.map(event => (
                 <div key={event.id} className="event">
-                  <h3>{event.title}</h3>
+                  <h3 dangerouslySetInnerHTML={{ __html: event.title }} />
                   <p>
                     <strong>Date:</strong>{' '}
                     {new Date(event.start_date).toLocaleDateString('en-AU', {
@@ -98,51 +98,97 @@ export default function Home() {
       </div>
 
       <style jsx global>{`
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+
         body {
-          font-family: sans-serif;
+          font-family: 'Montserrat', sans-serif;
           margin: 0;
+          background-color: #f0f4f8;
+          color: #333;
         }
         header {
-          background-color: #f8f8f8;
-          padding: 20px;
+          background: url('https://www.transparenttextures.com/patterns/wavecut.png'), linear-gradient(to right, #007bff, #0056b3);
+          color: white;
+          padding: 40px 20px;
           text-align: center;
+          position: relative;
         }
         header img {
-          max-width: 100px;
+          max-width: 120px;
+          border: 3px solid white;
+          border-radius: 50%;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+          margin-bottom: 10px;
         }
-        h1,
+        h1 {
+          margin: 0;
+          font-size: 2.5rem;
+          font-weight: 700;
+        }
         h2 {
+          color: #0056b3;
           text-align: center;
+          font-size: 2rem;
+          margin-bottom: 20px;
         }
         .container {
           padding: 20px;
+          max-width: 1200px;
+          margin: 0 auto;
         }
         .section {
-          margin-bottom: 30px;
-        }
-        .section h2 {
-          border-bottom: 2px solid #eee;
-          padding-bottom: 10px;
+          margin-bottom: 40px;
+          background: white;
+          padding: 30px;
+          border-radius: 10px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
         #events-container {
           display: grid;
           grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-          gap: 20px;
+          gap: 30px;
         }
         .event {
           border: 1px solid #ddd;
-          padding: 15px;
-          border-radius: 5px;
+          border-radius: 8px;
+          padding: 20px;
+          background-color: #fff;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .event:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+        }
+        .event h3 {
+          color: #d9534f;
+          margin-top: 0;
+        }
+        .event p {
+          line-height: 1.6;
+        }
+        .event a {
+          color: #f0ad4e;
+          text-decoration: none;
+          font-weight: bold;
+        }
+        .event a:hover {
+          text-decoration: underline;
         }
         .links a {
           display: block;
           padding: 15px;
-          background-color: #007bff;
+          background-color: #f0ad4e;
           color: white;
           text-decoration: none;
           margin-bottom: 10px;
           border-radius: 5px;
           text-align: center;
+          font-weight: bold;
+          transition: background-color 0.3s ease;
+        }
+        .links a:hover {
+          background-color: #ec971f;
         }
       `}</style>
     </div>
