@@ -29,7 +29,7 @@
   }
 }
 .container {
-  padding: 20px;
+  padding: 20px 20px 80px 20px;
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -140,3 +140,22 @@
 }
 
 /* The .event-day style is now in the global stylesheet */
+
+@media (max-width: 768px) {
+  .section {
+    padding: 20px;
+  }
+
+  .eventsContainer {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .eventControls {
+    flex-direction: column;
+  }
+
+  .searchInput {
+    width: 100%;
+  }
+}

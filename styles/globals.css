@@ -26,3 +26,15 @@ h2 {
   color: white !important;
   border-radius: 50%;
 }
+
+/* Responsive Calendar */
+@media (max-width: 768px) {
+  .react-calendar {
+    width: 100% !important;
+    max-width: 100%;
+    border: none;
+  }
+  .react-calendar__tile {
+    padding: 10px 5px;
+  }
+}
