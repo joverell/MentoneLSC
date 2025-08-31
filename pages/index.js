@@ -7,6 +7,7 @@ export default function Home() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(null);
 
   useEffect(() => {
     fetch('https://mentonelsc.com/wp-json/tribe/events/v1/events')
@@ -42,6 +43,21 @@ export default function Home() {
     return null;
   };
 
+  const handleDateChange = date => {
+    setSelectedDate(date);
+  };
+
+  const filteredEvents = selectedDate
+    ? events.filter(event => {
+        const eventDate = new Date(event.start_date);
+        return (
+          eventDate.getFullYear() === selectedDate.getFullYear() &&
+          eventDate.getMonth() === selectedDate.getMonth() &&
+          eventDate.getDate() === selectedDate.getDate()
+        );
+      })
+    : events;
+
   return (
     <div>
       <Head>
@@ -57,16 +73,24 @@ export default function Home() {
       <div className="container">
         <div id="calendar" className="section">
           <h2>Upcoming Activities</h2>
-          <Calendar tileClassName={tileClassName} />
+          <Calendar
+            onClickDay={handleDateChange}
+            tileClassName={tileClassName}
+          />
         </div>
 
         <div id="events" className="section">
           <h2>Bar and Kitchen Events</h2>
+          {selectedDate && (
+            <button onClick={() => setSelectedDate(null)} className="clear-filter-btn">
+              Clear Filter
+            </button>
+          )}
           <div id="events-container">
             {loading && <p>Loading events...</p>}
             {error && <p>{error}</p>}
-            {!loading && !error && events.length > 0 ? (
-              events.map(event => (
+            {!loading && !error && filteredEvents.length > 0 ? (
+              filteredEvents.map(event => (
                 <div key={event.id} className="event">
                   <h3 dangerouslySetInnerHTML={{ __html: event.title }} />
                   <p>
@@ -92,7 +116,7 @@ export default function Home() {
                 </div>
               ))
             ) : (
-              !loading && !error && <p>No upcoming events found.</p>
+              !loading && !error && <p>{selectedDate ? 'No events found for this date.' : 'No upcoming events found.'}</p>
             )}
           </div>
         </div>
@@ -216,6 +240,22 @@ export default function Home() {
           background-color: #d9534f !important;
           color: white !important;
           border-radius: 50%;
+        }
+        .clear-filter-btn {
+          background-color: #f0ad4e;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 5px;
+          cursor: pointer;
+          font-weight: bold;
+          margin-bottom: 20px;
+          display: block;
+          margin-left: auto;
+          margin-right: auto;
+        }
+        .clear-filter-btn:hover {
+          background-color: #ec971f;
         }
       `}</style>
     </div>
