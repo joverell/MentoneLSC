@@ -1,7 +1,8 @@
 import styles from '../styles/BottomNav.module.css';
-import { FaCalendarAlt, FaListAlt, FaInfoCircle, FaUserCircle, FaNewspaper } from 'react-icons/fa';
+import { FaCalendarAlt, FaListAlt, FaInfoCircle, FaUserCircle, FaNewspaper, FaUsersCog } from 'react-icons/fa';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { useAuth } from '../context/AuthContext';
 
 const NavLink = ({ href, icon, label, active }) => (
   <Link href={href} passHref>
@@ -15,6 +16,7 @@ const NavLink = ({ href, icon, label, active }) => (
 const BottomNav = () => {
   const router = useRouter();
   const { pathname } = router;
+  const { user } = useAuth();
 
   // This component will now manage its own state based on the current route
   return (
@@ -38,16 +40,24 @@ const BottomNav = () => {
         active={pathname === '/' && router.query.tab === 'calendar'}
       />
       <NavLink
-        href="/account"
-        icon={<FaUserCircle />}
-        label="Account"
-        active={pathname === '/account'}
-      />
-      <NavLink
         href="/?tab=info"
         icon={<FaInfoCircle />}
         label="Info"
         active={pathname === '/' && router.query.tab === 'info'}
+      />
+      {user && user.roles && user.roles.includes('Admin') && (
+        <NavLink
+          href="/admin/users"
+          icon={<FaUsersCog />}
+          label="Admin"
+          active={pathname.startsWith('/admin')}
+        />
+      )}
+       <NavLink
+        href="/account"
+        icon={<FaUserCircle />}
+        label="Account"
+        active={pathname === '/account'}
       />
     </nav>
   );

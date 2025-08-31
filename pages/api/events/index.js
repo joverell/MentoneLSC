@@ -39,9 +39,15 @@ function createEvent(req, res) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+
+    // 2. Authorize the user
+    if (!decoded.roles || !decoded.roles.includes('Admin')) {
+      return res.status(403).json({ message: 'Forbidden: You do not have permission to create events.' });
+    }
+
     const userId = decoded.userId;
 
-    // 2. Validate request body
+    // 3. Validate request body
     const { title, description, start_time, end_time, location } = req.body;
     if (!title || !description || !start_time || !end_time) {
       return res.status(400).json({ message: 'Missing required event fields' });

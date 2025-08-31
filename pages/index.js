@@ -188,7 +188,7 @@ export default function Home() {
           <div id="news" className={styles.section}>
             <div className={styles.sectionHeader}>
               <h2>Club News</h2>
-              {user && (
+              {user && user.roles && user.roles.includes('Admin') && (
                 <Link href="/create-news" className={styles.createEventBtn}>
                   + Create Article
                 </Link>
@@ -228,7 +228,7 @@ export default function Home() {
           <div id="events" className={styles.section}>
             <div className={styles.sectionHeader}>
               <h2>Club Events</h2>
-              {user && (
+              {user && user.roles && user.roles.includes('Admin') && (
                 <Link href="/create-event" className={styles.createEventBtn}>
                   + Create Event
                 </Link>

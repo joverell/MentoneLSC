@@ -38,6 +38,12 @@ function createNews(req, res) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+
+    // Authorize the user
+    if (!decoded.roles || !decoded.roles.includes('Admin')) {
+      return res.status(403).json({ message: 'Forbidden: You do not have permission to create articles.' });
+    }
+
     const userId = decoded.userId;
 
     const { title, content } = req.body;
