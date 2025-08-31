@@ -49,15 +49,20 @@ export default function Home() {
   const { user } = useAuth();
   const router = useRouter();
   const [allEvents, setAllEvents] = useState([]);
+  const [newsArticles, setNewsArticles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [newsLoading, setNewsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [newsError, setNewsError] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const activeTab = router.query.tab || 'events';
+  const activeTab = router.query.tab || 'news';
 
+  // Effect for fetching events
   useEffect(() => {
     const fetchEvents = async () => {
+      setLoading(true);
       try {
         const [wpRes, internalRes] = await Promise.all([
           fetch('https://mentonelsc.com/wp-json/tribe/events/v1/events').catch(e => { console.error("WP fetch error:", e); return { ok: false }; }),
@@ -84,7 +89,7 @@ export default function Home() {
         combinedEvents.sort((a, b) => a.startTime - b.startTime);
 
         setAllEvents(combinedEvents);
-
+        setError(null);
       } catch (err) {
         console.error('Error processing events:', err);
         setError('Could not load events. Please try again later.');
@@ -92,8 +97,27 @@ export default function Home() {
         setLoading(false);
       }
     };
-
     fetchEvents();
+  }, []);
+
+  // Effect for fetching news
+  useEffect(() => {
+    const fetchNews = async () => {
+      setNewsLoading(true);
+      try {
+        const res = await fetch('/api/news');
+        if (!res.ok) throw new Error('Failed to fetch news');
+        const data = await res.json();
+        setNewsArticles(data);
+        setNewsError(null);
+      } catch (err) {
+        console.error(err);
+        setNewsError('Could not load news. Please try again later.');
+      } finally {
+        setNewsLoading(false);
+      }
+    };
+    fetchNews();
   }, []);
 
   const tileClassName = ({ date, view }) => {
@@ -159,6 +183,36 @@ export default function Home() {
 
       <div className={styles.container}>
         <Weather />
+
+        {activeTab === 'news' && (
+          <div id="news" className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <h2>Club News</h2>
+              {user && (
+                <Link href="/create-news" className={styles.createEventBtn}>
+                  + Create Article
+                </Link>
+              )}
+            </div>
+            <div className={styles.newsContainer}>
+              {newsLoading && <p>Loading news...</p>}
+              {newsError && <p>{newsError}</p>}
+              {!newsLoading && !newsError && newsArticles.length > 0 ? (
+                newsArticles.map(article => (
+                  <div key={article.id} className={styles.newsArticle}>
+                    <h3>{article.title}</h3>
+                    <p className={styles.articleMeta}>
+                      By {article.authorName} on {new Date(article.createdAt).toLocaleDateString('en-AU')}
+                    </p>
+                    <div dangerouslySetInnerHTML={{ __html: article.content.replace(/\n/g, '<br />') }} />
+                  </div>
+                ))
+              ) : (
+                !newsLoading && !newsError && <p>No news articles found.</p>
+              )}
+            </div>
+          </div>
+        )}
 
         {activeTab === 'calendar' && (
           <div id="calendar" className={styles.section}>

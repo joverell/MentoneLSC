@@ -180,3 +180,28 @@
 .createEventBtn:hover {
   background-color: #005bb5;
 }
+
+/* News Feed Styles */
+.newsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.newsArticle {
+  border: 1px solid #e0e0e0;
+  padding: 1.5rem;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+
+.newsArticle h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.articleMeta {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 1rem;
+}

@@ -1,5 +1,5 @@
 import styles from '../styles/BottomNav.module.css';
-import { FaCalendarAlt, FaListAlt, FaInfoCircle, FaUserCircle } from 'react-icons/fa';
+import { FaCalendarAlt, FaListAlt, FaInfoCircle, FaUserCircle, FaNewspaper } from 'react-icons/fa';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 
@@ -19,6 +19,12 @@ const BottomNav = () => {
   // This component will now manage its own state based on the current route
   return (
     <nav className={styles.nav}>
+      <NavLink
+        href="/?tab=news"
+        icon={<FaNewspaper />}
+        label="News"
+        active={pathname === '/' && router.query.tab === 'news'}
+      />
       <NavLink
         href="/?tab=events"
         icon={<FaListAlt />}
