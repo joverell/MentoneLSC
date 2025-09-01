@@ -1,3 +1,4 @@
+import { encrypt } from '../../../lib/crypto';
 import { getDb } from '../../../lib/db';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
@@ -21,7 +22,12 @@ function getNews(req, res) {
   try {
     const stmt = db.prepare('SELECT news.*, users.name as authorName FROM news JOIN users ON news.created_by = users.id ORDER BY news.createdAt DESC');
     const articles = stmt.all();
-    return res.status(200).json(articles);
+    const encryptedArticles = articles.map(article => ({
+      ...article,
+      id: encrypt(article.id),
+      created_by: encrypt(article.created_by),
+    }));
+    return res.status(200).json(encryptedArticles);
   } catch (error) {
     console.error('Failed to fetch news:', error);
     return res.status(500).json({ message: 'An error occurred while fetching news articles.' });
@@ -58,7 +64,10 @@ function createNews(req, res) {
     );
     const info = stmt.run(title, content, userId);
 
-    return res.status(201).json({ message: 'News article created successfully', articleId: info.lastInsertRowid });
+    return res.status(201).json({
+      message: 'News article created successfully',
+      articleId: encrypt(info.lastInsertRowid),
+    });
 
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {

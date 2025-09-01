@@ -1,4 +1,5 @@
 import { getDb } from '../../../lib/db';
+import { encrypt } from '../../../lib/crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { serialize } from 'cookie';
@@ -79,11 +80,22 @@ export default async function handler(req, res) {
           groups,
         });
 
+
       } catch (error) {
         console.error('Login Error:', error);
         res.status(500).json({ message: 'An error occurred during login' });
       }
       break;
+
+    // --- Respond with user info, including permissions ---
+    res.status(200).json({
+      id: encrypt(user.id),
+      name: user.name,
+      email: user.email,
+      roles,
+      groups,
+    });
+
 
     default:
       res.setHeader('Allow', ['POST']);

@@ -1,3 +1,4 @@
+import { encrypt } from '../../lib/crypto';
 import db from '../../lib/db';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
@@ -26,7 +27,11 @@ export default function handler(req, res) {
 
     const stmt = db.prepare('SELECT * FROM roles ORDER BY name ASC');
     const roles = stmt.all();
-    return res.status(200).json(roles);
+    const encryptedRoles = roles.map(role => ({
+      ...role,
+      id: encrypt(role.id),
+    }));
+    return res.status(200).json(encryptedRoles);
 
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {

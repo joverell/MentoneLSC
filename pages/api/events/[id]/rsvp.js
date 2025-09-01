@@ -1,3 +1,4 @@
+import { decrypt } from '../../../../lib/crypto';
 import db from '../../../../lib/db';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
@@ -22,12 +23,18 @@ export default function handler(req, res) {
     const decoded = jwt.verify(token, JWT_SECRET);
     const userId = decoded.userId;
 
-    const { id: eventId } = req.query;
+    const { id: encryptedEventId } = req.query;
+    const eventId = decrypt(encryptedEventId);
+
+    if (!eventId) {
+      return res.status(400).json({ message: 'Invalid event ID' });
+    }
+
     const { status, comment } = req.body;
 
     // 2. Validate input
-    if (!eventId || !status) {
-      return res.status(400).json({ message: 'Event ID and status are required.' });
+    if (!status) {
+      return res.status(400).json({ message: 'Status is required.' });
     }
     if (!['Yes', 'No', 'Maybe'].includes(status)) {
         return res.status(400).json({ message: "Invalid status. Must be one of 'Yes', 'No', 'Maybe'." });

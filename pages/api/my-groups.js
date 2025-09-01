@@ -1,3 +1,4 @@
+import { encrypt } from '../../lib/crypto';
 import db from '../../lib/db';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
@@ -38,8 +39,12 @@ export default function handler(req, res) {
     `);
 
     const groups = stmt.all(userId);
+    const encryptedGroups = groups.map(group => ({
+      ...group,
+      id: encrypt(group.id),
+    }));
 
-    return res.status(200).json(groups);
+    return res.status(200).json(encryptedGroups);
 
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {

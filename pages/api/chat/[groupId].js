@@ -1,3 +1,4 @@
+import { decrypt, encrypt } from '../../../lib/crypto';
 import { getDb } from '../../../lib/db';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
@@ -13,7 +14,7 @@ function isUserInGroup(db, userId, groupId) {
 
 export default function handler(req, res) {
   const db = getDb();
-  // 1. Authenticate the user from the token in the cookie
+  // 1. Authenticate the user from the token in the.cookie
   const cookies = parse(req.headers.cookie || '');
   const token = cookies.auth_token;
 
@@ -24,7 +25,12 @@ export default function handler(req, res) {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     const userId = decoded.userId;
-    const { groupId } = req.query;
+    const { groupId: encryptedGroupId } = req.query;
+    const groupId = decrypt(encryptedGroupId);
+
+    if (!groupId) {
+      return res.status(400).json({ message: 'Invalid group ID' });
+    }
 
     // 2. Authorize: Check if the user is a member of the group
     if (!isUserInGroup(db, userId, groupId)) {
@@ -50,7 +56,12 @@ export default function handler(req, res) {
           cm.createdAt ASC
       `);
       const messages = stmt.all(groupId);
-      return res.status(200).json(messages);
+      const encryptedMessages = messages.map(msg => ({
+        ...msg,
+        id: encrypt(msg.id),
+        userId: encrypt(msg.userId),
+      }));
+      return res.status(200).json(encryptedMessages);
     } else if (req.method === 'POST') {
       // Send a new message
       const { message } = req.body;
@@ -66,7 +77,10 @@ export default function handler(req, res) {
 
       // For simplicity, we'll just return success.
       // A more advanced implementation might return the created message object.
-      return res.status(201).json({ message: 'Message sent successfully', messageId: info.lastInsertRowid });
+      return res.status(201).json({
+        message: 'Message sent successfully',
+        messageId: encrypt(info.lastInsertRowid),
+      });
     } else {
       res.setHeader('Allow', ['GET', 'POST']);
       return res.status(405).end(`Method ${req.method} Not Allowed`);

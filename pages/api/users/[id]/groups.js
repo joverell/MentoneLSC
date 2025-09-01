@@ -1,3 +1,4 @@
+import { decrypt } from '../../../../lib/crypto';
 import db from '../../../../lib/db';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
@@ -24,11 +25,22 @@ export default function handler(req, res) {
       return res.status(403).json({ message: 'Forbidden: You do not have permission to perform this action.' });
     }
 
-    const { id: userId } = req.query;
-    const { groupIds } = req.body;
+    const { id: encryptedUserId } = req.query;
+    const { groupIds: encryptedGroupIds } = req.body;
 
-    if (!userId || !Array.isArray(groupIds)) {
-      return res.status(400).json({ message: 'User ID and a groups array are required.' });
+    const userId = decrypt(encryptedUserId);
+    if (!userId) {
+      return res.status(400).json({ message: 'Invalid user ID.' });
+    }
+
+    if (!Array.isArray(encryptedGroupIds)) {
+      return res.status(400).json({ message: 'A groups array is required.' });
+    }
+
+    const groupIds = encryptedGroupIds.map(decrypt).filter(Boolean);
+    if (groupIds.length !== encryptedGroupIds.length) {
+      // This means one or more IDs failed to decrypt
+      return res.status(400).json({ message: 'Invalid group ID found in the array.' });
     }
 
     // 2. Use a transaction to update groups
