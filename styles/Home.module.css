@@ -1,5 +1,5 @@
 .header {
-  background: url('https://www.transparenttextures.com/patterns/wavecut.png'), linear-gradient(to right, #007bff, #0056b3);
+  background: url('https://www.transparenttextures.com/patterns/wavecut.png'), linear-gradient(to right, #B30059, #800040);
   color: white;
   padding: 20px;
   display: flex;
@@ -10,9 +10,8 @@
 }
 
 .header img {
-  max-width: 80px;
-  border: 2px solid white;
-  border-radius: 50%;
+  max-width: 120px;
+  height: auto;
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
@@ -70,7 +69,7 @@
   box-shadow: 0 8px 15px rgba(0,0,0,0.15);
 }
 .event h3 {
-  color: #d9534f;
+  color: #B30059;
   margin-top: 0;
 }
 .event p {
@@ -98,11 +97,6 @@
 }
 .links a:hover {
   background-color: #ec971f;
-}
-.eventDay {
-  background-color: #d9534f !important;
-  color: white !important;
-  border-radius: 50%;
 }
 .clearFilterBtn {
   background-color: #f0ad4e;
@@ -168,7 +162,7 @@
 }
 
 .createEventBtn {
-  background-color: #0070f3;
+  background-color: #B30059;
   color: white;
   padding: 0.5rem 1rem;
   border-radius: 5px;
@@ -178,7 +172,7 @@
 }
 
 .createEventBtn:hover {
-  background-color: #005bb5;
+  background-color: #800040;
 }
 
 /* News Feed Styles */
@@ -240,9 +234,9 @@
 }
 
 .rsvpButtons .rsvpActive {
-  background-color: #d9534f;
+  background-color: #B30059;
   color: white;
-  border-color: #d43f3a;
+  border-color: #800040;
 }
 
 .rsvpTally {
