@@ -2,13 +2,13 @@ import db from '../../../lib/db';
 import bcrypt from 'bcryptjs';
 
 export default function handler(req, res) {
-  if (req.method !== 'POST') {
-    // Only allow POST requests
-    res.setHeader('Allow', ['POST']);
-    return res.status(405).end(`Method ${req.method} Not Allowed`);
-  }
-
   try {
+    if (req.method !== 'POST') {
+      // Only allow POST requests
+      res.setHeader('Allow', ['POST']);
+      return res.status(405).json({ message: `Method ${req.method} Not Allowed` });
+    }
+
     const { name, email, password } = req.body;
 
     // Basic validation
@@ -35,9 +35,9 @@ export default function handler(req, res) {
     const info = stmtInsert.run(name, email, hashedPassword);
 
     // Respond with success
-    res.status(201).json({ message: 'User created successfully', userId: info.lastInsertRowid });
+    return res.status(201).json({ message: 'User created successfully', userId: info.lastInsertRowid });
   } catch (error) {
     console.error('Registration Error:', error);
-    res.status(500).json({ message: 'An error occurred during registration' });
+    return res.status(500).json({ message: 'An error occurred during registration' });
   }
 }

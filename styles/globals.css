@@ -14,7 +14,7 @@ h1 {
 }
 
 h2 {
-  color: #0056b3;
+  color: #B30059;
   text-align: center;
   font-size: 2rem;
   margin-bottom: 20px;
@@ -22,7 +22,7 @@ h2 {
 
 /* Styles for the react-calendar component */
 .event-day {
-  background-color: #d9534f !important;
+  background-color: #B30059 !important;
   color: white !important;
   border-radius: 50%;
 }

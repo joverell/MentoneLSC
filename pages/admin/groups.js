@@ -102,7 +102,7 @@ export default function GroupManagement() {
       </header>
       <div className={styles.container}>
         <div className={styles.adminNav}>
-          <Link href="/admin/users"><a className={styles.adminNavLink}>Manage Users</a></Link>
+          <Link href="/admin/users" className={styles.adminNavLink}>Manage Users</Link>
         </div>
 
         {error && <p className={styles.error}>{error}</p>}
