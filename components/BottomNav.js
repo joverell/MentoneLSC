@@ -1,5 +1,5 @@
 import styles from '../styles/BottomNav.module.css';
-import { FaCalendarAlt, FaListAlt, FaInfoCircle, FaUserCircle, FaNewspaper, FaUsersCog } from 'react-icons/fa';
+import { FaCalendarAlt, FaListAlt, FaInfoCircle, FaUserCircle, FaNewspaper, FaUsersCog, FaComment } from 'react-icons/fa';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '../context/AuthContext';
@@ -39,6 +39,14 @@ const BottomNav = () => {
         label="Calendar"
         active={pathname === '/' && router.query.tab === 'calendar'}
       />
+      {user && (
+        <NavLink
+          href="/chat"
+          icon={<FaComment />}
+          label="Chat"
+          active={pathname.startsWith('/chat')}
+        />
+      )}
       <NavLink
         href="/?tab=info"
         icon={<FaInfoCircle />}
