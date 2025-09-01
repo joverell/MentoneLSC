@@ -1,3 +1,4 @@
+import { encrypt } from '../../../lib/crypto';
 import { getDb } from '../../../lib/db';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
@@ -47,6 +48,7 @@ export default function handler(req, res) {
 
     const users = stmt.all().map(user => ({
       ...user,
+      id: encrypt(user.id),
       roles: user.roles ? user.roles.split(',') : [],
       groups: user.groups ? user.groups.split(',') : [],
     }));

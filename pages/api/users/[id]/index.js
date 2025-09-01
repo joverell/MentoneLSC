@@ -1,3 +1,4 @@
+import { decrypt, encrypt } from '../../../../lib/crypto';
 import db from '../../../../lib/db';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
@@ -24,7 +25,12 @@ export default function handler(req, res) {
       return res.status(403).json({ message: 'Forbidden: You do not have permission to access this resource.' });
     }
 
-    const { id: userId } = req.query;
+    const { id: encryptedId } = req.query;
+    const userId = decrypt(encryptedId);
+
+    if (!userId) {
+      return res.status(400).json({ message: 'Invalid user ID' });
+    }
 
     // 2. Fetch the specific user with their roles and groups
     const stmt = db.prepare(`
@@ -57,11 +63,11 @@ export default function handler(req, res) {
     const groupIds = user.groupIds ? user.groupIds.split(',').map(Number) : [];
 
     res.status(200).json({
-      id: user.id,
+      id: encrypt(user.id),
       name: user.name,
       email: user.email,
-      roleIds,
-      groupIds,
+      roleIds: roleIds.map(encrypt),
+      groupIds: groupIds.map(encrypt),
     });
 
   } catch (error) {

@@ -102,7 +102,7 @@ export default function ChatRoom() {
           <div
             key={msg.id}
             className={`${styles.messageBubble} ${
-              msg.userId === user.userId ? styles.myMessage : styles.theirMessage
+              msg.userId === user.id ? styles.myMessage : styles.theirMessage
             }`}
           >
             <div className={styles.messageMeta}>

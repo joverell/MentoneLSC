@@ -1,3 +1,4 @@
+import { decrypt } from '../../../lib/crypto';
 import { getDb } from '../../../lib/db';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
@@ -26,19 +27,25 @@ export default function handler(req, res) {
     return res.status(403).json({ message: 'Forbidden: You do not have permission to perform this action.' });
   }
 
+  const { id: encryptedId } = req.query;
+  const id = decrypt(encryptedId);
+
+  if (!id) {
+    return res.status(400).json({ message: 'Invalid ID' });
+  }
+
   if (req.method === 'PUT') {
-    return updateAccessGroup(req, res);
+    return updateAccessGroup(req, res, id);
   } else if (req.method === 'DELETE') {
-    return deleteAccessGroup(req, res);
+    return deleteAccessGroup(req, res, id);
   } else {
     res.setHeader('Allow', ['PUT', 'DELETE']);
     return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }
 
-function updateAccessGroup(req, res) {
+function updateAccessGroup(req, res, id) {
   const db = getDb();
-  const { id } = req.query;
   const { name } = req.body;
 
   if (!name) {
@@ -63,9 +70,8 @@ function updateAccessGroup(req, res) {
   }
 }
 
-function deleteAccessGroup(req, res) {
+function deleteAccessGroup(req, res, id) {
   const db = getDb();
-  const { id } = req.query;
 
   try {
     const stmt = db.prepare('DELETE FROM access_groups WHERE id = ?');

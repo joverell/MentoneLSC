@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 import { getDb } from '../../../lib/db';
+import { encrypt } from '../../../lib/crypto';
 
 const JWT_SECRET = 'a-secure-and-long-secret-key-that-is-at-least-32-characters';
 
@@ -53,7 +54,7 @@ export default function handler(req, res) {
     const groups = user.groups ? user.groups.split(',') : [];
 
     res.status(200).json({
-      id: user.id,
+      id: encrypt(user.id),
       name: user.name,
       email: user.email,
       roles,

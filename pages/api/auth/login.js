@@ -1,4 +1,5 @@
 import { getDb } from '../../../lib/db';
+import { encrypt } from '../../../lib/crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { serialize } from 'cookie';
@@ -74,7 +75,7 @@ export default function handler(req, res) {
 
     // --- Respond with user info, including permissions ---
     res.status(200).json({
-      id: user.id,
+      id: encrypt(user.id),
       name: user.name,
       email: user.email,
       roles,

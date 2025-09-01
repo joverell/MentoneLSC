@@ -1,3 +1,4 @@
+import { encrypt } from '../../../lib/crypto';
 import { getDb } from '../../../lib/db';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
@@ -51,6 +52,8 @@ function getEvents(req, res) {
     const stmt = db.prepare(sql);
     const events = stmt.all(userId).map(event => ({
       ...event,
+      id: encrypt(event.id),
+      created_by: encrypt(event.created_by),
       rsvpTally: {
         yes: event.yes_count,
         no: event.no_count,
@@ -97,7 +100,10 @@ function createEvent(req, res) {
     );
     const info = stmt.run(title, description, start_time, end_time, location || null, userId);
 
-    return res.status(201).json({ message: 'Event created successfully', eventId: info.lastInsertRowid });
+    return res.status(201).json({
+      message: 'Event created successfully',
+      eventId: encrypt(info.lastInsertRowid),
+    });
 
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {
