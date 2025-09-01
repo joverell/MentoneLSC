@@ -30,6 +30,22 @@ export default async function handler(req, res) {
       'INSERT INTO users (name, email, password) VALUES (?, ?, ?)'
     );
     stmtInsert.run(name, email, hashedPassword);
+    const info = stmtInsert.run(name, email, hashedPassword);
+    const userId = info.lastInsertRowid;
+
+    // Check if the user is the one to be made an admin
+    if (email === 'jaoverell@gmail.com') {
+      // Get the Admin role ID
+      const adminRole = db.prepare('SELECT id FROM roles WHERE name = ?').get('Admin');
+      if (adminRole) {
+        // Assign the Admin role to the new user
+        const stmtAssignRole = db.prepare(
+          'INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)'
+        );
+        stmtAssignRole.run(userId, adminRole.id);
+      }
+    }
+
 
     return res.status(201).json({ message: 'User created successfully' });
   } catch (error) {
