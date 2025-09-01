@@ -1,12 +1,13 @@
 .header {
-  background: url('https://www.transparenttextures.com/patterns/wavecut.png'), linear-gradient(to right, #B30059, #800040);
-  color: white;
+  background: linear-gradient(to right, #f0f0f0, #e0e0e0);
+  color: #333;
   padding: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 20px;
   position: relative;
+  border-bottom: 1px solid #ccc;
 }
 
 .header img {

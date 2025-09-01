@@ -203,10 +203,10 @@ export default function Home() {
           <img src="https://lh3.googleusercontent.com/a/ACg8ocJ6ORu45K50sJufG0lJGMZ5n6KvqlEyMHN-7euIGvYw3S-ysmg=s288-c-no" alt="Mentone LSC Logo" />
         </a>
         <h1>Mentone LSC Hub</h1>
+        <Weather />
       </header>
 
       <div className={styles.container}>
-        <Weather />
 
         {activeTab === 'news' && (
           <div id="news" className={styles.section}>
