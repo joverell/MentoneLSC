@@ -46,16 +46,18 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (name, email, password) => {
     const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password }),
     });
-    const data = await res.json();
-    if(res.ok) {
-        // After successful registration, redirect to login
-        router.push('/login');
+
+    if (res.ok) {
+      // After successful registration, redirect to login
+      router.push('/login');
     } else {
-        throw new Error(data.message || 'Registration failed');
+      // If there's an error, parse the JSON to get the message
+      const data = await res.json();
+      throw new Error(data.message || 'Registration failed');
     }
   };
 
