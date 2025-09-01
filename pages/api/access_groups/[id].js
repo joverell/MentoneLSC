@@ -1,4 +1,4 @@
-import db from '../../../lib/db';
+import { getDb } from '../../../lib/db';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
@@ -37,6 +37,7 @@ export default function handler(req, res) {
 }
 
 function updateAccessGroup(req, res) {
+  const db = getDb();
   const { id } = req.query;
   const { name } = req.body;
 
@@ -63,6 +64,7 @@ function updateAccessGroup(req, res) {
 }
 
 function deleteAccessGroup(req, res) {
+  const db = getDb();
   const { id } = req.query;
 
   try {

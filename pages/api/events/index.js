@@ -1,4 +1,4 @@
-import db from '../../../lib/db';
+import { getDb } from '../../../lib/db';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
@@ -17,6 +17,7 @@ export default function handler(req, res) {
 
 // Function to get all events, including RSVP data
 function getEvents(req, res) {
+  const db = getDb();
   let userId = null;
   try {
     const cookies = parse(req.headers.cookie || '');
@@ -65,6 +66,7 @@ function getEvents(req, res) {
 
 // Function to create a new event (protected)
 function createEvent(req, res) {
+  const db = getDb();
   // 1. Authenticate the user
   const cookies = parse(req.headers.cookie || '');
   const token = cookies.auth_token;

@@ -1,7 +1,8 @@
-import db from '../../../lib/db';
+import { getDb } from '../../../lib/db';
 import bcrypt from 'bcryptjs';
 
 export default function handler(req, res) {
+  const db = getDb();
   try {
     if (req.method !== 'POST') {
       // Only allow POST requests

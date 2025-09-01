@@ -1,4 +1,4 @@
-import db from '../../../lib/db';
+import { getDb } from '../../../lib/db';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
@@ -17,6 +17,7 @@ export default function handler(req, res) {
 
 // Function to get all news articles, newest first
 function getNews(req, res) {
+  const db = getDb();
   try {
     const stmt = db.prepare('SELECT news.*, users.name as authorName FROM news JOIN users ON news.created_by = users.id ORDER BY news.createdAt DESC');
     const articles = stmt.all();
@@ -29,6 +30,7 @@ function getNews(req, res) {
 
 // Function to create a new news article (protected)
 function createNews(req, res) {
+  const db = getDb();
   const cookies = parse(req.headers.cookie || '');
   const token = cookies.auth_token;
 
