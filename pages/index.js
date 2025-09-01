@@ -7,6 +7,7 @@ import 'react-calendar/dist/Calendar.css';
 import styles from '../styles/Home.module.css';
 import Weather from '../components/Weather';
 import BottomNav from '../components/BottomNav';
+import ExpandableArticle from '../components/ExpandableArticle';
 import { useAuth } from '../context/AuthContext';
 
 // Helper function to decode HTML entities
@@ -58,7 +59,7 @@ export default function Home() {
   const [newsLoading, setNewsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [newsError, setNewsError] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [searchTerm, setSearchTerm] = useState('');
 
   const activeTab = router.query.tab || 'events';
@@ -161,12 +162,17 @@ export default function Home() {
 
   const handleDateChange = date => {
     setSelectedDate(date);
-    router.push('/?tab=events', undefined, { shallow: true });
+    // No longer need to push to router, as calendar is always visible
+    // router.push('/?tab=events', undefined, { shallow: true });
   };
 
   const filteredEvents = allEvents
     .filter(event => {
-      if (!selectedDate) return true;
+      // If no date is selected, show all future events
+      if (!selectedDate) {
+        return event.startTime >= new Date();
+      }
+      // Otherwise, filter by the selected date
       const eventDate = event.startTime;
       return (
         eventDate.getFullYear() === selectedDate.getFullYear() &&
@@ -208,6 +214,14 @@ export default function Home() {
       <div className={styles.container}>
         <Weather />
 
+        <div className={styles.calendarContainer}>
+          <Calendar
+            onChange={handleDateChange}
+            value={selectedDate}
+            tileClassName={tileClassName}
+          />
+        </div>
+
         {activeTab === 'news' && (
           <div id="news" className={styles.section}>
             <div className={styles.sectionHeader}>
@@ -222,29 +236,14 @@ export default function Home() {
               {newsLoading && <p>Loading news...</p>}
               {newsError && <p>{newsError}</p>}
               {!newsLoading && !newsError && newsArticles.length > 0 ? (
-                newsArticles.map(article => (
-                  <div key={article.id} className={styles.newsArticle}>
-                    <h3>{article.title}</h3>
-                    <p className={styles.articleMeta}>
-                      By {article.authorName} on {new Date(article.createdAt).toLocaleDateString('en-AU')}
-                    </p>
-                    <div dangerouslySetInnerHTML={{ __html: article.content.replace(/\n/g, '<br />') }} />
-                  </div>
-                ))
+                newsArticles.map(article => {
+                  const plainTextContent = article.content.replace(/<[^>]*>?/gm, '');
+                  return <ExpandableArticle key={article.id} article={article} plainTextContent={plainTextContent} />;
+                })
               ) : (
                 !newsLoading && !newsError && <p>No news articles found.</p>
               )}
             </div>
-          </div>
-        )}
-
-        {activeTab === 'calendar' && (
-          <div id="calendar" className={styles.section}>
-            <h2>Upcoming Activities</h2>
-            <Calendar
-              onClickDay={handleDateChange}
-              tileClassName={tileClassName}
-            />
           </div>
         )}
 
@@ -268,7 +267,7 @@ export default function Home() {
               />
               {selectedDate && (
                 <button onClick={() => setSelectedDate(null)} className={styles.clearFilterBtn}>
-                  Clear Date Filter
+                  Show All Events
                 </button>
               )}
             </div>
