@@ -1,4 +1,4 @@
-import db from '../../../lib/db';
+import { getDb } from '../../../lib/db';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
@@ -37,6 +37,7 @@ export default function handler(req, res) {
 }
 
 function getAccessGroups(req, res) {
+  const db = getDb();
   try {
     const stmt = db.prepare('SELECT * FROM access_groups ORDER BY name ASC');
     const groups = stmt.all();
@@ -48,6 +49,7 @@ function getAccessGroups(req, res) {
 }
 
 function createAccessGroup(req, res) {
+  const db = getDb();
   const { name } = req.body;
   if (!name) {
     return res.status(400).json({ message: 'Group name is required.' });

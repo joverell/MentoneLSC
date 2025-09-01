@@ -1,17 +1,18 @@
-import db from '../../../lib/db';
+import { getDb } from '../../../lib/db';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
 const JWT_SECRET = 'a-secure-and-long-secret-key-that-is-at-least-32-characters';
 
 // Helper function to check if a user is in a group
-function isUserInGroup(userId, groupId) {
+function isUserInGroup(db, userId, groupId) {
   const stmt = db.prepare('SELECT 1 FROM user_access_groups WHERE user_id = ? AND group_id = ?');
   const result = stmt.get(userId, groupId);
   return !!result;
 }
 
 export default function handler(req, res) {
+  const db = getDb();
   // 1. Authenticate the user from the token in the cookie
   const cookies = parse(req.headers.cookie || '');
   const token = cookies.auth_token;
@@ -26,7 +27,7 @@ export default function handler(req, res) {
     const { groupId } = req.query;
 
     // 2. Authorize: Check if the user is a member of the group
-    if (!isUserInGroup(userId, groupId)) {
+    if (!isUserInGroup(db, userId, groupId)) {
       return res.status(403).json({ message: 'Forbidden: You are not a member of this group.' });
     }
 
