@@ -200,7 +200,7 @@ export default function Home() {
 
       <header className={styles.header}>
         <a href="https://mentonelsc.com/" target="_blank" rel="noopener noreferrer">
-          <img src="https://mentonelsc.com/wp-content/uploads/2021/03/cropped-C100-MLSC-logo-2-e1723032334453-80x81.jpg" alt="Mentone LSC Logo" />
+          <img src="https://lh3.googleusercontent.com/a/ACg8ocJ6ORu45K50sJufG0lJGMZ5n6KvqlEyMHN-7euIGvYw3S-ysmg=s288-c-no" alt="Mentone LSC Logo" />
         </a>
         <h1>Mentone LSC Hub</h1>
       </header>
