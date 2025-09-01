@@ -27,7 +27,7 @@ const normalizeWordPressEvent = (event) => ({
   startTime: new Date(event.start_date.replace(' ', 'T')), // More reliable parsing
   endTime: new Date(event.end_date.replace(' ', 'T')),
   location: event.venue ? event.venue.venue : 'See details',
-  imageUrl: event.image ? event.image.sizes.medium.url : null,
+  imageUrl: event.image?.sizes?.medium?.url || (event.image?.url || null),
   source: 'wordpress',
   externalUrl: event.url,
   rsvpTally: null,

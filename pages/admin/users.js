@@ -56,7 +56,7 @@ export default function UserManagement() {
       </header>
       <div className={styles.container}>
         <div className={styles.adminNav}>
-          <Link href="/admin/groups"><a className={styles.adminNavLink}>Manage Access Groups</a></Link>
+          <Link href="/admin/groups" className={styles.adminNavLink}>Manage Access Groups</Link>
         </div>
         {error && <p className={styles.error}>{error}</p>}
         <div className={styles.tableContainer}>
@@ -78,8 +78,8 @@ export default function UserManagement() {
                   <td>{u.roles.join(', ')}</td>
                   <td>{u.groups.join(', ')}</td>
                   <td>
-                    <Link href={`/admin/users/${u.id}`}>
-                      <a className={styles.manageLink}>Manage</a>
+                    <Link href={`/admin/users/${u.id}`} className={styles.manageLink}>
+                      Manage
                     </Link>
                   </td>
                 </tr>

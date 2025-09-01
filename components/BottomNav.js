@@ -5,11 +5,9 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../context/AuthContext';
 
 const NavLink = ({ href, icon, label, active }) => (
-  <Link href={href} passHref>
-    <a className={`${styles.navButton} ${active ? styles.active : ''}`}>
-      {icon}
-      <span>{label}</span>
-    </a>
+  <Link href={href} className={`${styles.navButton} ${active ? styles.active : ''}`}>
+    {icon}
+    <span>{label}</span>
   </Link>
 );
 

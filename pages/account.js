@@ -32,12 +32,8 @@ export default function Account() {
         <h2>Access Denied</h2>
         <p>You must be logged in to view this page.</p>
         <div className={homeStyles.links}>
-          <Link href="/login" passHref>
-            <a className={formStyles.button}>Login</a>
-          </Link>
-          <Link href="/register" passHref>
-            <a className={formStyles.button}>Register</a>
-          </Link>
+          <Link href="/login" className={formStyles.button}>Login</Link>
+          <Link href="/register" className={formStyles.button}>Register</Link>
         </div>
       </div>
     );
