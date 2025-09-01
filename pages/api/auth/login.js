@@ -7,37 +7,35 @@ import { serialize } from 'cookie';
 // This should be in an environment variable in a real application
 const JWT_SECRET = 'a-secure-and-long-secret-key-that-is-at-least-32-characters';
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   const db = getDb();
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', ['POST']);
-    return res.status(405).end(`Method ${req.method} Not Allowed`);
-  }
 
-  try {
-    const { email, password } = req.body;
+  switch (req.method) {
+    case 'POST':
+      try {
+        const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
-    }
+        if (!email || !password) {
+          return res.status(400).json({ message: 'Email and password are required' });
+        }
 
-    // Find the user by email
-    const stmt = db.prepare('SELECT * FROM users WHERE email = ?');
-    const user = stmt.get(email);
+        // Find the user by email
+        const stmt = db.prepare('SELECT * FROM users WHERE email = ?');
+        const user = stmt.get(email);
 
-    if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
+        if (!user) {
+          return res.status(401).json({ message: 'Invalid credentials' });
+        }
 
-    // Compare the provided password with the stored hash
-    const isValid = bcrypt.compareSync(password, user.password);
+        // Compare the provided password with the stored hash
+        const isValid = bcrypt.compareSync(password, user.password);
 
-    if (!isValid) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
+        if (!isValid) {
+          return res.status(401).json({ message: 'Invalid credentials' });
+        }
 
-    // --- Fetch roles and groups ---
-    const roleStmt = db.prepare(`
+        // --- Fetch roles and groups ---
+        const roleStmt = db.prepare(`
       SELECT
         GROUP_CONCAT(DISTINCT r.name) as roles,
         GROUP_CONCAT(DISTINCT ag.name) as groups
@@ -52,26 +50,42 @@ export default function handler(req, res) {
       GROUP BY
         u.id
     `);
-    const permissions = roleStmt.get(user.id);
-    const roles = permissions && permissions.roles ? permissions.roles.split(',') : [];
-    const groups = permissions && permissions.groups ? permissions.groups.split(',') : [];
+        const permissions = roleStmt.get(user.id);
+        const roles = permissions && permissions.roles ? permissions.roles.split(',') : [];
+        const groups = permissions && permissions.groups ? permissions.groups.split(',') : [];
 
-    // --- Create JWT with permissions ---
-    const token = jwt.sign(
-      { userId: user.id, email: user.email, name: user.name, roles, groups },
-      JWT_SECRET,
-      { expiresIn: '1h' }
-    );
+        // --- Create JWT with permissions ---
+        const token = jwt.sign(
+          { userId: user.id, email: user.email, name: user.name, roles, groups },
+          JWT_SECRET,
+          { expiresIn: '1h' }
+        );
 
-    const cookie = serialize('auth_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV !== 'development',
-      sameSite: 'strict',
-      maxAge: 60 * 60,
-      path: '/',
-    });
+        const cookie = serialize('auth_token', token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV !== 'development',
+          sameSite: 'strict',
+          maxAge: 60 * 60,
+          path: '/',
+        });
 
-    res.setHeader('Set-Cookie', cookie);
+        res.setHeader('Set-Cookie', cookie);
+
+        // --- Respond with user info, including permissions ---
+        res.status(200).json({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          roles,
+          groups,
+        });
+
+
+      } catch (error) {
+        console.error('Login Error:', error);
+        res.status(500).json({ message: 'An error occurred during login' });
+      }
+      break;
 
     // --- Respond with user info, including permissions ---
     res.status(200).json({
@@ -82,8 +96,10 @@ export default function handler(req, res) {
       groups,
     });
 
-  } catch (error) {
-    console.error('Login Error:', error);
-    res.status(500).json({ message: 'An error occurred during login' });
+
+    default:
+      res.setHeader('Allow', ['POST']);
+      res.status(405).end(`Method ${req.method} Not Allowed`);
+      break;
   }
 }
