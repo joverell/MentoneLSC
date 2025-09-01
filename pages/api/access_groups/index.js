@@ -1,3 +1,4 @@
+import { encrypt } from '../../../lib/crypto';
 import { getDb } from '../../../lib/db';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
@@ -41,7 +42,11 @@ function getAccessGroups(req, res) {
   try {
     const stmt = db.prepare('SELECT * FROM access_groups ORDER BY name ASC');
     const groups = stmt.all();
-    return res.status(200).json(groups);
+    const encryptedGroups = groups.map(group => ({
+      ...group,
+      id: encrypt(group.id),
+    }));
+    return res.status(200).json(encryptedGroups);
   } catch (error) {
     console.error('Get Access Groups API Error:', error);
     return res.status(500).json({ message: 'An error occurred while fetching access groups' });
@@ -58,7 +63,10 @@ function createAccessGroup(req, res) {
   try {
     const stmt = db.prepare('INSERT INTO access_groups (name) VALUES (?)');
     const info = stmt.run(name);
-    return res.status(201).json({ message: 'Access group created successfully.', groupId: info.lastInsertRowid });
+    return res.status(201).json({
+      message: 'Access group created successfully.',
+      groupId: encrypt(info.lastInsertRowid),
+    });
   } catch (error) {
     // Handle unique constraint violation
     if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
