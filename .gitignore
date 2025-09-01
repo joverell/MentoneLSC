@@ -29,3 +29,11 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+
+# Log files
+*.log
