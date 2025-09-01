@@ -53,8 +53,10 @@ const Weather = () => {
     <div className={styles.weatherWidget}>
       <h4>Mentone Weather</h4>
       <div className={styles.weatherInfo}>
-        <span className={styles.weatherIcon}>{getWeatherIcon(weather.weathercode)}</span>
-        <span className={styles.weatherTemp}>{weather.temperature_2m}°C</span>
+        <div className={styles.weatherLine}>
+          <span className={styles.weatherIcon}>{getWeatherIcon(weather.weathercode)}</span>
+          <span className={styles.weatherTemp}>{weather.temperature_2m}°C</span>
+        </div>
         <span className={styles.weatherTemp}>🌊 {weather.soil_temperature_0cm}°C</span>
       </div>
     </div>
