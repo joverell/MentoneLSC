@@ -1,5 +1,6 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { useRouter } from 'next/router';
+import axios from 'axios';
 
 const AuthContext = createContext();
 
@@ -30,34 +31,26 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setUser(data);
+    try {
+      const res = await axios.post('/api/auth/login', { email, password });
+      setUser(res.data);
       router.push('/account');
-    } else {
-      throw new Error(data.message || 'Login failed');
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Login failed');
     }
   };
 
   const register = async (name, email, password) => {
-    const res = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password }),
-    });
-
-    if (res.ok) {
-      // After successful registration, redirect to login
+    try {
+      await axios.post('/api/auth/register', { name, email, password });
       router.push('/login');
-    } else {
-      // If there's an error, parse the JSON to get the message
-      const data = await res.json();
-      throw new Error(data.message || 'Registration failed');
+    } catch (error) {
+      if (error.response && error.response.status === 409) {
+        // Use a more user-friendly message as suggested by the user
+        throw new Error('A user with this email address already exists. Please use a different email or log in.');
+      }
+      // For other errors, use the server message or a generic one.
+      throw new Error(error.response?.data?.message || 'Registration failed. Please try again.');
     }
   };
 
