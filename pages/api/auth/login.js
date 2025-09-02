@@ -1,7 +1,6 @@
 import { adminAuth, adminDb } from '../../../src/firebase-admin';
 import jwt from 'jsonwebtoken';
 import { serialize } from 'cookie';
-import { doc, getDoc } from 'firebase/firestore';
 
 const JWT_SECRET = 'a-secure-and-long-secret-key-that-is-at-least-32-characters';
 // This is your Web API Key from your Firebase project's client-side config.
@@ -48,10 +47,11 @@ export default async function handler(req, res) {
 
         // 2. Fetch user data and permissions from Firestore
         console.log('Fetching user data from Firestore...');
-        const userDocRef = doc(adminDb, 'users', uid);
-        const userDoc = await getDoc(userDocRef);
+        const userDocRef = adminDb.collection('users').doc(uid);
+        const userDoc = await userDocRef.get();
 
-        if (!userDoc.exists()) {
+
+        if (!userDoc.exists) {
           console.log('User profile not found in Firestore.');
           // This case is unlikely if user exists in Auth but not Firestore, but good to handle.
           return res.status(404).json({ message: 'User profile not found.' });

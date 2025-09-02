@@ -1,5 +1,5 @@
+import admin from 'firebase-admin';
 import { adminAuth, adminDb } from '../../../src/firebase-admin';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 export default async function handler(req, res) {
   switch (req.method) {
@@ -31,12 +31,12 @@ export default async function handler(req, res) {
         }
 
         // 3. Create a corresponding user document in Firestore
-        const userDocRef = doc(adminDb, 'users', uid);
-        await setDoc(userDocRef, {
+        const userDocRef = adminDb.collection('users').doc(uid);
+        await userDocRef.set({
           name: name,
           email: email,
           roles: userRoles, // Store roles in the user document as well
-          createdAt: serverTimestamp(),
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
         });
 
         return res.status(201).json({ message: 'User created successfully', uid: uid });
