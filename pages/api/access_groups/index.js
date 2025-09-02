@@ -1,6 +1,5 @@
 import { encrypt } from '../../../lib/crypto';
 import { adminDb } from '../../../src/firebase-admin';
-import { collection, query, orderBy, getDocs, addDoc, where } from 'firebase/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
@@ -40,9 +39,7 @@ export default async function handler(req, res) {
 
 async function getAccessGroups(req, res) {
   try {
-    const groupsCollection = collection(adminDb, 'access_groups');
-    const q = query(groupsCollection, orderBy('name', 'asc'));
-    const groupsSnapshot = await getDocs(q);
+    const groupsSnapshot = await adminDb.collection('access_groups').orderBy('name', 'asc').get();
     const groups = groupsSnapshot.docs.map(doc => ({
       id: encrypt(doc.id),
       ...doc.data(),
@@ -62,14 +59,14 @@ async function createAccessGroup(req, res) {
 
   try {
     // Check for uniqueness since Firestore doesn't enforce it
-    const groupsCollection = collection(adminDb, 'access_groups');
-    const q = query(groupsCollection, where('name', '==', name));
-    const existing = await getDocs(q);
+    const groupsCollection = adminDb.collection('access_groups');
+    const q = groupsCollection.where('name', '==', name);
+    const existing = await q.get();
     if (!existing.empty) {
       return res.status(409).json({ message: 'An access group with this name already exists.' });
     }
 
-    const newGroupRef = await addDoc(groupsCollection, { name });
+    const newGroupRef = await groupsCollection.add({ name });
     return res.status(201).json({
       message: 'Access group created successfully.',
       groupId: encrypt(newGroupRef.id),

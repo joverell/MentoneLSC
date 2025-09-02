@@ -1,6 +1,5 @@
 import { decrypt, encrypt } from '../../../../lib/crypto';
 import { adminDb } from '../../../../src/firebase-admin';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
@@ -11,9 +10,9 @@ async function getIdsFromNames(collectionName, names) {
   if (!names || names.length === 0) {
     return [];
   }
-  const collRef = collection(adminDb, collectionName);
-  const q = query(collRef, where('name', 'in', names));
-  const snapshot = await getDocs(q);
+  const collRef = adminDb.collection(collectionName);
+  const q = collRef.where('name', 'in', names);
+  const snapshot = await q.get();
   return snapshot.docs.map(doc => doc.id);
 }
 
@@ -45,10 +44,10 @@ export default async function handler(req, res) {
     }
 
     // 2. Fetch the specific user from Firestore
-    const userDocRef = doc(adminDb, 'users', userId);
-    const userDoc = await getDoc(userDocRef);
+    const userDocRef = adminDb.collection('users').doc(userId);
+    const userDoc = await userDocRef.get();
 
-    if (!userDoc.exists()) {
+    if (!userDoc.exists) {
       return res.status(404).json({ message: 'User not found' });
     }
     const userData = userDoc.data();

@@ -1,6 +1,5 @@
 import { decrypt } from '../../../../lib/crypto';
 import { adminDb, adminAuth } from '../../../../src/firebase-admin';
-import { doc, updateDoc, getDocs, collection, query, where } from 'firebase/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
@@ -11,10 +10,9 @@ async function getRoleNamesFromIds(roleIds) {
   if (!roleIds || roleIds.length === 0) {
     return [];
   }
-  const rolesCollection = collection(adminDb, 'roles');
-  const q = query(rolesCollection, where('__name__', 'in', roleIds));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => doc.data().name);
+  const docRefs = roleIds.map(id => adminDb.collection('roles').doc(id));
+  const docSnapshots = await adminDb.getAll(...docRefs);
+  return docSnapshots.map(doc => doc.exists ? doc.data().name : null).filter(Boolean);
 }
 
 export default async function handler(req, res) {
@@ -62,8 +60,8 @@ export default async function handler(req, res) {
     }
 
     // 3. Update the user document in Firestore
-    const userDocRef = doc(adminDb, 'users', userId);
-    await updateDoc(userDocRef, { roles: roleNames });
+    const userDocRef = adminDb.collection('users').doc(userId);
+    await userDocRef.update({ roles: roleNames });
 
     // 4. Update the custom claims in Firebase Auth for immediate effect on tokens
     await adminAuth.setCustomUserClaims(userId, { roles: roleNames });

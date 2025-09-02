@@ -1,6 +1,5 @@
 import { decrypt } from '../../../../lib/crypto';
 import { adminDb, adminAuth } from '../../../../src/firebase-admin';
-import { doc, updateDoc, getDocs, collection, query, where, getDoc } from 'firebase/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
@@ -11,10 +10,9 @@ async function getGroupNamesFromIds(groupIds) {
   if (!groupIds || groupIds.length === 0) {
     return [];
   }
-  const groupsCollection = collection(adminDb, 'access_groups');
-  const q = query(groupsCollection, where('__name__', 'in', groupIds));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => doc.data().name);
+  const docRefs = groupIds.map(id => adminDb.collection('access_groups').doc(id));
+  const docSnapshots = await adminDb.getAll(...docRefs);
+  return docSnapshots.map(doc => doc.exists ? doc.data().name : null).filter(Boolean);
 }
 
 export default async function handler(req, res) {
@@ -61,8 +59,8 @@ export default async function handler(req, res) {
     }
 
     // 3. Update the user document in Firestore
-    const userDocRef = doc(adminDb, 'users', userId);
-    await updateDoc(userDocRef, { groups: groupNames });
+    const userDocRef = adminDb.collection('users').doc(userId);
+    await userDocRef.update({ groups: groupNames });
 
     // 4. Update the custom claims in Firebase Auth
     // We need to merge the new groups with existing claims like roles

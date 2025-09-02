@@ -1,6 +1,5 @@
 import { encrypt } from '../../lib/crypto';
 import { adminDb } from '../../src/firebase-admin';
-import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
@@ -26,9 +25,7 @@ export default async function handler(req, res) {
       return res.status(403).json({ message: 'Forbidden: You do not have permission to access this resource.' });
     }
 
-    const rolesCollection = collection(adminDb, 'roles');
-    const q = query(rolesCollection, orderBy('name', 'asc'));
-    const rolesSnapshot = await getDocs(q);
+    const rolesSnapshot = await adminDb.collection('roles').orderBy('name', 'asc').get();
 
     const roles = rolesSnapshot.docs.map(doc => ({
       id: encrypt(doc.id),
