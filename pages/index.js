@@ -20,19 +20,30 @@ function decode(str) {
 }
 
 
-const normalizeWordPressEvent = (event) => ({
-  id: `wp-${event.id}`,
-  title: decode(event.title),
-  description: event.description, // Keep as HTML
-  startTime: new Date(event.start_date.replace(' ', 'T')), // More reliable parsing
-  endTime: new Date(event.end_date.replace(' ', 'T')),
-  location: event.venue ? event.venue.venue : 'See details',
-  imageUrl: event.image?.sizes?.medium?.url || (event.image?.url || null),
-  source: 'wordpress',
-  externalUrl: event.url,
-  rsvpTally: null,
-  currentUserRsvpStatus: null,
-});
+const normalizeWordPressEvent = (event) => {
+  const location = event.venue ? event.venue.venue : null;
+  let description = event.description;
+
+  // The Events Calendar plugin often includes a div with venue details.
+  // This regex attempts to remove that block to prevent duplicate information.
+  const venueDetailsRegex = /<div\s+class="tribe-events-venue-details">[\s\S]*?<\/div>/;
+  description = description.replace(venueDetailsRegex, '');
+
+  return {
+    id: `wp-${event.id}`,
+    title: decode(event.title),
+    description: description, // Use the modified description
+    startTime: new Date(event.start_date.replace(' ', 'T')), // More reliable parsing
+    endTime: new Date(event.end_date.replace(' ', 'T')),
+    location: location || 'See details',
+    locationLink: location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}` : null,
+    imageUrl: event.image?.sizes?.medium?.url || (event.image?.url || null),
+    source: 'wordpress',
+    externalUrl: event.url,
+    rsvpTally: null,
+    currentUserRsvpStatus: null,
+  };
+};
 
 const normalizeInternalEvent = (event) => ({
   id: `internal-${event.id}`,
@@ -41,7 +52,8 @@ const normalizeInternalEvent = (event) => ({
   startTime: new Date(event.start_time),
   endTime: new Date(event.end_time),
   location: event.location,
-  imageUrl: null, // No image support for internal events yet
+  locationLink: event.location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}` : null,
+  imageUrl: event.imageUrl || null,
   source: 'internal',
   externalUrl: null,
   rsvpTally: event.rsvpTally,
@@ -301,6 +313,18 @@ export default function Home() {
                           minute: '2-digit',
                         })}
                       </p>
+                      {event.location && (
+                        <p>
+                          <strong>Location:</strong>{' '}
+                          {event.locationLink ? (
+                            <a href={event.locationLink} target="_blank" rel="noopener noreferrer">
+                              {event.location}
+                            </a>
+                          ) : (
+                            event.location
+                          )}
+                        </p>
+                      )}
                       <div dangerouslySetInnerHTML={{ __html: event.description }} />
                       {event.externalUrl && (
                         <a href={event.externalUrl} target="_blank" rel="noopener noreferrer">
