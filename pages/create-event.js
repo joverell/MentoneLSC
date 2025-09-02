@@ -13,6 +13,7 @@ export default function CreateEvent() {
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [location, setLocation] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
@@ -47,6 +48,7 @@ export default function CreateEvent() {
           start_time: startTime,
           end_time: endTime,
           location,
+          imageUrl,
         }),
       });
 
@@ -126,6 +128,17 @@ export default function CreateEvent() {
               id="location"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="imageUrl">Image URL (Optional)</label>
+            <input
+              type="url"
+              id="imageUrl"
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              placeholder="https://example.com/image.jpg"
             />
           </div>
 

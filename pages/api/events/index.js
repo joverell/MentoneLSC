@@ -97,7 +97,7 @@ async function createEvent(req, res) {
 
     const userId = decoded.userId;
 
-    const { title, description, start_time, end_time, location } = req.body;
+    const { title, description, start_time, end_time, location, imageUrl } = req.body;
     if (!title || !description || !start_time || !end_time) {
       return res.status(400).json({ message: 'Missing required event fields' });
     }
@@ -116,6 +116,7 @@ async function createEvent(req, res) {
       start_time,
       end_time,
       location: location || null,
+      imageUrl: imageUrl || null,
       created_by: userId,
       authorName,
       createdAt: serverTimestamp(),
