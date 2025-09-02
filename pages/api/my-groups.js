@@ -1,6 +1,5 @@
 import { encrypt } from '../../lib/crypto';
 import { adminDb } from '../../src/firebase-admin';
-import { collection, query, where, getDocs } from 'firebase/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
@@ -29,9 +28,9 @@ export default async function handler(req, res) {
     }
 
     // 2. Fetch the access groups documents based on the names in the token
-    const groupsCollection = collection(adminDb, 'access_groups');
-    const q = query(groupsCollection, where('name', 'in', groupNames));
-    const groupsSnapshot = await getDocs(q);
+    const groupsCollection = adminDb.collection('access_groups');
+    const q = groupsCollection.where('name', 'in', groupNames);
+    const groupsSnapshot = await q.get();
 
     const groups = groupsSnapshot.docs.map(doc => ({
       id: encrypt(doc.id),

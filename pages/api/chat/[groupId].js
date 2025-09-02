@@ -1,6 +1,6 @@
 import { decrypt, encrypt } from '../../../lib/crypto';
 import { adminDb } from '../../../src/firebase-admin';
-import { collection, query, orderBy, getDocs, addDoc, doc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
@@ -9,9 +9,9 @@ const JWT_SECRET = 'a-secure-and-long-secret-key-that-is-at-least-32-characters'
 // Helper function to check if a user is in a group via their token
 async function isUserInGroup(userGroups, groupId) {
     // Get the group document to find its name
-    const groupDocRef = doc(adminDb, 'access_groups', groupId);
-    const groupDoc = await getDoc(groupDocRef);
-    if (!groupDoc.exists()) {
+    const groupDocRef = adminDb.collection('access_groups').doc(groupId);
+    const groupDoc = await groupDocRef.get();
+    if (!groupDoc.exists) {
         return false; // Group doesn't exist
     }
     const groupName = groupDoc.data().name;
@@ -47,11 +47,11 @@ export default async function handler(req, res) {
       return res.status(403).json({ message: 'Forbidden: You are not a member of this group.' });
     }
 
-    const messagesCollectionRef = collection(adminDb, 'chats', groupId, 'messages');
+    const messagesCollectionRef = adminDb.collection('chats').doc(groupId).collection('messages');
 
     if (req.method === 'GET') {
-      const q = query(messagesCollectionRef, orderBy('createdAt', 'asc'));
-      const messagesSnapshot = await getDocs(q);
+      const q = messagesCollectionRef.orderBy('createdAt', 'asc');
+      const messagesSnapshot = await q.get();
       const messages = messagesSnapshot.docs.map(msgDoc => {
         const msgData = msgDoc.data();
         return {
@@ -75,10 +75,10 @@ export default async function handler(req, res) {
         message: message.trim(),
         userId: userId,
         userName: userName, // Denormalize user's name for easy display
-        createdAt: serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
       };
 
-      const newDocRef = await addDoc(messagesCollectionRef, newMessage);
+      const newDocRef = await messagesCollectionRef.add(newMessage);
 
       return res.status(201).json({
         message: 'Message sent successfully',

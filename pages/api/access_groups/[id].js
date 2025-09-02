@@ -1,6 +1,5 @@
 import { decrypt } from '../../../lib/crypto';
 import { adminDb } from '../../../src/firebase-admin';
-import { doc, updateDoc, deleteDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
@@ -36,10 +35,10 @@ export default async function handler(req, res) {
   }
 
   // Check if the document exists before proceeding
-  const docRef = doc(adminDb, 'access_groups', id);
-  const docSnap = await getDoc(docRef);
+  const docRef = adminDb.collection('access_groups').doc(id);
+  const docSnap = await docRef.get();
 
-  if (!docSnap.exists()) {
+  if (!docSnap.exists) {
     return res.status(404).json({ message: 'Access group not found.' });
   }
 
@@ -62,14 +61,14 @@ async function updateAccessGroup(req, res, docRef) {
 
   try {
     // Check for uniqueness before updating
-    const groupsCollection = collection(adminDb, 'access_groups');
-    const q = query(groupsCollection, where('name', '==', name));
-    const existing = await getDocs(q);
+    const groupsCollection = adminDb.collection('access_groups');
+    const q = groupsCollection.where('name', '==', name);
+    const existing = await q.get();
     if (!existing.empty && existing.docs[0].id !== docRef.id) {
         return res.status(409).json({ message: 'An access group with this name already exists.' });
     }
 
-    await updateDoc(docRef, { name });
+    await docRef.update({ name });
     return res.status(200).json({ message: 'Access group updated successfully.' });
 
   } catch (error) {
@@ -80,7 +79,7 @@ async function updateAccessGroup(req, res, docRef) {
 
 async function deleteAccessGroup(req, res, docRef) {
   try {
-    await deleteDoc(docRef);
+    await docRef.delete();
     return res.status(200).json({ message: 'Access group deleted successfully.' });
   } catch (error) {
     console.error('Delete Access Group API Error:', error);

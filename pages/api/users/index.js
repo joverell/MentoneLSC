@@ -1,6 +1,5 @@
 import { encrypt } from '../../../lib/crypto';
 import { adminDb } from '../../../src/firebase-admin';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
@@ -27,9 +26,7 @@ export default async function handler(req, res) {
     }
 
     // 2. Fetch all users from the Firestore 'users' collection
-    const usersCollection = collection(adminDb, 'users');
-    const q = query(usersCollection, orderBy('name', 'asc'));
-    const usersSnapshot = await getDocs(q);
+    const usersSnapshot = await adminDb.collection('users').orderBy('name', 'asc').get();
 
     const users = usersSnapshot.docs.map(doc => {
       const userData = doc.data();
