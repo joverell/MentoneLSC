@@ -1,5 +1,6 @@
 import { encrypt } from '../../../lib/crypto';
-import { getDb } from '../../../lib/db';
+import { adminDb } from '../../../src/firebase-admin';
+import { collection, query, orderBy, getDocs, addDoc, where } from 'firebase/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
@@ -21,7 +22,7 @@ function authorizeAdmin(req) {
   }
 }
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   const adminUser = authorizeAdmin(req);
   if (!adminUser) {
     return res.status(403).json({ message: 'Forbidden: You do not have permission to access this resource.' });
@@ -37,41 +38,43 @@ export default function handler(req, res) {
   }
 }
 
-function getAccessGroups(req, res) {
-  const db = getDb();
+async function getAccessGroups(req, res) {
   try {
-    const stmt = db.prepare('SELECT * FROM access_groups ORDER BY name ASC');
-    const groups = stmt.all();
-    const encryptedGroups = groups.map(group => ({
-      ...group,
-      id: encrypt(group.id),
+    const groupsCollection = collection(adminDb, 'access_groups');
+    const q = query(groupsCollection, orderBy('name', 'asc'));
+    const groupsSnapshot = await getDocs(q);
+    const groups = groupsSnapshot.docs.map(doc => ({
+      id: encrypt(doc.id),
+      ...doc.data(),
     }));
-    return res.status(200).json(encryptedGroups);
+    return res.status(200).json(groups);
   } catch (error) {
     console.error('Get Access Groups API Error:', error);
     return res.status(500).json({ message: 'An error occurred while fetching access groups' });
   }
 }
 
-function createAccessGroup(req, res) {
-  const db = getDb();
+async function createAccessGroup(req, res) {
   const { name } = req.body;
   if (!name) {
     return res.status(400).json({ message: 'Group name is required.' });
   }
 
   try {
-    const stmt = db.prepare('INSERT INTO access_groups (name) VALUES (?)');
-    const info = stmt.run(name);
-    return res.status(201).json({
-      message: 'Access group created successfully.',
-      groupId: encrypt(info.lastInsertRowid),
-    });
-  } catch (error) {
-    // Handle unique constraint violation
-    if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+    // Check for uniqueness since Firestore doesn't enforce it
+    const groupsCollection = collection(adminDb, 'access_groups');
+    const q = query(groupsCollection, where('name', '==', name));
+    const existing = await getDocs(q);
+    if (!existing.empty) {
       return res.status(409).json({ message: 'An access group with this name already exists.' });
     }
+
+    const newGroupRef = await addDoc(groupsCollection, { name });
+    return res.status(201).json({
+      message: 'Access group created successfully.',
+      groupId: encrypt(newGroupRef.id),
+    });
+  } catch (error) {
     console.error('Create Access Group API Error:', error);
     return res.status(500).json({ message: 'An error occurred while creating the access group.' });
   }

@@ -1,5 +1,6 @@
 import { decrypt } from '../../../lib/crypto';
-import { getDb } from '../../../lib/db';
+import { adminDb } from '../../../src/firebase-admin';
+import { doc, updateDoc, deleteDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
@@ -21,7 +22,7 @@ function authorizeAdmin(req) {
   }
 }
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   const adminUser = authorizeAdmin(req);
   if (!adminUser) {
     return res.status(403).json({ message: 'Forbidden: You do not have permission to perform this action.' });
@@ -34,18 +35,25 @@ export default function handler(req, res) {
     return res.status(400).json({ message: 'Invalid ID' });
   }
 
+  // Check if the document exists before proceeding
+  const docRef = doc(adminDb, 'access_groups', id);
+  const docSnap = await getDoc(docRef);
+
+  if (!docSnap.exists()) {
+    return res.status(404).json({ message: 'Access group not found.' });
+  }
+
   if (req.method === 'PUT') {
-    return updateAccessGroup(req, res, id);
+    return updateAccessGroup(req, res, docRef);
   } else if (req.method === 'DELETE') {
-    return deleteAccessGroup(req, res, id);
+    return deleteAccessGroup(req, res, docRef);
   } else {
     res.setHeader('Allow', ['PUT', 'DELETE']);
     return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }
 
-function updateAccessGroup(req, res, id) {
-  const db = getDb();
+async function updateAccessGroup(req, res, docRef) {
   const { name } = req.body;
 
   if (!name) {
@@ -53,34 +61,26 @@ function updateAccessGroup(req, res, id) {
   }
 
   try {
-    const stmt = db.prepare('UPDATE access_groups SET name = ? WHERE id = ?');
-    const info = stmt.run(name, id);
-
-    if (info.changes === 0) {
-      return res.status(404).json({ message: 'Access group not found.' });
+    // Check for uniqueness before updating
+    const groupsCollection = collection(adminDb, 'access_groups');
+    const q = query(groupsCollection, where('name', '==', name));
+    const existing = await getDocs(q);
+    if (!existing.empty && existing.docs[0].id !== docRef.id) {
+        return res.status(409).json({ message: 'An access group with this name already exists.' });
     }
 
+    await updateDoc(docRef, { name });
     return res.status(200).json({ message: 'Access group updated successfully.' });
+
   } catch (error) {
-    if (error.code === 'SQLITE_CONSTRAINT_UNIQUE') {
-      return res.status(409).json({ message: 'An access group with this name already exists.' });
-    }
     console.error('Update Access Group API Error:', error);
     return res.status(500).json({ message: 'An error occurred while updating the access group.' });
   }
 }
 
-function deleteAccessGroup(req, res, id) {
-  const db = getDb();
-
+async function deleteAccessGroup(req, res, docRef) {
   try {
-    const stmt = db.prepare('DELETE FROM access_groups WHERE id = ?');
-    const info = stmt.run(id);
-
-    if (info.changes === 0) {
-      return res.status(404).json({ message: 'Access group not found.' });
-    }
-
+    await deleteDoc(docRef);
     return res.status(200).json({ message: 'Access group deleted successfully.' });
   } catch (error) {
     console.error('Delete Access Group API Error:', error);

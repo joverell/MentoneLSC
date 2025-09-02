@@ -1,12 +1,23 @@
 import { decrypt } from '../../../../lib/crypto';
-import { getDb } from '../../../../lib/db';
+import { adminDb, adminAuth } from '../../../../src/firebase-admin';
+import { doc, updateDoc, getDocs, collection, query, where } from 'firebase/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
 const JWT_SECRET = 'a-secure-and-long-secret-key-that-is-at-least-32-characters';
 
-export default function handler(req, res) {
-  const db = getDb();
+// Helper function to get role names from an array of role IDs
+async function getRoleNamesFromIds(roleIds) {
+  if (!roleIds || roleIds.length === 0) {
+    return [];
+  }
+  const rolesCollection = collection(adminDb, 'roles');
+  const q = query(rolesCollection, where('__name__', 'in', roleIds));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => doc.data().name);
+}
+
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
     return res.status(405).end(`Method ${req.method} Not Allowed`);
@@ -35,7 +46,7 @@ export default function handler(req, res) {
     }
 
     if (!Array.isArray(encryptedRoleIds)) {
-      return res.status(400).json({ message: 'A roles array is required.' });
+      return res.status(400).json({ message: 'A roleIds array is required.' });
     }
 
     const roleIds = encryptedRoleIds.map(decrypt).filter(Boolean);
@@ -43,27 +54,21 @@ export default function handler(req, res) {
       return res.status(400).json({ message: 'Invalid role ID found in the array.' });
     }
 
-    // 2. Use a transaction to update roles
-    const updateRoles = db.transaction((uid, rIds) => {
-      // Delete existing roles for the user
-      db.prepare('DELETE FROM user_roles WHERE user_id = ?').run(uid);
-
-      // Insert new roles
-      const insertStmt = db.prepare('INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)');
-      rIds.forEach(roleId => {
-        insertStmt.run(uid, roleId);
-      });
-      return { success: true };
-    });
-
-    const result = updateRoles(userId, roleIds);
-
-    if (result.success) {
-      return res.status(200).json({ message: 'User roles updated successfully.' });
-    } else {
-      // This part should ideally not be reached if transaction is set up correctly
-      throw new Error('Transaction failed');
+    // 2. Convert role IDs to role names
+    const roleNames = await getRoleNamesFromIds(roleIds);
+    if (roleNames.length !== roleIds.length) {
+        // This means one of the provided role IDs was not found
+        return res.status(400).json({ message: 'One or more provided role IDs are invalid.' });
     }
+
+    // 3. Update the user document in Firestore
+    const userDocRef = doc(adminDb, 'users', userId);
+    await updateDoc(userDocRef, { roles: roleNames });
+
+    // 4. Update the custom claims in Firebase Auth for immediate effect on tokens
+    await adminAuth.setCustomUserClaims(userId, { roles: roleNames });
+
+    return res.status(200).json({ message: 'User roles updated successfully.' });
 
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {

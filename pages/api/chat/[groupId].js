@@ -1,20 +1,27 @@
 import { decrypt, encrypt } from '../../../lib/crypto';
-import { getDb } from '../../../lib/db';
+import { adminDb } from '../../../src/firebase-admin';
+import { collection, query, orderBy, getDocs, addDoc, doc, getDoc, serverTimestamp } from 'firebase/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
 const JWT_SECRET = 'a-secure-and-long-secret-key-that-is-at-least-32-characters';
 
-// Helper function to check if a user is in a group
-function isUserInGroup(db, userId, groupId) {
-  const stmt = db.prepare('SELECT 1 FROM user_access_groups WHERE user_id = ? AND group_id = ?');
-  const result = stmt.get(userId, groupId);
-  return !!result;
+// Helper function to check if a user is in a group via their token
+async function isUserInGroup(userGroups, groupId) {
+    // Get the group document to find its name
+    const groupDocRef = doc(adminDb, 'access_groups', groupId);
+    const groupDoc = await getDoc(groupDocRef);
+    if (!groupDoc.exists()) {
+        return false; // Group doesn't exist
+    }
+    const groupName = groupDoc.data().name;
+
+    // Check if the user's token claims include this group name
+    return userGroups.includes(groupName);
 }
 
-export default function handler(req, res) {
-  const db = getDb();
-  // 1. Authenticate the user from the token in the.cookie
+export default async function handler(req, res) {
+  // 1. Authenticate the user from the token in the cookie
   const cookies = parse(req.headers.cookie || '');
   const token = cookies.auth_token;
 
@@ -25,6 +32,9 @@ export default function handler(req, res) {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     const userId = decoded.userId;
+    const userName = decoded.name;
+    const userGroups = decoded.groups || [];
+
     const { groupId: encryptedGroupId } = req.query;
     const groupId = decrypt(encryptedGroupId);
 
@@ -33,54 +43,48 @@ export default function handler(req, res) {
     }
 
     // 2. Authorize: Check if the user is a member of the group
-    if (!isUserInGroup(db, userId, groupId)) {
+    if (!(await isUserInGroup(userGroups, groupId))) {
       return res.status(403).json({ message: 'Forbidden: You are not a member of this group.' });
     }
 
+    const messagesCollectionRef = collection(adminDb, 'chats', groupId, 'messages');
+
     if (req.method === 'GET') {
-      // Fetch message history for the group
-      const stmt = db.prepare(`
-        SELECT
-          cm.id,
-          cm.message,
-          cm.createdAt,
-          u.id as userId,
-          u.name as userName
-        FROM
-          chat_messages cm
-        JOIN
-          users u ON cm.user_id = u.id
-        WHERE
-          cm.group_id = ?
-        ORDER BY
-          cm.createdAt ASC
-      `);
-      const messages = stmt.all(groupId);
-      const encryptedMessages = messages.map(msg => ({
-        ...msg,
-        id: encrypt(msg.id),
-        userId: encrypt(msg.userId),
-      }));
-      return res.status(200).json(encryptedMessages);
+      const q = query(messagesCollectionRef, orderBy('createdAt', 'asc'));
+      const messagesSnapshot = await getDocs(q);
+      const messages = messagesSnapshot.docs.map(msgDoc => {
+        const msgData = msgDoc.data();
+        return {
+          id: encrypt(msgDoc.id),
+          message: msgData.message,
+          createdAt: msgData.createdAt.toDate(), // Convert Firestore timestamp to JS Date
+          userId: encrypt(msgData.userId),
+          userName: msgData.userName,
+        };
+      });
+      return res.status(200).json(messages);
+
     } else if (req.method === 'POST') {
-      // Send a new message
       const { message } = req.body;
 
       if (!message || typeof message !== 'string' || message.trim().length === 0) {
         return res.status(400).json({ message: 'Message content cannot be empty' });
       }
 
-      const stmt = db.prepare(
-        'INSERT INTO chat_messages (group_id, user_id, message) VALUES (?, ?, ?)'
-      );
-      const info = stmt.run(groupId, userId, message.trim());
+      const newMessage = {
+        message: message.trim(),
+        userId: userId,
+        userName: userName, // Denormalize user's name for easy display
+        createdAt: serverTimestamp(),
+      };
 
-      // For simplicity, we'll just return success.
-      // A more advanced implementation might return the created message object.
+      const newDocRef = await addDoc(messagesCollectionRef, newMessage);
+
       return res.status(201).json({
         message: 'Message sent successfully',
-        messageId: encrypt(info.lastInsertRowid),
+        messageId: encrypt(newDocRef.id),
       });
+
     } else {
       res.setHeader('Allow', ['GET', 'POST']);
       return res.status(405).end(`Method ${req.method} Not Allowed`);

@@ -1,12 +1,12 @@
 import { encrypt } from '../../../lib/crypto';
-import { getDb } from '../../../lib/db';
+import { adminDb } from '../../../src/firebase-admin';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
 const JWT_SECRET = 'a-secure-and-long-secret-key-that-is-at-least-32-characters';
 
-export default function handler(req, res) {
-  const db = getDb();
+export default async function handler(req, res) {
   if (req.method !== 'GET') {
     res.setHeader('Allow', ['GET']);
     return res.status(405).end(`Method ${req.method} Not Allowed`);
@@ -26,32 +26,21 @@ export default function handler(req, res) {
       return res.status(403).json({ message: 'Forbidden: You do not have permission to access this resource.' });
     }
 
-    // 2. Fetch all users with their roles and groups
-    const stmt = db.prepare(`
-      SELECT
-        u.id,
-        u.name,
-        u.email,
-        GROUP_CONCAT(DISTINCT r.name) as roles,
-        GROUP_CONCAT(DISTINCT ag.name) as groups
-      FROM
-        users u
-      LEFT JOIN user_roles ur ON u.id = ur.user_id
-      LEFT JOIN roles r ON ur.role_id = r.id
-      LEFT JOIN user_access_groups uag ON u.id = uag.user_id
-      LEFT JOIN access_groups ag ON uag.group_id = ag.id
-      GROUP BY
-        u.id
-      ORDER BY
-        u.name ASC
-    `);
+    // 2. Fetch all users from the Firestore 'users' collection
+    const usersCollection = collection(adminDb, 'users');
+    const q = query(usersCollection, orderBy('name', 'asc'));
+    const usersSnapshot = await getDocs(q);
 
-    const users = stmt.all().map(user => ({
-      ...user,
-      id: encrypt(user.id),
-      roles: user.roles ? user.roles.split(',') : [],
-      groups: user.groups ? user.groups.split(',') : [],
-    }));
+    const users = usersSnapshot.docs.map(doc => {
+      const userData = doc.data();
+      return {
+        id: encrypt(doc.id),
+        name: userData.name,
+        email: userData.email,
+        roles: userData.roles || [],
+        groups: userData.groups || [],
+      };
+    });
 
     return res.status(200).json(users);
 

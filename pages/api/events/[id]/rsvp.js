@@ -1,12 +1,12 @@
 import { decrypt } from '../../../../lib/crypto';
-import { getDb } from '../../../../lib/db';
+import { db } from '../../../../src/firebase';
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
 const JWT_SECRET = 'a-secure-and-long-secret-key-that-is-at-least-32-characters';
 
-export default function handler(req, res) {
-  const db = getDb();
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
     return res.status(405).end(`Method ${req.method} Not Allowed`);
@@ -22,7 +22,7 @@ export default function handler(req, res) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const userId = decoded.userId;
+    const userId = String(decoded.userId); // Ensure userId is a string
 
     const { id: encryptedEventId } = req.query;
     const eventId = decrypt(encryptedEventId);
@@ -38,30 +38,36 @@ export default function handler(req, res) {
       return res.status(400).json({ message: 'Status is required.' });
     }
     if (!['Yes', 'No', 'Maybe'].includes(status)) {
-        return res.status(400).json({ message: "Invalid status. Must be one of 'Yes', 'No', 'Maybe'." });
+      return res.status(400).json({ message: "Invalid status. Must be one of 'Yes', 'No', 'Maybe'." });
     }
 
-    // 3. Perform UPSERT operation
-    const stmt = db.prepare(`
-      INSERT INTO rsvps (event_id, user_id, status, comment, updatedAt)
-      VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-      ON CONFLICT(event_id, user_id) DO UPDATE SET
-        status = excluded.status,
-        comment = excluded.comment,
-        updatedAt = CURRENT_TIMESTAMP
-    `);
+    // 3. Check if the event exists before trying to RSVP
+    const eventDocRef = doc(db, 'events', eventId);
+    const eventDoc = await getDoc(eventDocRef);
+    if (!eventDoc.exists()) {
+      return res.status(404).json({ message: 'Event not found.' });
+    }
 
-    stmt.run(eventId, userId, status, comment || null);
+    // 4. Perform UPSERT operation using setDoc
+    // The doc path is 'events/{eventId}/rsvps/{userId}'
+    const rsvpDocRef = doc(db, 'events', eventId, 'rsvps', userId);
+
+    await setDoc(rsvpDocRef, {
+      status,
+      comment: comment || null,
+      updatedAt: serverTimestamp()
+    });
+
+    // Note: To keep the rsvpTally on the event document updated,
+    // a more advanced implementation would use a Cloud Function triggered
+    // by this write to update the counts on the parent event document.
+    // For now, the counts are calculated on-the-fly in the GET /api/events endpoint.
 
     return res.status(200).json({ message: 'RSVP submitted successfully.' });
 
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {
       return res.status(401).json({ message: 'Invalid token' });
-    }
-    // Handle foreign key constraint failure, e.g., event doesn't exist
-    if (error.code === 'SQLITE_CONSTRAINT_FOREIGNKEY') {
-        return res.status(404).json({ message: 'Event not found.' });
     }
     console.error('RSVP API Error:', error);
     res.status(500).json({ message: 'An error occurred while submitting RSVP.' });

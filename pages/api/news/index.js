@@ -1,5 +1,6 @@
 import { encrypt } from '../../../lib/crypto';
-import { getDb } from '../../../lib/db';
+import { db } from '../../../src/firebase'; // Import Firestore instance
+import { collection, getDocs, addDoc, doc, getDoc, query, orderBy, serverTimestamp } from 'firebase/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
@@ -16,17 +17,25 @@ export default function handler(req, res) {
   }
 }
 
-// Function to get all news articles, newest first
-function getNews(req, res) {
-  const db = getDb();
+// Function to get all news articles from Firestore
+async function getNews(req, res) {
   try {
-    const stmt = db.prepare('SELECT news.*, users.name as authorName FROM news JOIN users ON news.created_by = users.id ORDER BY news.createdAt DESC');
-    const articles = stmt.all();
+    const newsCollection = collection(db, 'news');
+    const q = query(newsCollection, orderBy('createdAt', 'desc'));
+    const newsSnapshot = await getDocs(q);
+
+    const articles = newsSnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    // Encrypt IDs for consistency with the old API
     const encryptedArticles = articles.map(article => ({
       ...article,
       id: encrypt(article.id),
       created_by: encrypt(article.created_by),
     }));
+
     return res.status(200).json(encryptedArticles);
   } catch (error) {
     console.error('Failed to fetch news:', error);
@@ -34,9 +43,8 @@ function getNews(req, res) {
   }
 }
 
-// Function to create a new news article (protected)
-function createNews(req, res) {
-  const db = getDb();
+// Function to create a new news article in Firestore (protected)
+async function createNews(req, res) {
   const cookies = parse(req.headers.cookie || '');
   const token = cookies.auth_token;
 
@@ -59,14 +67,27 @@ function createNews(req, res) {
       return res.status(400).json({ message: 'Missing required fields: title and content' });
     }
 
-    const stmt = db.prepare(
-      'INSERT INTO news (title, content, created_by) VALUES (?, ?, ?)'
-    );
-    const info = stmt.run(title, content, userId);
+    // Fetch author's name from 'users' collection to denormalize data
+    const userDocRef = doc(db, 'users', String(userId)); // Ensure userId is a string for the doc path
+    const userDoc = await getDoc(userDocRef);
+    if (!userDoc.exists()) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+    const authorName = userDoc.data().name;
+
+
+    const newsCollection = collection(db, 'news');
+    const newArticleRef = await addDoc(newsCollection, {
+      title,
+      content,
+      created_by: userId,
+      authorName, // Denormalized author's name
+      createdAt: serverTimestamp(),
+    });
 
     return res.status(201).json({
       message: 'News article created successfully',
-      articleId: encrypt(info.lastInsertRowid),
+      articleId: encrypt(newArticleRef.id),
     });
 
   } catch (error) {
