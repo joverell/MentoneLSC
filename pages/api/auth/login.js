@@ -1,7 +1,6 @@
 import { adminAuth, adminDb } from '../../../src/firebase-admin';
 import jwt from 'jsonwebtoken';
 import { serialize } from 'cookie';
-import { doc, getDoc } from 'firebase/firestore';
 
 const JWT_SECRET = 'a-secure-and-long-secret-key-that-is-at-least-32-characters';
 // This is your Web API Key from your Firebase project's client-side config.
@@ -30,67 +29,81 @@ async function verifyPassword(email, password) {
 }
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', ['POST']);
-    return res.status(405).end(`Method ${req.method} Not Allowed`);
-  }
+  switch (req.method) {
+    case 'POST':
+      try {
+        console.log('Login API - POST request received. Body:', req.body);
+        const { email, password } = req.body;
 
-  try {
-    const { email, password } = req.body;
+        if (!email || !password) {
+          return res.status(400).json({ message: 'Email and password are required' });
+        }
 
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
-    }
+        // 1. Verify password with Firebase Auth REST API
+        console.log('Verifying password with Firebase...');
+        const authData = await verifyPassword(email, password);
+        console.log('Password verified. UID:', authData.localId);
+        const uid = authData.localId;
 
-    // 1. Verify password with Firebase Auth REST API
-    const authData = await verifyPassword(email, password);
-    const uid = authData.localId;
+        // 2. Fetch user data and permissions from Firestore
+        console.log('Fetching user data from Firestore...');
+        const userDocRef = adminDb.collection('users').doc(uid);
+        const userDoc = await userDocRef.get();
 
-    // 2. Fetch user data and permissions from Firestore
-    const userDocRef = doc(adminDb, 'users', uid);
-    const userDoc = await getDoc(userDocRef);
 
-    if (!userDoc.exists()) {
-      // This case is unlikely if user exists in Auth but not Firestore, but good to handle.
-      return res.status(404).json({ message: 'User profile not found.' });
-    }
-    const user = userDoc.data();
+        if (!userDoc.exists) {
+          console.log('User profile not found in Firestore.');
+          // This case is unlikely if user exists in Auth but not Firestore, but good to handle.
+          return res.status(404).json({ message: 'User profile not found.' });
+        }
+        const user = userDoc.data();
+        console.log('User data fetched:', user);
 
-    // Fallback for groups if they don't exist on the user document
-    const roles = user.roles || [];
-    const groups = user.groups || [];
 
-    // 3. Create a custom JWT for our application session
-    const token = jwt.sign(
-      { userId: uid, email: user.email, name: user.name, roles, groups },
-      JWT_SECRET,
-      { expiresIn: '1h' }
-    );
+        // Fallback for groups if they don't exist on the user document
+        const roles = user.roles || [];
+        const groups = user.groups || [];
 
-    const cookie = serialize('auth_token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV !== 'development',
-      sameSite: 'strict',
-      maxAge: 60 * 60, // 1 hour
-      path: '/',
-    });
+        // 3. Create a custom JWT for our application session
+        console.log('Creating JWT...');
+        const token = jwt.sign(
+          { userId: uid, email: user.email, name: user.name, roles, groups },
+          JWT_SECRET,
+          { expiresIn: '1h' }
+        );
+        console.log('JWT created.');
 
-    res.setHeader('Set-Cookie', cookie);
 
-    // 4. Respond with user info
-    res.status(200).json({
-      id: uid,
-      name: user.name,
-      email: user.email,
-      roles,
-      groups,
-    });
+        const cookie = serialize('auth_token', token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV !== 'development',
+          sameSite: 'strict',
+          maxAge: 60 * 60, // 1 hour
+          path: '/',
+        });
 
-  } catch (error) {
-    console.error('Login Error:', error);
-    if (error.message === 'Invalid credentials') {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-    return res.status(500).json({ message: 'An error occurred during login' });
+        res.setHeader('Set-Cookie', cookie);
+
+        // 4. Respond with user info
+        res.status(200).json({
+          id: uid,
+          name: user.name,
+          email: user.email,
+          roles,
+          groups,
+        });
+
+      } catch (error) {
+        console.error('Login Error:', error);
+        if (error.message === 'Invalid credentials') {
+          return res.status(401).json({ message: 'Invalid credentials' });
+        }
+        return res.status(500).json({ message: 'An error occurred during login' });
+      }
+      break;
+
+    default:
+      res.setHeader('Allow', ['POST']);
+      res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }
