@@ -1,12 +1,23 @@
 import { decrypt, encrypt } from '../../../../lib/crypto';
-import { getDb } from '../../../../lib/db';
+import { adminDb } from '../../../../src/firebase-admin';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
 const JWT_SECRET = 'a-secure-and-long-secret-key-that-is-at-least-32-characters';
 
-export default function handler(req, res) {
-  const db = getDb();
+// Helper function to get IDs from an array of names by querying a collection
+async function getIdsFromNames(collectionName, names) {
+  if (!names || names.length === 0) {
+    return [];
+  }
+  const collRef = collection(adminDb, collectionName);
+  const q = query(collRef, where('name', 'in', names));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => doc.id);
+}
+
+export default async function handler(req, res) {
   if (req.method !== 'GET') {
     res.setHeader('Allow', ['GET']);
     return res.status(405).end(`Method ${req.method} Not Allowed`);
@@ -33,40 +44,24 @@ export default function handler(req, res) {
       return res.status(400).json({ message: 'Invalid user ID' });
     }
 
-    // 2. Fetch the specific user with their roles and groups
-    const stmt = db.prepare(`
-      SELECT
-        u.id,
-        u.name,
-        u.email,
-        GROUP_CONCAT(DISTINCT r.id) as roleIds,
-        GROUP_CONCAT(DISTINCT ag.id) as groupIds
-      FROM
-        users u
-      LEFT JOIN user_roles ur ON u.id = ur.user_id
-      LEFT JOIN roles r ON ur.role_id = r.id
-      LEFT JOIN user_access_groups uag ON u.id = uag.user_id
-      LEFT JOIN access_groups ag ON uag.group_id = ag.id
-      WHERE
-        u.id = ?
-      GROUP BY
-        u.id
-    `);
+    // 2. Fetch the specific user from Firestore
+    const userDocRef = doc(adminDb, 'users', userId);
+    const userDoc = await getDoc(userDocRef);
 
-    const user = stmt.get(userId);
-
-    if (!user) {
+    if (!userDoc.exists()) {
       return res.status(404).json({ message: 'User not found' });
     }
+    const userData = userDoc.data();
 
-    // Process roles and groups from comma-separated strings to arrays of numbers
-    const roleIds = user.roleIds ? user.roleIds.split(',').map(Number) : [];
-    const groupIds = user.groupIds ? user.groupIds.split(',').map(Number) : [];
+    // 3. Fetch the corresponding IDs for the user's roles and groups
+    const roleIds = await getIdsFromNames('roles', userData.roles);
+    const groupIds = await getIdsFromNames('access_groups', userData.groups);
 
+    // 4. Return the response in the original format
     res.status(200).json({
-      id: encrypt(user.id),
-      name: user.name,
-      email: user.email,
+      id: encrypt(userDoc.id),
+      name: userData.name,
+      email: userData.email,
       roleIds: roleIds.map(encrypt),
       groupIds: groupIds.map(encrypt),
     });

@@ -1,5 +1,6 @@
 import { encrypt } from '../../../lib/crypto';
-import { getDb } from '../../../lib/db';
+import { db } from '../../../src/firebase';
+import { collection, getDocs, addDoc, doc, getDoc, query, orderBy, serverTimestamp, collectionGroup, where } from 'firebase/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
@@ -16,9 +17,8 @@ export default function handler(req, res) {
   }
 }
 
-// Function to get all events, including RSVP data
-function getEvents(req, res) {
-  const db = getDb();
+// Function to get all events, including RSVP data from Firestore
+async function getEvents(req, res) {
   let userId = null;
   try {
     const cookies = parse(req.headers.cookie || '');
@@ -28,38 +28,50 @@ function getEvents(req, res) {
       userId = decoded.userId;
     }
   } catch (err) {
-    // Ignore errors if token is invalid, user is just not logged in
+    // Ignore errors, user is simply not logged in
   }
 
   try {
-    const sql = `
-      SELECT
-        e.*,
-        u.name as authorName,
-        r.status as currentUserRsvpStatus,
-        (SELECT COUNT(*) FROM rsvps WHERE event_id = e.id AND status = 'Yes') as yes_count,
-        (SELECT COUNT(*) FROM rsvps WHERE event_id = e.id AND status = 'No') as no_count,
-        (SELECT COUNT(*) FROM rsvps WHERE event_id = e.id AND status = 'Maybe') as maybe_count
-      FROM
-        events e
-      JOIN
-        users u ON e.created_by = u.id
-      LEFT JOIN
-        rsvps r ON e.id = r.event_id AND r.user_id = ?
-      ORDER BY
-        e.start_time ASC
-    `;
-    const stmt = db.prepare(sql);
-    const events = stmt.all(userId).map(event => ({
-      ...event,
-      id: encrypt(event.id),
-      created_by: encrypt(event.created_by),
-      rsvpTally: {
-        yes: event.yes_count,
-        no: event.no_count,
-        maybe: event.maybe_count,
-      }
+    const eventsCollection = collection(db, 'events');
+    const q = query(eventsCollection, orderBy('start_time', 'asc'));
+    const eventsSnapshot = await getDocs(q);
+
+    const events = await Promise.all(eventsSnapshot.docs.map(async (eventDoc) => {
+      const eventData = eventDoc.data();
+      const eventId = eventDoc.id;
+
+      // Fetch RSVPs for this event
+      const rsvpsCollection = collection(db, 'events', eventId, 'rsvps');
+      const rsvpsSnapshot = await getDocs(rsvpsCollection);
+
+      let yes_count = 0;
+      let no_count = 0;
+      let maybe_count = 0;
+      let currentUserRsvpStatus = null;
+
+      rsvpsSnapshot.forEach(rsvpDoc => {
+        const rsvpData = rsvpDoc.data();
+        if (rsvpData.status === 'Yes') yes_count++;
+        if (rsvpData.status === 'No') no_count++;
+        if (rsvpData.status === 'Maybe') maybe_count++;
+        if (userId && rsvpDoc.id === String(userId)) {
+          currentUserRsvpStatus = rsvpData.status;
+        }
+      });
+
+      return {
+        ...eventData,
+        id: encrypt(eventId),
+        created_by: encrypt(eventData.created_by),
+        currentUserRsvpStatus,
+        rsvpTally: {
+          yes: yes_count,
+          no: no_count,
+          maybe: maybe_count,
+        }
+      };
     }));
+
     return res.status(200).json(events);
   } catch (error) {
     console.error('Failed to fetch events:', error);
@@ -67,10 +79,8 @@ function getEvents(req, res) {
   }
 }
 
-// Function to create a new event (protected)
-function createEvent(req, res) {
-  const db = getDb();
-  // 1. Authenticate the user
+// Function to create a new event in Firestore (protected)
+async function createEvent(req, res) {
   const cookies = parse(req.headers.cookie || '');
   const token = cookies.auth_token;
 
@@ -81,28 +91,39 @@ function createEvent(req, res) {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    // 2. Authorize the user
     if (!decoded.roles || !decoded.roles.includes('Admin')) {
       return res.status(403).json({ message: 'Forbidden: You do not have permission to create events.' });
     }
 
     const userId = decoded.userId;
 
-    // 3. Validate request body
     const { title, description, start_time, end_time, location } = req.body;
     if (!title || !description || !start_time || !end_time) {
       return res.status(400).json({ message: 'Missing required event fields' });
     }
 
-    // 3. Insert into database
-    const stmt = db.prepare(
-      'INSERT INTO events (title, description, start_time, end_time, location, created_by) VALUES (?, ?, ?, ?, ?, ?)'
-    );
-    const info = stmt.run(title, description, start_time, end_time, location || null, userId);
+    // Fetch author's name for denormalization
+    const userDocRef = doc(db, 'users', String(userId));
+    const userDoc = await getDoc(userDocRef);
+    if (!userDoc.exists()) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+    const authorName = userDoc.data().name;
+
+    const newEventRef = await addDoc(collection(db, 'events'), {
+      title,
+      description,
+      start_time,
+      end_time,
+      location: location || null,
+      created_by: userId,
+      authorName,
+      createdAt: serverTimestamp(),
+    });
 
     return res.status(201).json({
       message: 'Event created successfully',
-      eventId: encrypt(info.lastInsertRowid),
+      eventId: encrypt(newEventRef.id),
     });
 
   } catch (error) {

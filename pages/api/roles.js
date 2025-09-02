@@ -1,12 +1,12 @@
 import { encrypt } from '../../lib/crypto';
-import { getDb } from '../../lib/db';
+import { adminDb } from '../../src/firebase-admin';
+import { collection, query, orderBy, getDocs } from 'firebase/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
 const JWT_SECRET = 'a-secure-and-long-secret-key-that-is-at-least-32-characters';
 
-export default function handler(req, res) {
-  const db = getDb();
+export default async function handler(req, res) {
   if (req.method !== 'GET') {
     res.setHeader('Allow', ['GET']);
     return res.status(405).end(`Method ${req.method} Not Allowed`);
@@ -26,13 +26,16 @@ export default function handler(req, res) {
       return res.status(403).json({ message: 'Forbidden: You do not have permission to access this resource.' });
     }
 
-    const stmt = db.prepare('SELECT * FROM roles ORDER BY name ASC');
-    const roles = stmt.all();
-    const encryptedRoles = roles.map(role => ({
-      ...role,
-      id: encrypt(role.id),
+    const rolesCollection = collection(adminDb, 'roles');
+    const q = query(rolesCollection, orderBy('name', 'asc'));
+    const rolesSnapshot = await getDocs(q);
+
+    const roles = rolesSnapshot.docs.map(doc => ({
+      id: encrypt(doc.id),
+      ...doc.data(),
     }));
-    return res.status(200).json(encryptedRoles);
+
+    return res.status(200).json(roles);
 
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {

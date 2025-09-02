@@ -1,5 +1,5 @@
-import { getDb } from '../../../lib/db';
-import bcrypt from 'bcryptjs';
+import { adminAuth, adminDb } from '../../../src/firebase-admin';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -14,42 +14,43 @@ export default async function handler(req, res) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    const db = getDb();
+    // 1. Create the user in Firebase Authentication
+    const userRecord = await adminAuth.createUser({
+      email: email,
+      password: password,
+      displayName: name,
+    });
 
-    const stmtCheck = db.prepare('SELECT id FROM users WHERE email = ?');
-    const existingUser = stmtCheck.get(email);
+    const uid = userRecord.uid;
+    let userRoles = ['Member']; // Default role
 
-    if (existingUser) {
-      return res.status(409).json({ message: 'User with this email already exists' });
-    }
-
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    const stmtInsert = db.prepare(
-      'INSERT INTO users (name, email, password) VALUES (?, ?, ?)'
-    );
-    stmtInsert.run(name, email, hashedPassword);
-    const info = stmtInsert.run(name, email, hashedPassword);
-    const userId = info.lastInsertRowid;
-
-    // Check if the user is the one to be made an admin
+    // 2. Handle the special admin user case
     if (email === 'jaoverell@gmail.com') {
-      // Get the Admin role ID
-      const adminRole = db.prepare('SELECT id FROM roles WHERE name = ?').get('Admin');
-      if (adminRole) {
-        // Assign the Admin role to the new user
-        const stmtAssignRole = db.prepare(
-          'INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)'
-        );
-        stmtAssignRole.run(userId, adminRole.id);
-      }
+      userRoles.push('Admin');
+      // Set custom claims for role-based access control
+      await adminAuth.setCustomUserClaims(uid, { roles: userRoles });
     }
 
+    // 3. Create a corresponding user document in Firestore
+    const userDocRef = doc(adminDb, 'users', uid);
+    await setDoc(userDocRef, {
+      name: name,
+      email: email,
+      roles: userRoles, // Store roles in the user document as well
+      createdAt: serverTimestamp(),
+    });
 
-    return res.status(201).json({ message: 'User created successfully' });
+    return res.status(201).json({ message: 'User created successfully', uid: uid });
+
   } catch (error) {
     console.error('Registration Error:', error);
+    if (error.code === 'auth/email-already-exists') {
+      return res.status(409).json({ message: 'User with this email already exists' });
+    }
+    // This can happen if the FIREBASE_SERVICE_ACCOUNT_KEY is not set
+    if (error.message.includes('Must initialize app')) {
+        return res.status(500).json({ message: 'Server configuration error. Please check Firebase Admin setup.' });
+    }
     return res.status(500).json({ message: 'An error occurred during registration' });
   }
 }

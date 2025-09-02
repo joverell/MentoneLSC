@@ -1,105 +1,96 @@
-import { getDb } from '../../../lib/db';
-import { encrypt } from '../../../lib/crypto';
-import bcrypt from 'bcryptjs';
+import { adminAuth, adminDb } from '../../../src/firebase-admin';
 import jwt from 'jsonwebtoken';
 import { serialize } from 'cookie';
+import { doc, getDoc } from 'firebase/firestore';
 
-// This should be in an environment variable in a real application
 const JWT_SECRET = 'a-secure-and-long-secret-key-that-is-at-least-32-characters';
+// This is your Web API Key from your Firebase project's client-side config.
+// It's safe to expose this. It's best to set this as an environment variable.
+const FIREBASE_WEB_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyDgvrCV5dZDz38RcTEjLimuptSjKzqHIG0';
+
+async function verifyPassword(email, password) {
+  const url = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_WEB_API_KEY}`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      email: email,
+      password: password,
+      returnSecureToken: true,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Invalid credentials');
+  }
+
+  return response.json();
+}
 
 export default async function handler(req, res) {
-  const db = getDb();
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', ['POST']);
+    return res.status(405).end(`Method ${req.method} Not Allowed`);
+  }
 
-  switch (req.method) {
-    case 'POST':
-      try {
-        const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
 
-        if (!email || !password) {
-          return res.status(400).json({ message: 'Email and password are required' });
-        }
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
 
-        // Find the user by email
-        const stmt = db.prepare('SELECT * FROM users WHERE email = ?');
-        const user = stmt.get(email);
+    // 1. Verify password with Firebase Auth REST API
+    const authData = await verifyPassword(email, password);
+    const uid = authData.localId;
 
-        if (!user) {
-          return res.status(401).json({ message: 'Invalid credentials' });
-        }
+    // 2. Fetch user data and permissions from Firestore
+    const userDocRef = doc(adminDb, 'users', uid);
+    const userDoc = await getDoc(userDocRef);
 
-        // Compare the provided password with the stored hash
-        const isValid = bcrypt.compareSync(password, user.password);
+    if (!userDoc.exists()) {
+      // This case is unlikely if user exists in Auth but not Firestore, but good to handle.
+      return res.status(404).json({ message: 'User profile not found.' });
+    }
+    const user = userDoc.data();
 
-        if (!isValid) {
-          return res.status(401).json({ message: 'Invalid credentials' });
-        }
+    // Fallback for groups if they don't exist on the user document
+    const roles = user.roles || [];
+    const groups = user.groups || [];
 
-        // --- Fetch roles and groups ---
-        const roleStmt = db.prepare(`
-      SELECT
-        GROUP_CONCAT(DISTINCT r.name) as roles,
-        GROUP_CONCAT(DISTINCT ag.name) as groups
-      FROM
-        users u
-      LEFT JOIN user_roles ur ON u.id = ur.user_id
-      LEFT JOIN roles r ON ur.role_id = r.id
-      LEFT JOIN user_access_groups uag ON u.id = uag.user_id
-      LEFT JOIN access_groups ag ON uag.group_id = ag.id
-      WHERE
-        u.id = ?
-      GROUP BY
-        u.id
-    `);
-        const permissions = roleStmt.get(user.id);
-        const roles = permissions && permissions.roles ? permissions.roles.split(',') : [];
-        const groups = permissions && permissions.groups ? permissions.groups.split(',') : [];
+    // 3. Create a custom JWT for our application session
+    const token = jwt.sign(
+      { userId: uid, email: user.email, name: user.name, roles, groups },
+      JWT_SECRET,
+      { expiresIn: '1h' }
+    );
 
-        // --- Create JWT with permissions ---
-        const token = jwt.sign(
-          { userId: user.id, email: user.email, name: user.name, roles, groups },
-          JWT_SECRET,
-          { expiresIn: '1h' }
-        );
+    const cookie = serialize('auth_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV !== 'development',
+      sameSite: 'strict',
+      maxAge: 60 * 60, // 1 hour
+      path: '/',
+    });
 
-        const cookie = serialize('auth_token', token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV !== 'development',
-          sameSite: 'strict',
-          maxAge: 60 * 60,
-          path: '/',
-        });
+    res.setHeader('Set-Cookie', cookie);
 
-        res.setHeader('Set-Cookie', cookie);
-
-        // --- Respond with user info, including permissions ---
-        res.status(200).json({
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          roles,
-          groups,
-        });
-
-
-      } catch (error) {
-        console.error('Login Error:', error);
-        res.status(500).json({ message: 'An error occurred during login' });
-      }
-      break;
-
-    // --- Respond with user info, including permissions ---
+    // 4. Respond with user info
     res.status(200).json({
-      id: encrypt(user.id),
+      id: uid,
       name: user.name,
       email: user.email,
       roles,
       groups,
     });
 
-
-    default:
-      res.setHeader('Allow', ['POST']);
-      res.status(405).end(`Method ${req.method} Not Allowed`);
-      break;
+  } catch (error) {
+    console.error('Login Error:', error);
+    if (error.message === 'Invalid credentials') {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+    return res.status(500).json({ message: 'An error occurred during login' });
   }
 }
