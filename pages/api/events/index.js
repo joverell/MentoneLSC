@@ -1,4 +1,3 @@
-import { encrypt } from '../../../lib/crypto';
 import { db } from '../../../src/firebase';
 import { adminDb } from '../../../src/firebase-admin';
 import admin from 'firebase-admin';
@@ -6,7 +5,7 @@ import { collection, getDocs, query, orderBy, collectionGroup, where } from 'fir
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
-const JWT_SECRET = 'a-secure-and-long-secret-key-that-is-at-least-32-characters';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 export default function handler(req, res) {
   if (req.method === 'GET') {

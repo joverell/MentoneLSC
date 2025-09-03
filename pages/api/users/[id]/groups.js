@@ -1,9 +1,8 @@
-import { decrypt } from '../../../../lib/crypto';
 import { adminDb, adminAuth } from '../../../../src/firebase-admin';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
-const JWT_SECRET = 'a-secure-and-long-secret-key-that-is-at-least-32-characters';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
