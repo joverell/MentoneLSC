@@ -46,45 +46,68 @@ export default async function handler(req, res) {
         console.log('Password verified. UID:', authData.localId);
         const uid = authData.localId;
 
-        // 2. Fetch user data and permissions from Firestore
-        console.log('Fetching user data from Firestore...');
+        // 2. Fetch user auth record and Firestore document
+        console.log('Fetching user records...');
+        const userAuth = await adminAuth.getUser(uid);
         const userDocRef = adminDb.collection('users').doc(uid);
         let userDoc = await userDocRef.get();
-        let user;
+        let user, userRoles, customClaims;
+
+        // Determine if the user meets super admin criteria
+        const isSuperAdminUser = (
+          email.toLowerCase() === 'jaoverell@gmail.com' ||
+          (userDoc.exists() && userDoc.data().name === 'James Overell') ||
+          userAuth.displayName === 'James Overell'
+        );
 
         if (!userDoc.exists) {
           console.log('User profile not found in Firestore. Creating one...');
-
-          const newUser = {
-            name: authData.displayName || 'New User',
-            email: email,
-            roles: ['Member'],
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          };
-
-          if (email === 'jaoverell@gmail.com') {
-            newUser.roles.push('Admin');
-            await adminAuth.setCustomUserClaims(uid, { roles: newUser.roles });
+          userRoles = ['Member'];
+          if (isSuperAdminUser) {
+            userRoles.push('Admin');
           }
 
+          const newUser = {
+            name: userAuth.displayName || 'New User',
+            email: email,
+            roles: userRoles,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          };
           await userDocRef.set(newUser);
-
           user = newUser;
           console.log('User profile created in Firestore.');
-
         } else {
-            user = userDoc.data();
-            console.log('User data fetched:', user);
+          user = userDoc.data();
+          userRoles = user.roles || ['Member'];
+          // Ensure existing super admin has 'Admin' role in Firestore, if not add it
+          if (isSuperAdminUser && !userRoles.includes('Admin')) {
+            userRoles.push('Admin');
+            await userDocRef.update({ roles: userRoles });
+            console.log(`Updated Firestore roles for super admin ${email}`);
+          }
+          console.log('User data fetched:', user);
         }
 
-        // Fallback for roles and groupIds if they don't exist
-        const roles = user.roles || [];
-        const groupIds = user.groupIds || [];
+        // 3. Check and apply Super Admin custom claims if necessary.
+        // This handles promoting an existing user on login.
+        const needsSuperAdminClaim = isSuperAdminUser && !userAuth.customClaims?.isSuperAdmin;
+        if (needsSuperAdminClaim) {
+          console.log(`Setting isSuperAdmin claim for ${email}`);
+          customClaims = { ...(userAuth.customClaims || {}), roles: userRoles, isSuperAdmin: true };
+          await adminAuth.setCustomUserClaims(uid, customClaims);
+        } else {
+          customClaims = userAuth.customClaims || { roles: userRoles };
+        }
 
-        // 3. Create a custom JWT for our application session
+        // Use the latest roles and claims for the session, including super admin status
+        const roles = userRoles;
+        const groups = user.groups || user.groupIds || []; // Coalesce groups/groupIds for compatibility
+        const isSuperAdmin = customClaims.isSuperAdmin || false;
+
+        // 4. Create a custom JWT for our application session
         console.log('Creating JWT...');
         const token = jwt.sign(
-          { userId: uid, email: user.email, name: user.name, roles, groupIds },
+          { userId: uid, email: user.email, name: user.name, roles, groups, isSuperAdmin },
           JWT_SECRET,
           { expiresIn: '1h' }
         );

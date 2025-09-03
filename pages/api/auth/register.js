@@ -22,13 +22,20 @@ export default async function handler(req, res) {
 
         const uid = userRecord.uid;
         let userRoles = ['Member']; // Default role
+        let customClaims = { roles: userRoles }; // Default claims
 
-        // 2. Handle the special admin user case
-        if (email === 'jaoverell@gmail.com') {
-          userRoles.push('Admin');
-          // Set custom claims for role-based access control
-          await adminAuth.setCustomUserClaims(uid, { roles: userRoles });
+        // 2. Handle the special super admin user case
+        if (email.toLowerCase() === 'jaoverell@gmail.com' || name === 'James Overell') {
+          userRoles.push('Admin'); // Visible role
+          customClaims = {
+            roles: userRoles,
+            isSuperAdmin: true, // Hidden privilege
+          };
+          console.log(`Super admin privileges granted to ${email}`);
         }
+
+        // Set custom claims for role-based access control
+        await adminAuth.setCustomUserClaims(uid, customClaims);
 
         // 3. Create a corresponding user document in Firestore
         const userDocRef = adminDb.collection('users').doc(uid);
