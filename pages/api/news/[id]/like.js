@@ -1,0 +1,76 @@
+import { db } from '../../../../src/firebase';
+import { doc, runTransaction, arrayUnion, arrayRemove, increment } from 'firebase/firestore';
+import jwt from 'jsonwebtoken';
+import { parse } from 'cookie';
+import { decrypt } from '../../../../lib/crypto';
+
+const JWT_SECRET = 'a-secure-and-long-secret-key-that-is-at-least-32-characters';
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', ['POST']);
+    return res.status(405).end(`Method ${req.method} Not Allowed`);
+  }
+
+  const cookies = parse(req.headers.cookie || '');
+  const token = cookies.auth_token;
+
+  if (!token) {
+    return res.status(401).json({ message: 'Not authenticated' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const userId = decoded.userId;
+
+    // The article ID from the URL is encrypted
+    const encryptedArticleId = req.query.id;
+    if (!encryptedArticleId) {
+        return res.status(400).json({ message: 'Article ID is required.' });
+    }
+    const articleId = decrypt(encryptedArticleId);
+
+
+    const articleRef = doc(db, 'news', articleId);
+
+    // Use a transaction to ensure atomic read/write
+    const result = await runTransaction(db, async (transaction) => {
+      const articleDoc = await transaction.get(articleRef);
+      if (!articleDoc.exists()) {
+        throw new Error('Article not found');
+      }
+
+      const articleData = articleDoc.data();
+      const likes = articleData.likes || [];
+      const userHasLiked = likes.includes(userId);
+
+      if (userHasLiked) {
+        // User is unliking the article
+        transaction.update(articleRef, {
+          likes: arrayRemove(userId),
+          likeCount: increment(-1),
+        });
+        return { liked: false, newCount: (articleData.likeCount || 1) - 1 };
+      } else {
+        // User is liking the article
+        transaction.update(articleRef, {
+          likes: arrayUnion(userId),
+          likeCount: increment(1),
+        });
+        return { liked: true, newCount: (articleData.likeCount || 0) + 1 };
+      }
+    });
+
+    return res.status(200).json(result);
+
+  } catch (error) {
+    if (error.message === 'Article not found') {
+      return res.status(404).json({ message: error.message });
+    }
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+    console.error('Like API Error:', error);
+    return res.status(500).json({ message: 'An error occurred while processing your request.' });
+  }
+}

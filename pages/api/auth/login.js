@@ -77,14 +77,14 @@ export default async function handler(req, res) {
             console.log('User data fetched:', user);
         }
 
-        // Fallback for groups if they don't exist on the user document
+        // Fallback for roles and groupIds if they don't exist
         const roles = user.roles || [];
-        const groups = user.groups || [];
+        const groupIds = user.groupIds || [];
 
         // 3. Create a custom JWT for our application session
         console.log('Creating JWT...');
         const token = jwt.sign(
-          { userId: uid, email: user.email, name: user.name, roles, groups },
+          { userId: uid, email: user.email, name: user.name, roles, groupIds },
           JWT_SECRET,
           { expiresIn: '1h' }
         );
@@ -107,7 +107,7 @@ export default async function handler(req, res) {
           name: user.name,
           email: user.email,
           roles,
-          groups,
+          groupIds,
         });
 
       } catch (error) {

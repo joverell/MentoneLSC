@@ -21,24 +21,59 @@ export default function handler(req, res) {
 
 // Function to get all news articles from Firestore
 async function getNews(req, res) {
+  const cookies = parse(req.headers.cookie || '');
+  const token = cookies.auth_token;
+  let user = null;
+
+  if (token) {
+      try {
+          user = jwt.verify(token, JWT_SECRET);
+      } catch (e) {
+          console.warn("Invalid auth token on news fetch");
+      }
+  }
+
   try {
     const newsCollection = collection(db, 'news');
     const q = query(newsCollection, orderBy('createdAt', 'desc'));
     const newsSnapshot = await getDocs(q);
 
-    const articles = newsSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const articles = newsSnapshot.docs.map(doc => {
+        const data = doc.data();
 
-    // Encrypt IDs for consistency with the old API
-    const encryptedArticles = articles.map(article => ({
-      ...article,
-      id: encrypt(article.id),
-      created_by: encrypt(article.created_by),
-    }));
+        const isPublic = !data.visibleToGroups || data.visibleToGroups.length === 0;
+        const isAdmin = user && user.roles && user.roles.includes('Admin');
 
-    return res.status(200).json(encryptedArticles);
+        let canView = isPublic || isAdmin;
+
+        if (!canView && user && user.groupIds) {
+            const userGroups = new Set(user.groupIds);
+            const articleGroups = new Set(data.visibleToGroups);
+            for (const group of articleGroups) {
+                if (userGroups.has(group)) {
+                    canView = true;
+                    break;
+                }
+            }
+        }
+
+        if (!canView) return null;
+
+        const likes = data.likes || [];
+        const currentUserHasLiked = user ? likes.includes(user.userId) : false;
+
+        return {
+            id: encrypt(doc.id),
+            title: data.title,
+            content: data.content,
+            authorName: data.authorName,
+            createdAt: data.createdAt.toDate().toISOString(),
+            likeCount: data.likeCount || 0,
+            currentUserHasLiked: currentUserHasLiked,
+        };
+    }).filter(Boolean); // Filter out null values
+
+    return res.status(200).json(articles);
   } catch (error) {
     console.error('Failed to fetch news:', error);
     return res.status(500).json({ message: 'An error occurred while fetching news articles.' });
@@ -64,7 +99,7 @@ async function createNews(req, res) {
 
     const userId = decoded.userId;
 
-    const { title, content } = req.body;
+    const { title, content, visibleToGroups } = req.body;
     if (!title || !content) {
       return res.status(400).json({ message: 'Missing required fields: title and content' });
     }
@@ -83,7 +118,9 @@ async function createNews(req, res) {
       content,
       created_by: userId,
       authorName, // Denormalized author's name
+      visibleToGroups: visibleToGroups || [],
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
+
     });
 
     return res.status(201).json({
