@@ -1,5 +1,19 @@
 import admin from 'firebase-admin';
 
+const requiredEnv = [
+  'FIREBASE_PROJECT_ID',
+  'FIREBASE_PRIVATE_KEY_ID',
+  'FIREBASE_PRIVATE_KEY',
+  'FIREBASE_CLIENT_EMAIL',
+  'FIREBASE_STORAGE_BUCKET'
+];
+
+const missingEnv = requiredEnv.filter(envVar => !process.env[envVar]);
+
+if (missingEnv.length > 0) {
+  throw new Error(`Missing required Firebase environment variables: ${missingEnv.join(', ')}. Please set them in your Vercel project settings.`);
+}
+
 try {
   const serviceAccount = {
     type: 'service_account',
