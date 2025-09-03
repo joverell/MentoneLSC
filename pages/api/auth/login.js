@@ -9,6 +9,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const firebaseConfig = JSON.parse(process.env.NEXT_PUBLIC_FIREBASE_CONFIG);
 const FIREBASE_WEB_API_KEY = firebaseConfig.apiKey;
 
+
 async function verifyPassword(email, password) {
   const url = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_WEB_API_KEY}`;
   const response = await fetch(url, {
