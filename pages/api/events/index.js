@@ -19,13 +19,12 @@ export default function handler(req, res) {
 
 // Function to get all events, including RSVP data from Firestore
 async function getEvents(req, res) {
-  let userId = null;
+  let user = null;
   try {
     const cookies = parse(req.headers.cookie || '');
     const token = cookies.auth_token;
     if (token) {
-      const decoded = jwt.verify(token, JWT_SECRET);
-      userId = decoded.userId;
+      user = jwt.verify(token, JWT_SECRET);
     }
   } catch (err) {
     // Ignore errors, user is simply not logged in
@@ -36,9 +35,27 @@ async function getEvents(req, res) {
     const q = query(eventsCollection, orderBy('start_time', 'asc'));
     const eventsSnapshot = await getDocs(q);
 
-    const events = await Promise.all(eventsSnapshot.docs.map(async (eventDoc) => {
+    const eventPromises = eventsSnapshot.docs.map(async (eventDoc) => {
       const eventData = eventDoc.data();
       const eventId = eventDoc.id;
+
+      const isPublic = !eventData.visibleToGroups || eventData.visibleToGroups.length === 0;
+      const isAdmin = user && user.roles && user.roles.includes('Admin');
+
+      let canView = isPublic || isAdmin;
+
+      if (!canView && user && user.groupIds) {
+        const userGroups = new Set(user.groupIds);
+        const eventGroups = new Set(eventData.visibleToGroups);
+        for (const group of eventGroups) {
+          if (userGroups.has(group)) {
+            canView = true;
+            break;
+          }
+        }
+      }
+
+      if (!canView) return null;
 
       // Fetch RSVPs for this event
       const rsvpsCollection = collection(db, 'events', eventId, 'rsvps');
@@ -54,7 +71,7 @@ async function getEvents(req, res) {
         if (rsvpData.status === 'Yes') yes_count++;
         if (rsvpData.status === 'No') no_count++;
         if (rsvpData.status === 'Maybe') maybe_count++;
-        if (userId && rsvpDoc.id === String(userId)) {
+        if (user && rsvpDoc.id === String(user.userId)) {
           currentUserRsvpStatus = rsvpData.status;
         }
       });
@@ -70,7 +87,9 @@ async function getEvents(req, res) {
           maybe: maybe_count,
         }
       };
-    }));
+    });
+
+    const events = (await Promise.all(eventPromises)).filter(Boolean);
 
     return res.status(200).json(events);
   } catch (error) {
@@ -97,7 +116,7 @@ async function createEvent(req, res) {
 
     const userId = decoded.userId;
 
-    const { title, description, start_time, end_time, location, imageUrl } = req.body;
+    const { title, description, start_time, end_time, location, imageUrl, visibleToGroups } = req.body;
     if (!title || !description || !start_time || !end_time) {
       return res.status(400).json({ message: 'Missing required event fields' });
     }
@@ -120,6 +139,7 @@ async function createEvent(req, res) {
       created_by: userId,
       authorName,
       createdAt: serverTimestamp(),
+      visibleToGroups: visibleToGroups || [],
     });
 
     return res.status(201).json({

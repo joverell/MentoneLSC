@@ -72,6 +72,8 @@ export default function Home() {
   const [newsError, setNewsError] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeCommentSection, setActiveCommentSection] = useState(null);
+  const [newComment, setNewComment] = useState('');
 
   const activeTab = router.query.tab || 'events';
 
@@ -136,25 +138,140 @@ export default function Home() {
     }
   };
 
+  const fetchNews = useCallback(async () => {
+    setNewsLoading(true);
+    try {
+      const res = await fetch('/api/news');
+      if (!res.ok) throw new Error('Failed to fetch news');
+      const data = await res.json();
+      setNewsArticles(data);
+      setNewsError(null);
+    } catch (err) {
+      console.error(err);
+      setNewsError('Could not load news. Please try again later.');
+    } finally {
+      setNewsLoading(false);
+    }
+  }, []);
+
   // Effect for fetching news
   useEffect(() => {
-    const fetchNews = async () => {
-      setNewsLoading(true);
-      try {
-        const res = await fetch('/api/news');
-        if (!res.ok) throw new Error('Failed to fetch news');
-        const data = await res.json();
-        setNewsArticles(data);
-        setNewsError(null);
-      } catch (err) {
-        console.error(err);
-        setNewsError('Could not load news. Please try again later.');
-      } finally {
-        setNewsLoading(false);
-      }
+    if (activeTab === 'news') {
+        fetchNews();
+    }
+  }, [activeTab, fetchNews]);
+
+  const handleLikeClick = async (articleId) => {
+    if (!user) {
+        router.push('/login');
+        return;
+    }
+
+    // Optimistic UI update
+    const originalArticles = [...newsArticles];
+    const newArticles = newsArticles.map(article => {
+        if (article.id === articleId) {
+            const newLikeCount = article.currentUserHasLiked ? article.likeCount - 1 : article.likeCount + 1;
+            return {
+                ...article,
+                likeCount: newLikeCount,
+                currentUserHasLiked: !article.currentUserHasLiked
+            };
+        }
+        return article;
+    });
+    setNewsArticles(newArticles);
+
+    try {
+        const res = await fetch(`/api/news/${articleId}/like`, { method: 'POST' });
+        if (!res.ok) {
+            // Revert on failure
+            setNewsArticles(originalArticles);
+            const data = await res.json();
+            // Display an error message to the user
+            alert(data.message || "Failed to update like status.");
+        }
+    } catch (error) {
+        // Revert on failure
+        setNewsArticles(originalArticles);
+        alert("An error occurred. Please try again.");
+    }
+  };
+
+  const fetchComments = async (articleId) => {
+    // Set loading state for comments on a specific article
+    setNewsArticles(prev => prev.map(a => a.id === articleId ? { ...a, commentsLoading: true } : a));
+    try {
+        const res = await fetch(`/api/news/${articleId}/comments`);
+        if (!res.ok) throw new Error('Failed to fetch comments');
+        const comments = await res.json();
+        // Add comments to the specific article
+        setNewsArticles(prev => prev.map(a => a.id === articleId ? { ...a, comments, commentsLoading: false } : a));
+    } catch (err) {
+        console.error("Error fetching comments:", err);
+        // Handle error state for comments on a specific article
+        setNewsArticles(prev => prev.map(a => a.id === articleId ? { ...a, commentsError: err.message, commentsLoading: false } : a));
+    }
+  };
+
+  const toggleComments = (articleId) => {
+    const article = newsArticles.find(a => a.id === articleId);
+    if (activeCommentSection === articleId) {
+        setActiveCommentSection(null);
+    } else {
+        setActiveCommentSection(articleId);
+        // Fetch comments only if they haven't been fetched before
+        if (!article.comments) {
+            fetchComments(articleId);
+        }
+    }
+  };
+
+  const handleCommentSubmit = async (e, articleId) => {
+    e.preventDefault();
+    if (!user) {
+        router.push('/login');
+        return;
+    }
+    if (!newComment.trim()) return;
+
+    const originalArticles = [...newsArticles];
+    const tempComment = {
+        id: `temp-${Date.now()}`,
+        content: newComment,
+        authorName: user.name,
+        createdAt: new Date().toISOString(),
+        isTemporary: true,
     };
-    fetchNews();
-  }, []);
+
+    // Optimistic UI update
+    setNewsArticles(prev => prev.map(a => a.id === articleId ? { ...a, comments: [...(a.comments || []), tempComment] } : a));
+    setNewComment('');
+
+    try {
+        const res = await fetch(`/api/news/${articleId}/comments`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: newComment }),
+        });
+
+        if (!res.ok) {
+            // Revert on failure
+            setNewsArticles(originalArticles);
+            alert('Failed to post comment.');
+            return;
+        }
+
+        const savedComment = await res.json();
+        // Replace temporary comment with the real one from the server
+        setNewsArticles(prev => prev.map(a => a.id === articleId ? { ...a, comments: a.comments.map(c => c.id === tempComment.id ? savedComment : c) } : a));
+
+    } catch (error) {
+        console.error("Error submitting comment:", error);
+        setNewsArticles(originalArticles);
+        alert('An error occurred while posting your comment.');
+    }
+  };
 
   const tileClassName = ({ date, view }) => {
     if (view === 'month') {
@@ -240,7 +357,56 @@ export default function Home() {
                     <p className={styles.articleMeta}>
                       By {article.authorName} on {new Date(article.createdAt).toLocaleDateString('en-AU')}
                     </p>
-                    <div dangerouslySetInnerHTML={{ __html: article.content.replace(/\n/g, '<br />') }} />
+                    <div dangerouslySetInnerHTML={{ __html: article.content }} />
+                    <div className={styles.articleActions}>
+                        <button
+                            onClick={() => handleLikeClick(article.id)}
+                            className={`${styles.likeButton} ${article.currentUserHasLiked ? styles.liked : ''}`}
+                            disabled={!user}
+                            title={!user ? "Log in to like posts" : ""}
+                        >
+                            <span role="img" aria-label="like">👍</span> {article.likeCount}
+                        </button>
+                        <button onClick={() => toggleComments(article.id)} className={styles.commentButton}>
+                            <span role="img" aria-label="comment">💬</span> Comment
+                        </button>
+                    </div>
+
+                    {activeCommentSection === article.id && (
+                        <div className={styles.commentsSection}>
+                            {article.commentsLoading && <p>Loading comments...</p>}
+                            {article.commentsError && <p className={styles.error}>{article.commentsError}</p>}
+                            {article.comments && article.comments.length > 0 && (
+                                <div className={styles.commentsList}>
+                                    {article.comments.map(comment => (
+                                        <div key={comment.id} className={`${styles.comment} ${comment.isTemporary ? styles.temporaryComment : ''}`}>
+                                            <p><strong>{comment.authorName}</strong></p>
+                                            <p>{comment.content}</p>
+                                            <span className={styles.commentDate}>
+                                                {new Date(comment.createdAt).toLocaleString('en-AU')}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            {article.comments && article.comments.length === 0 && <p>No comments yet.</p>}
+
+                            {user ? (
+                                <form onSubmit={(e) => handleCommentSubmit(e, article.id)} className={styles.commentForm}>
+                                    <textarea
+                                        value={newComment}
+                                        onChange={(e) => setNewComment(e.target.value)}
+                                        placeholder="Write a comment..."
+                                        rows="2"
+                                        required
+                                    />
+                                    <button type="submit">Post</button>
+                                </form>
+                            ) : (
+                                <p>You must be <Link href="/login">logged in</Link> to comment.</p>
+                            )}
+                        </div>
+                    )}
                   </div>
                 ))
               ) : (
