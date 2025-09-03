@@ -115,7 +115,7 @@ export default async function handler(req, res) {
         const foundGroupIds = querySnapshot.docs.map(doc => doc.id);
 
         await userDocRef.update({
-            groupIds: foundGroupIds,
+            groupIds: found_group_ids,
             groups: admin.firestore.FieldValue.delete()
         });
 
