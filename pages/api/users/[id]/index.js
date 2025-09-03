@@ -57,9 +57,10 @@ const handleGetRequest = async (req, res) => {
 
 const handlePutRequest = async (req, res, decoded) => {
     const { id: userId } = req.query;
-    const { name, email, patrolQualifications, emergencyContact, uniformSize } = req.body;
+    const { name, email, patrolQualifications, emergencyContact, uniformSize, roles } = req.body;
 
     // Authorization: Either admin or the user themselves
+    const isSuperAdmin = decoded.isSuperAdmin === true;
     const isAdmin = decoded.roles && decoded.roles.includes('Admin');
     if (!isAdmin && decoded.uid !== userId) {
         return res.status(403).json({ message: 'Forbidden: You can only update your own profile.' });
@@ -82,6 +83,11 @@ const handlePutRequest = async (req, res, decoded) => {
                 // Update Firebase Auth email
                 await adminAuth.updateUser(userId, { email });
             }
+        }
+
+        // Only Super Admins can manage roles
+        if (roles && isSuperAdmin) {
+            updateData.roles = roles;
         }
 
         await userDocRef.update(updateData);

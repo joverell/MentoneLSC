@@ -394,6 +394,7 @@ const CalendarSubscriptionModal = ({ isOpen, onClose }) => {
               {!newsLoading && !newsError && newsArticles.length > 0 ? (
                 newsArticles.map(article => (
                   <div key={article.id} className={styles.newsArticle}>
+                    {article.imageUrl && <img src={article.imageUrl} alt={article.title} className={styles.newsImage} />}
                     <h3>{article.title}</h3>
                     <p className={styles.articleMeta}>
                       By {article.authorName} on {new Date(article.createdAt).toLocaleDateString('en-AU')}

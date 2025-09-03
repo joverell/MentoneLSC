@@ -5,6 +5,16 @@ import { parse } from 'cookie';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
+function decrypt(encryptedId) {
+  try {
+    const decoded = jwt.verify(encryptedId, JWT_SECRET);
+    return decoded.id;
+  } catch (error) {
+    console.error("Error decrypting ID", error);
+    return null;
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
@@ -29,6 +39,9 @@ export default async function handler(req, res) {
     }
     const articleId = decrypt(encryptedArticleId);
 
+    if (!articleId) {
+      return res.status(400).json({ message: 'Invalid article ID' });
+    }
 
     const articleRef = doc(db, 'news', articleId);
 

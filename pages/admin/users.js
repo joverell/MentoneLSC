@@ -11,6 +11,21 @@ export default function UserManagement() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [reminderStatus, setReminderStatus] = useState('');
+
+  const handleSendReminders = async () => {
+    setReminderStatus('Sending...');
+    try {
+      const res = await fetch('/api/events/reminders', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to send reminders');
+      }
+      setReminderStatus(data.message);
+    } catch (err) {
+      setReminderStatus(`Error: ${err.message}`);
+    }
+  };
 
   useEffect(() => {
     if (authLoading) return; // Wait for authentication to resolve
@@ -59,6 +74,9 @@ export default function UserManagement() {
           <Link href="/admin/groups" className={styles.adminNavLink}>Manage Groups</Link>
           <span style={{ margin: '0 1rem' }}>|</span>
           <Link href="/admin/sponsors" className={styles.adminNavLink}>Manage Sponsors</Link>
+          <span style={{ margin: '0 1rem' }}>|</span>
+          <button onClick={handleSendReminders} className={styles.adminNavLink}>Send Event Reminders</button>
+          {reminderStatus && <p style={{ marginLeft: '1rem', display: 'inline' }}>{reminderStatus}</p>}
         </div>
         {error && <p className={styles.error}>{error}</p>}
         <div className={styles.tableContainer}>
