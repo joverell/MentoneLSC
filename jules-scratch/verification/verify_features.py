@@ -1,52 +1,60 @@
-import re
-from playwright.sync_api import sync_playwright, Page, expect
+from playwright.sync_api import sync_playwright, expect
+import time
 
 def run(playwright):
     browser = playwright.chromium.launch(headless=True)
     context = browser.new_context()
     page = context.new_page()
 
-    try:
-        # 1. Login as the admin user
-        page.goto("http://localhost:3000/login")
-        page.get_by_label("Email").fill("jules.test.admin@example.com")
-        page.get_by_label("Password").fill("password123")
-        page.get_by_role("button", name="Login").click()
+    # Use a unique email to avoid conflicts
+    email = f"jules.test.admin.{int(time.time())}@example.com"
+    password = "password"
 
-        # Wait for navigation to the account page to confirm login
-        expect(page).to_have_url(re.compile(r".*\/account"))
-        print("Login successful.")
+    # Register a new user. This user will become an admin.
+    page.goto("http://localhost:3000/register")
+    page.get_by_label("Name").fill("Jules Admin")
+    page.get_by_label("Email").fill(email)
+    page.get_by_label("Password").fill(password)
+    page.get_by_role("button", name="Register").click()
+    page.wait_for_url("http://localhost:3000/login")
 
-        # 2. Navigate to Documents page
-        page.get_by_role("link", name="Docs").click()
-        expect(page).to_have_url(re.compile(r".*\/documents"))
-        expect(page.get_by_role("heading", name="Club Documents")).to_be_visible()
-        print("Navigated to Documents page.")
+    # Log in as the new admin user
+    page.goto("http://localhost:3000/login")
+    page.get_by_label("Email").fill(email)
+    page.get_by_label("Password").fill(password)
+    page.get_by_role("button", name="Login").click()
+    page.wait_for_url("http://localhost:3000/account")
 
-        # 3. Navigate to Gallery page
-        page.get_by_role("link", name="Gallery").click()
-        expect(page).to_have_url(re.compile(r".*\/gallery"))
-        expect(page.get_by_role("heading", name="Photo Gallery")).to_be_visible()
-        print("Navigated to Gallery page.")
+    # Navigate to User Management
+    page.goto("http://localhost:3000/admin/users")
+    expect(page.get_by_role("heading", name="User Management")).to_be_visible()
+    page.screenshot(path="jules-scratch/verification/user-management.png")
 
-        # 4. Navigate to Info tab and verify Sponsors
-        page.get_by_role("link", name="Info").click()
-        expect(page.get_by_role("heading", name="Club Information")).to_be_visible()
+    # Navigate to Event Management
+    page.goto("http://localhost:3000/admin/events")
+    expect(page.get_by_role("heading", name="Event Management")).to_be_visible()
+    page.screenshot(path="jules-scratch/verification/event-management.png")
 
-        # Check if the Sponsors section is there
-        sponsors_heading = page.get_by_role("heading", name="Our Sponsors")
-        expect(sponsors_heading).to_be_visible()
-        print("Navigated to Info tab and Sponsors section is visible.")
+    # Navigate to the user's own edit page
+    page.goto("http://localhost:3000/admin/users")
+    manage_link = page.get_by_role("link", name="Manage", exact=True).first
+    expect(manage_link).to_be_visible()
 
-        # 5. Take screenshot
-        page.screenshot(path="jules-scratch/verification/verification.png")
-        print("Screenshot taken.")
+    href = manage_link.get_attribute("href")
+    print(f"Manage link href: {href}")
 
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        page.screenshot(path="jules-scratch/verification/error.png")
-    finally:
-        browser.close()
+    manage_link.click()
+
+    # Wait for the URL to change to the user edit page
+    page.wait_for_url(f"http://localhost:3000{href}")
+
+    print(f"URL after click: {page.url}")
+    print(page.content())
+
+    expect(page.get_by_role("heading", name="Edit User:")).to_be_visible()
+    page.screenshot(path="jules-scratch/verification/user-page.png")
+
+    browser.close()
 
 with sync_playwright() as playwright:
     run(playwright)

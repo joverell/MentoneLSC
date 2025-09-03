@@ -78,13 +78,26 @@ export default function ChatRoom() {
         // NOTE: We are now writing directly to Firestore from the client
         // This requires appropriate Firestore security rules to be in place
         const messagesColRef = collection(db, 'chats', groupId, 'messages');
-        await addDoc(messagesColRef, {
+        const messageData = {
             message: newMessage.trim(),
             userId: user.id,
             userName: user.name,
+        };
+        await addDoc(messagesColRef, {
+            ...messageData,
             createdAt: serverTimestamp()
         });
         setNewMessage('');
+
+        // Trigger push notification
+        fetch(`/api/chat/notify`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ groupId, message: messageData })
+        });
+
     } catch (err) {
         console.error("Error sending message:", err);
         setError("Failed to send message.");

@@ -4,12 +4,24 @@ import { useAuth } from '../../../context/AuthContext';
 import styles from '../../../styles/Admin.module.css';
 import BottomNav from '../../../components/BottomNav';
 
-export default function EditUser() {
+// Helper function to format a date for datetime-local input
+const formatDateTimeForInput = (date) => {
+  if (!date) return '';
+  // Firestore timestamps might be objects with _seconds and _nanoseconds
+  const d = new Date(date._seconds ? date._seconds * 1000 : date);
+  if (isNaN(d.getTime())) return ''; // Return empty string for invalid dates
+  // Pad with leading zeros if necessary
+  const pad = (num) => (num < 10 ? '0' : '') + num;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+
+export default function EditEvent() {
   const { user: adminUser, loading: authLoading } = useAuth();
   const router = useRouter();
-  const { id: userId } = router.query;
+  const { id: eventId } = router.query;
 
-  const [userData, setUserData] = useState(null);
+  const [eventData, setEventData] = useState(null);
   const [allGroups, setAllGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -17,29 +29,30 @@ export default function EditUser() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!adminUser || !adminUser.roles.includes('Admin')) {
-      router.push('/');
+    if (!adminUser) {
+      router.push('/login');
       return;
     }
 
     const fetchData = async () => {
-      if (!userId) return;
+      if (!eventId) return;
       try {
         setLoading(true);
-        const [userRes, groupsRes] = await Promise.all([
-          fetch(`/api/users/${userId}`),
+        const [eventRes, groupsRes] = await Promise.all([
+          fetch(`/api/events/${eventId}`),
           fetch('/api/access_groups'),
         ]);
 
-        if (!userRes.ok) {
-          const data = await userRes.json();
-          throw new Error(data.message || 'Failed to fetch user data');
+        if (!eventRes.ok) {
+          const data = await eventRes.json();
+          throw new Error(data.message || 'Failed to fetch event data');
         }
-        const userDetails = await userRes.json();
-        setUserData({
-          ...userDetails,
-          roles: userDetails.roles || [],
-          groupIds: userDetails.groupIds || [],
+        const eventDetails = await eventRes.json();
+        setEventData({
+          ...eventDetails,
+          start_time: formatDateTimeForInput(eventDetails.start_time),
+          end_time: formatDateTimeForInput(eventDetails.end_time),
+          visibleToGroups: eventDetails.visibleToGroups || [],
         });
 
         if (!groupsRes.ok) {
@@ -57,16 +70,16 @@ export default function EditUser() {
     };
 
     fetchData();
-  }, [userId, adminUser, authLoading, router]);
+  }, [eventId, adminUser, authLoading, router]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setUserData(prev => ({ ...prev, [name]: value }));
+    setEventData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleCheckboxChange = (e) => {
     const { name, value, checked } = e.target;
-    setUserData(prev => {
+    setEventData(prev => {
       const currentValues = prev[name] || [];
       if (checked) {
         return { ...prev, [name]: [...currentValues, value] };
@@ -82,33 +95,33 @@ export default function EditUser() {
     setSuccess('');
 
     try {
-      const res = await fetch(`/api/users/${userId}`, {
+      const res = await fetch(`/api/events/${eventId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData),
+        body: JSON.stringify(eventData),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.message || 'Failed to update user');
+        throw new Error(data.message || 'Failed to update event');
       }
-      setSuccess('User updated successfully!');
+      setSuccess('Event updated successfully!');
     } catch (err) {
       setError(err.message);
     }
   };
 
   const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
+    if (window.confirm('Are you sure you want to delete this event?')) {
       try {
-        const res = await fetch(`/api/users/${userId}`, {
+        const res = await fetch(`/api/events/${eventId}`, {
           method: 'DELETE',
         });
         if (!res.ok) {
           const data = await res.json();
-          throw new Error(data.message || 'Failed to delete user');
+          throw new Error(data.message || 'Failed to delete event');
         }
-        router.push('/admin/users');
+        router.push('/admin/events');
       } catch (err) {
         setError(err.message);
       }
@@ -116,79 +129,51 @@ export default function EditUser() {
   };
 
   if (loading || authLoading) return <p>Loading...</p>;
-  if (!adminUser || !adminUser.roles.includes('Admin')) return <p>Redirecting...</p>;
+  if (!adminUser) return <p>Redirecting...</p>;
   if (error) return <p className={styles.error}>{error}</p>;
-  if (!userData) return <p>User not found.</p>;
+  if (!eventData) return <p>Event not found.</p>;
 
   return (
     <div className={styles.pageContainer}>
       <header className={styles.header}>
-        <h1>Edit User: {userData.name}</h1>
+        <h1>Edit Event: {eventData.title}</h1>
       </header>
       <div className={styles.container}>
         <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.formGroup}>
-            <label htmlFor="name">Name</label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              value={userData.name}
-              onChange={handleInputChange}
-              required
-            />
+            <label htmlFor="title">Title</label>
+            <input type="text" id="title" name="title" value={eventData.title || ''} onChange={handleInputChange} required />
           </div>
           <div className={styles.formGroup}>
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={userData.email}
-              onChange={handleInputChange}
-              required
-            />
+            <label htmlFor="description">Description</label>
+            <textarea id="description" name="description" value={eventData.description || ''} onChange={handleInputChange} required />
           </div>
           <div className={styles.formGroup}>
-            <label htmlFor="patrolQualifications">Patrol Qualifications</label>
-            <input type="text" id="patrolQualifications" name="patrolQualifications" placeholder="e.g., Bronze Medallion, IRB Driver" value={userData.patrolQualifications || ''} onChange={handleInputChange} />
-          </div>
-
-          <div className={styles.formGroup}>
-            <label htmlFor="emergencyContact">Emergency Contact</label>
-            <input type="text" id="emergencyContact" name="emergencyContact" placeholder="e.g., Jane Doe - 0400 123 456" value={userData.emergencyContact || ''} onChange={handleInputChange} />
-          </div>
-
-          <div className={styles.formGroup}>
-            <label htmlFor="uniformSize">Uniform Size</label>
-            <input type="text" id="uniformSize" name="uniformSize" placeholder="e.g., Mens L, Womens 12" value={userData.uniformSize || ''} onChange={handleInputChange} />
+            <label htmlFor="start_time">Start Time</label>
+            <input type="datetime-local" id="start_time" name="start_time" value={eventData.start_time} onChange={handleInputChange} required />
           </div>
           <div className={styles.formGroup}>
-            <label>Roles</label>
-            <div className={styles.checkboxGroup}>
-              <label>
-                <input
-                  type="checkbox"
-                  name="roles"
-                  value="Admin"
-                  checked={userData.roles.includes('Admin')}
-                  onChange={handleCheckboxChange}
-                />
-                Admin
-              </label>
-              {/* Add other roles here if they exist */}
-            </div>
+            <label htmlFor="end_time">End Time</label>
+            <input type="datetime-local" id="end_time" name="end_time" value={eventData.end_time} onChange={handleInputChange} required />
           </div>
           <div className={styles.formGroup}>
-            <label>Access Groups</label>
+            <label htmlFor="location">Location</label>
+            <input type="text" id="location" name="location" value={eventData.location || ''} onChange={handleInputChange} />
+          </div>
+          <div className={styles.formGroup}>
+            <label htmlFor="imageUrl">Image URL</label>
+            <input type="text" id="imageUrl" name="imageUrl" value={eventData.imageUrl || ''} onChange={handleInputChange} />
+          </div>
+          <div className={styles.formGroup}>
+            <label>Visible To Groups</label>
             <div className={styles.checkboxGroup}>
               {allGroups.map(group => (
                 <label key={group.id}>
                   <input
                     type="checkbox"
-                    name="groupIds"
+                    name="visibleToGroups"
                     value={group.id}
-                    checked={userData.groupIds.includes(group.id)}
+                    checked={eventData.visibleToGroups.includes(group.id)}
                     onChange={handleCheckboxChange}
                   />
                   {group.name}
@@ -199,7 +184,7 @@ export default function EditUser() {
           {error && <p className={styles.error}>{error}</p>}
           {success && <p className={styles.success}>{success}</p>}
           <button type="submit" className={styles.button}>Save Changes</button>
-          <button type="button" onClick={handleDelete} className={`${styles.button} ${styles.deleteBtn}`}>Delete User</button>
+          <button type="button" onClick={handleDelete} className={`${styles.button} ${styles.deleteBtn}`}>Delete Event</button>
         </form>
       </div>
       <BottomNav />

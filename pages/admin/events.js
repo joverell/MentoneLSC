@@ -91,9 +91,9 @@ export default function EventManagement() {
                   <td>{new Date(event.start_time).toLocaleString()}</td>
                   <td>{event.location}</td>
                   <td>
-                    <button onClick={() => handleDelete(event.id)} className={styles.deleteBtn}>
-                      Delete
-                    </button>
+                    <Link href={`/admin/events/${event.id}`} className={styles.manageLink}>
+                      Manage
+                    </Link>
                   </td>
                 </tr>
               ))}
