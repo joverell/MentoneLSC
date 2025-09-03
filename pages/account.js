@@ -14,6 +14,11 @@ export default function Account() {
     patrolQualifications: '',
     emergencyContact: '',
     uniformSize: '',
+    notificationSettings: {
+      news: true,
+      events: true,
+      chat: true,
+    },
   });
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -28,13 +33,25 @@ export default function Account() {
         patrolQualifications: user.patrolQualifications || '',
         emergencyContact: user.emergencyContact || '',
         uniformSize: user.uniformSize || '',
+        notificationSettings: user.notificationSettings || { news: true, events: true, chat: true },
       });
     }
   }, [user]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setUserData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    if (name.startsWith('notification_')) {
+        const key = name.split('_')[1];
+        setUserData(prev => ({
+            ...prev,
+            notificationSettings: {
+                ...prev.notificationSettings,
+                [key]: checked,
+            }
+        }));
+    } else {
+        setUserData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -105,6 +122,22 @@ export default function Account() {
           <div className={formStyles.inputGroup}>
             <label htmlFor="uniformSize">Uniform Size</label>
             <input type="text" id="uniformSize" name="uniformSize" placeholder="e.g., Mens L, Womens 12" value={userData.uniformSize} onChange={handleChange} />
+          </div>
+
+          <div className={formStyles.inputGroup}>
+            <h3>Notification Settings</h3>
+            <label>
+              <input type="checkbox" name="notification_news" checked={userData.notificationSettings.news} onChange={handleChange} />
+              Notify me about new News Articles
+            </label>
+            <label>
+              <input type="checkbox" name="notification_events" checked={userData.notificationSettings.events} onChange={handleChange} />
+              Notify me about new Events & Reminders
+            </label>
+            <label>
+              <input type="checkbox" name="notification_chat" checked={userData.notificationSettings.chat} onChange={handleChange} />
+              Notify me about new Chat Messages
+            </label>
           </div>
 
           <button type="submit" className={formStyles.button}>Update Profile</button>

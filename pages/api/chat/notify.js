@@ -41,8 +41,10 @@ export default async function handler(req, res) {
         const tokens = [];
         usersSnapshot.forEach(doc => {
             const userData = doc.data();
-            // Do not send notification to the sender
-            if (userData.fcmTokens && doc.id !== decoded.uid) {
+            const wantsChatNotifs = (userData.notificationSettings && userData.notificationSettings.chat !== undefined) ? userData.notificationSettings.chat : true;
+
+            // Do not send notification to the sender, and check their preference
+            if (wantsChatNotifs && userData.fcmTokens && doc.id !== decoded.uid) {
                 // fcmTokens is an array of tokens
                 if(Array.isArray(userData.fcmTokens)) {
                     tokens.push(...userData.fcmTokens);

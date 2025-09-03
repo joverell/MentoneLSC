@@ -501,7 +501,13 @@ const CalendarSubscriptionModal = ({ isOpen, onClose }) => {
               {loading && <p>Loading events...</p>}
               {error && <p>{error}</p>}
               {!loading && !error && filteredEvents.length > 0 ? (
-                filteredEvents.map(event => (
+                filteredEvents.map(event => {
+                  const isInternal = event.source === 'internal';
+                  const eventUrl = isInternal ? `/events/${event.id.replace('internal-', '')}` : event.externalUrl;
+                  const EventWrapper = isInternal ? ({ children }) => <Link href={eventUrl}>{children}</Link> : ({ children }) => <>{children}</>;
+
+                  return (
+                  <EventWrapper>
                   <div key={event.id} className={styles.event}>
                     {event.imageUrl && (
                       <img
@@ -543,6 +549,10 @@ const CalendarSubscriptionModal = ({ isOpen, onClose }) => {
                         <a href={event.externalUrl} target="_blank" rel="noopener noreferrer">
                           Find out more
                         </a>
+                      )}
+
+                      {event.source === 'internal' && (
+                        <a className={styles.detailsLink}>View Details & RSVP</a>
                       )}
 
                       {event.source === 'internal' && user && (
@@ -641,7 +651,9 @@ const CalendarSubscriptionModal = ({ isOpen, onClose }) => {
                       )}
                     </div>
                   </div>
-                ))
+                  </EventWrapper>
+                  );
+                })
               ) : (
                 !loading && !error && <p>{selectedDate ? 'No events found for this date.' : 'No upcoming events found.'}</p>
               )}
