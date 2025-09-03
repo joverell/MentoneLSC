@@ -1,31 +1,31 @@
 import admin from 'firebase-admin';
 
-// This is the server-side initialization for Firebase.
-// It uses a "Service Account" which gives administrative access.
-// IMPORTANT: You must create a service account in your Firebase project settings
-// and set the credentials as an environment variable.
+// 1. Read the environment variable
+const serviceAccountBase64 = process.env.FIRESTORE_SERVICE_ACCOUNT_BASE64;
 
-// 1. Go to your Firebase project settings > Service accounts.
-// 2. Click "Generate new private key" and download the JSON file.
-// 3. DO NOT commit this file to git. It's highly sensitive.
-// 4. Set the contents of the JSON file as an environment variable.
-//    For example, in a .env.local file:
-//    FIREBASE_SERVICE_ACCOUNT_KEY='{ "type": "service_account", ... }'
+// 2. Add a robust check WITH a clear, custom error message
+if (!serviceAccountBase64) {
+  throw new Error(
+    'CRITICAL: FIRESTORE_SERVICE_ACCOUNT_BASE64 environment variable is not set. The application cannot start.'
+  );
+}
 
 try {
-  if (!admin.apps.length) {
-    // The new approach: parse the service account key from a single environment variable.
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+  // 3. Decode the Base64 string and parse it as JSON
+  const serviceAccountJson = Buffer.from(serviceAccountBase64, 'base64').toString('utf-8');
+  const serviceAccount = JSON.parse(serviceAccountJson);
 
+  // 4. Initialize Firebase Admin, preventing re-initialization
+  if (!admin.apps.length) {
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
       storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
     });
   }
 } catch (error) {
-  console.error('Firebase admin initialization error', error);
-  // Optional: throw the error to halt execution if Firebase is essential
-  // throw new Error("Firebase initialization failed: " + error.message);
+  // 5. Add a catch block to provide more context if the key is invalid
+  console.error('Firebase Admin Initialization Error:', error);
+  throw new Error('Failed to initialize Firebase Admin SDK. The service account key may be invalid or incorrectly encoded.');
 }
 
 export const adminAuth = admin.auth();
