@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
+import { getFcmToken, saveFcmToken, removeFcmToken } from '../src/fcm';
 
 const AuthContext = createContext();
 
@@ -9,14 +10,23 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  const handleFcmToken = async (currentUser) => {
+    if (currentUser && typeof window !== 'undefined') {
+      const token = await getFcmToken();
+      if (token) {
+        await saveFcmToken(currentUser.uid, token);
+      }
+    }
+  };
+
   useEffect(() => {
-    // Check if the user is authenticated on initial load
     const checkUser = async () => {
       try {
         const res = await fetch('/api/auth/me');
         if (res.ok) {
           const data = await res.json();
           setUser(data);
+          handleFcmToken(data); // Handle FCM token on initial load
         } else {
           setUser(null);
         }
@@ -34,6 +44,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await axios.post('/api/auth/login', { email, password });
       setUser(res.data);
+      handleFcmToken(res.data); // Handle FCM token on login
       router.push('/account');
     } catch (error) {
       throw new Error(error.response?.data?.message || 'Login failed');
@@ -55,6 +66,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
+    if (user && typeof window !== 'undefined') {
+        const token = await getFcmToken();
+        if (token) {
+            await removeFcmToken(user.uid, token);
+        }
+    }
     await fetch('/api/auth/logout', { method: 'POST' });
     setUser(null);
     router.push('/login');

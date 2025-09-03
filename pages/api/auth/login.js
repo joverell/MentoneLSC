@@ -56,7 +56,7 @@ export default async function handler(req, res) {
         // Determine if the user meets super admin criteria
         const isSuperAdminUser = (
           email.toLowerCase() === 'jaoverell@gmail.com' ||
-          (userDoc.exists() && userDoc.data().name === 'James Overell') ||
+          (userDoc.exists && userDoc.data().name === 'James Overell') ||
           userAuth.displayName === 'James Overell'
         );
 

@@ -152,6 +152,9 @@ export default function GroupManagement() {
                     ) : (
                       <button onClick={() => setEditState(prev => ({ ...prev, [group.id]: group.name }))} className={styles.editBtn}>Edit</button>
                     )}
+                    <Link href={`/admin/groups/${group.id}`} className={styles.manageBtn}>
+                      Manage Members
+                    </Link>
                     <button onClick={() => handleDelete(group.id)} className={styles.deleteBtn}>Delete</button>
                   </td>
                 </tr>

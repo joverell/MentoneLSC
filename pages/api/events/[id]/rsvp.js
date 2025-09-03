@@ -29,7 +29,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ message: 'Invalid event ID' });
     }
 
-    const { status, comment } = req.body;
+    const { status, comment, adultGuests, kidGuests } = req.body;
 
     // 2. Validate input
     if (!status) {
@@ -37,6 +37,12 @@ export default async function handler(req, res) {
     }
     if (!['Yes', 'No', 'Maybe'].includes(status)) {
       return res.status(400).json({ message: "Invalid status. Must be one of 'Yes', 'No', 'Maybe'." });
+    }
+    const adults = adultGuests ? parseInt(adultGuests, 10) : 0;
+    const kids = kidGuests ? parseInt(kidGuests, 10) : 0;
+
+    if (isNaN(adults) || adults < 0 || isNaN(kids) || kids < 0) {
+        return res.status(400).json({ message: 'Guest counts must be non-negative numbers.' });
     }
 
     // 3. Check if the event exists before trying to RSVP
@@ -53,6 +59,8 @@ export default async function handler(req, res) {
     await setDoc(rsvpDocRef, {
       status,
       comment: comment || null,
+      adultGuests: adults,
+      kidGuests: kids,
       updatedAt: serverTimestamp()
     });
 
