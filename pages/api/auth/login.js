@@ -101,13 +101,38 @@ export default async function handler(req, res) {
 
         // Use the latest roles and claims for the session, including super admin status
         const roles = userRoles;
-        const groups = user.groups || user.groupIds || []; // Coalesce groups/groupIds for compatibility
+        let groupIds = user.groupIds || user.groups || []; // Coalesce groups/groupIds for compatibility
         const isSuperAdmin = customClaims.isSuperAdmin || false;
+
+        // On-the-fly migration for users with legacy 'groups' (an array of names)
+        if (user.groups && typeof user.groupIds === 'undefined') {
+          console.log(`User ${email} has legacy 'groups' field. Migrating...`);
+          const groupNames = user.groups;
+          const accessGroupsRef = adminDb.collection('access_groups');
+          const q = accessGroupsRef.where('name', 'in', groupNames);
+          const querySnapshot = await q.get();
+          const foundGroupIds = querySnapshot.docs.map(doc => doc.id);
+
+          await userDocRef.update({
+              groupIds: foundGroupIds,
+              groups: admin.firestore.FieldValue.delete()
+          });
+
+          // Also update custom claims
+          const newClaims = { ...(userAuth.customClaims || {}) };
+          delete newClaims.groups;
+          newClaims.groupIds = foundGroupIds;
+          await adminAuth.setCustomUserClaims(uid, newClaims);
+
+          // Use the newly migrated IDs for the current session
+          groupIds = foundGroupIds;
+          console.log(`Migrated 'groups' to 'groupIds' for user ${email}`);
+        }
 
         // 4. Create a custom JWT for our application session
         console.log('Creating JWT...');
         const token = jwt.sign(
-          { userId: uid, email: user.email, name: user.name, roles, groups, isSuperAdmin },
+          { userId: uid, email: user.email, name: user.name, roles, groupIds, isSuperAdmin },
           JWT_SECRET,
           { expiresIn: '1h' }
         );

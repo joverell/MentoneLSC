@@ -54,7 +54,14 @@ export default async function handler(req, res) {
 
     // 3. Fetch the corresponding IDs for the user's roles and groups
     const roleIds = await getIdsFromNames('roles', userData.roles);
-    const groupIds = await getIdsFromNames('access_groups', userData.groups);
+
+    // Handle both new 'groupIds' (array of IDs) and legacy 'groups' (array of names)
+    let finalGroupIds = [];
+    if (userData.groupIds) {
+      finalGroupIds = userData.groupIds;
+    } else if (userData.groups) {
+      finalGroupIds = await getIdsFromNames('access_groups', userData.groups);
+    }
 
     // 4. Return the response in the original format
     res.status(200).json({
@@ -62,7 +69,7 @@ export default async function handler(req, res) {
       name: userData.name,
       email: userData.email,
       roleIds: roleIds.map(encrypt),
-      groupIds: groupIds.map(encrypt),
+      groupIds: finalGroupIds.map(encrypt),
     });
 
   } catch (error) {

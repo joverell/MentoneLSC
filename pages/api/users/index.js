@@ -35,7 +35,8 @@ export default async function handler(req, res) {
         name: userData.name,
         email: userData.email,
         roles: userData.roles || [],
-        groups: userData.groups || [],
+        // Standardize on groupIds, but maintain backward compatibility for now
+        groupIds: userData.groupIds || userData.groups || [],
       };
     });
 
