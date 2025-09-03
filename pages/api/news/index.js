@@ -65,6 +65,7 @@ async function getNews(req, res) {
             id: doc.id,
             title: data.title,
             content: data.content,
+            imageUrl: data.imageUrl || null,
             authorName: data.authorName,
             createdAt: data.createdAt.toDate().toISOString(),
             likeCount: data.likeCount || 0,
@@ -98,7 +99,7 @@ async function createNews(req, res) {
 
     const userId = decoded.userId;
 
-    const { title, content, visibleToGroups } = req.body;
+    const { title, content, imageUrl, visibleToGroups } = req.body;
     if (!title || !content) {
       return res.status(400).json({ message: 'Missing required fields: title and content' });
     }
@@ -115,6 +116,7 @@ async function createNews(req, res) {
     const newArticleRef = await adminDb.collection('news').add({
       title,
       content,
+      imageUrl,
       created_by: userId,
       authorName, // Denormalized author's name
       visibleToGroups: visibleToGroups || [],
@@ -124,7 +126,14 @@ async function createNews(req, res) {
 
     // --- Send Push Notifications ---
     try {
-        const usersSnapshot = await adminDb.collection('users').get();
+        let usersQuery = adminDb.collection('users');
+
+        // If the article is restricted to certain groups, filter the users
+        if (visibleToGroups && visibleToGroups.length > 0) {
+            usersQuery = usersQuery.where('groupIds', 'array-contains-any', visibleToGroups);
+        }
+
+        const usersSnapshot = await usersQuery.get();
         const tokens = [];
         usersSnapshot.forEach(doc => {
             const userTokens = doc.data().fcmTokens;

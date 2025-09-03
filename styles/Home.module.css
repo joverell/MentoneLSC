@@ -411,6 +411,15 @@
   font-size: 0.9rem;
 }
 
+.newsImage {
+  width: 100%;
+  height: auto;
+  max-height: 400px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
 .toggleRsvpListBtn {
   margin-left: 1rem;
   background: none;
