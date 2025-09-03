@@ -97,6 +97,8 @@ export default function SponsorsAdminPage() {
                     <Link href="/admin/users" className={styles.adminNavLink}>Manage Users</Link>
                     <span style={{ margin: '0 1rem' }}>|</span>
                     <Link href="/admin/groups" className={styles.adminNavLink}>Manage Groups</Link>
+                    <span style={{ margin: '0 1rem' }}>|</span>
+                    <Link href="/admin/settings" className={styles.adminNavLink}>Settings</Link>
                 </div>
 
                 <div className={formStyles.form} style={{ marginBottom: '2rem' }}>

@@ -95,6 +95,8 @@ export default function UserManagement() {
           <span style={{ margin: '0 1rem' }}>|</span>
           <Link href="/admin/sponsors" className={styles.adminNavLink}>Manage Sponsors</Link>
           <span style={{ margin: '0 1rem' }}>|</span>
+          <Link href="/admin/settings" className={styles.adminNavLink}>Settings</Link>
+          <span style={{ margin: '0 1rem' }}>|</span>
           <button onClick={handleSendReminders} className={styles.adminNavLink}>Send Event Reminders</button>
           {reminderStatus && <p style={{ marginLeft: '1rem', display: 'inline' }}>{reminderStatus}</p>}
         </div>
