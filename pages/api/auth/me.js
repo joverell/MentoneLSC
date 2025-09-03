@@ -24,7 +24,7 @@ export default function handler(req, res) {
     const decoded = jwt.verify(token, JWT_SECRET);
 
     // The payload of the token we created in login.js contains all we need.
-    const { userId, name, email, roles, groups } = decoded;
+    const { userId, name, email, roles, groupIds } = decoded;
 
     if (!userId) {
         return res.status(401).json({ message: 'Invalid token payload' });
@@ -35,7 +35,7 @@ export default function handler(req, res) {
       name: name,
       email: email,
       roles: roles || [],
-      groups: groups || [],
+      groupIds: groupIds || [],
     });
 
   } catch (error) {

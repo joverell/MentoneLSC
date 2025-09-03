@@ -55,3 +55,61 @@
   border-radius: 5px;
   text-align: center;
 }
+
+.success {
+  color: #28a745;
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+  padding: 15px;
+  border-radius: 5px;
+  text-align: center;
+}
+
+/* Styles for React Quill */
+.quillEditor .ql-toolbar {
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+  background-color: #f8f9fa;
+}
+
+.quillEditor .ql-container {
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px;
+  min-height: 250px;
+  font-size: 1rem;
+}
+
+.quillEditor .ql-editor {
+  min-height: 250px; /* Match container height */
+}
+
+.fieldDescription {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: -10px;
+    margin-bottom: 10px;
+}
+
+.checkboxGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 5px;
+    border: 1px solid #e0e0e0;
+}
+
+.checkboxWrapper {
+    display: flex;
+    align-items: center;
+}
+
+.checkboxWrapper input {
+    margin-right: 0.5rem;
+}
+
+.checkboxWrapper label {
+    font-weight: normal;
+    color: #333;
+}

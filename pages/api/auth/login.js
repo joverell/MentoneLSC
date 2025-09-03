@@ -99,9 +99,9 @@ export default async function handler(req, res) {
           customClaims = userAuth.customClaims || { roles: userRoles };
         }
 
-        // Use the latest roles and claims for the session
+        // Use the latest roles and claims for the session, including super admin status
         const roles = userRoles;
-        const groups = user.groups || [];
+        const groups = user.groups || user.groupIds || []; // Coalesce groups/groupIds for compatibility
         const isSuperAdmin = customClaims.isSuperAdmin || false;
 
         // 4. Create a custom JWT for our application session
@@ -130,7 +130,7 @@ export default async function handler(req, res) {
           name: user.name,
           email: user.email,
           roles,
-          groups,
+          groupIds,
         });
 
       } catch (error) {
