@@ -1,21 +1,19 @@
 import admin from 'firebase-admin';
 
-// 1. Read the environment variable
-const serviceAccountBase64 = process.env.FIRESTORE_SERVICE_ACCOUNT_BASE64;
-
-// 2. Add a robust check WITH a clear, custom error message
-if (!serviceAccountBase64) {
-  throw new Error(
-    'CRITICAL: FIRESTORE_SERVICE_ACCOUNT_BASE64 environment variable is not set. The application cannot start.'
-  );
-}
-
 try {
-  // 3. Decode the Base64 string and parse it as JSON
-  const serviceAccountJson = Buffer.from(serviceAccountBase64, 'base64').toString('utf-8');
-  const serviceAccount = JSON.parse(serviceAccountJson);
+  const serviceAccount = {
+    type: 'service_account',
+    project_id: process.env.FIREBASE_PROJECT_ID,
+    private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
+    private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    client_email: process.env.FIREBASE_CLIENT_EMAIL,
+    client_id: '', // Not always needed
+    auth_uri: 'https://accounts.google.com/o/oauth2/auth',
+    token_uri: 'https://oauth2.googleapis.com/token',
+    auth_provider_x509_cert_url: 'https://www.googleapis.com/oauth2/v1/certs',
+    client_x509_cert_url: `https://www.googleapis.com/robot/v1/metadata/x509/${process.env.FIREBASE_CLIENT_EMAIL}`
+  };
 
-  // 4. Initialize Firebase Admin, preventing re-initialization
   if (!admin.apps.length) {
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
@@ -23,7 +21,6 @@ try {
     });
   }
 } catch (error) {
-  // 5. Add a catch block to provide more context if the key is invalid
   console.error('Firebase Admin Initialization Error:', error);
   throw new Error('Failed to initialize Firebase Admin SDK. The service account key may be invalid or incorrectly encoded.');
 }
