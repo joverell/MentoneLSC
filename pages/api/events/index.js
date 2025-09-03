@@ -91,10 +91,6 @@ async function createEvent(req, res) {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    if (!decoded.roles || !decoded.roles.includes('Admin')) {
-      return res.status(403).json({ message: 'Forbidden: You do not have permission to create events.' });
-    }
-
     const userId = decoded.userId;
 
     const { title, description, start_time, end_time, location, imageUrl } = req.body;
