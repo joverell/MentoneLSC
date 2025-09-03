@@ -174,13 +174,22 @@ export default function EditUser() {
                   checked={userData.roles.includes('Admin')}
                   onChange={handleCheckboxChange}
                 />
-                Admin
+                Admin (Super Admin)
               </label>
-              {/* Add other roles here if they exist */}
+              <label>
+                <input
+                  type="checkbox"
+                  name="roles"
+                  value="Group Admin"
+                  checked={userData.roles.includes('Group Admin')}
+                  onChange={handleCheckboxChange}
+                />
+                Group Admin
+              </label>
             </div>
           </div>
           <div className={styles.formGroup}>
-            <label>Access Groups</label>
+            <label>Member Of Groups</label>
             <div className={styles.checkboxGroup}>
               {allGroups.map(group => (
                 <label key={group.id}>
@@ -189,6 +198,24 @@ export default function EditUser() {
                     name="groupIds"
                     value={group.id}
                     checked={userData.groupIds.includes(group.id)}
+                    onChange={handleCheckboxChange}
+                  />
+                  {group.name}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div className={styles.formGroup}>
+            <label>Admin For Groups</label>
+            <p className={styles.fieldDescription}>Select which groups this user can manage events and news for (if they have the 'Group Admin' role).</p>
+            <div className={styles.checkboxGroup}>
+              {allGroups.map(group => (
+                <label key={group.id}>
+                  <input
+                    type="checkbox"
+                    name="adminForGroups"
+                    value={group.id}
+                    checked={userData.adminForGroups && userData.adminForGroups.includes(group.id)}
                     onChange={handleCheckboxChange}
                   />
                   {group.name}

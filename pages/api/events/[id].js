@@ -19,6 +19,11 @@ async function authorize(req, eventId) {
       return { authorized: true, user: decoded };
     }
 
+    const isGroupAdminRole = decoded.roles && decoded.roles.includes('Group Admin');
+    if (!isGroupAdminRole) {
+        return null; // Not a group admin, so can't proceed
+    }
+
     // Check if the user is a group admin for the event
     const eventRef = adminDb.collection('events').doc(eventId);
     const eventDoc = await eventRef.get();
@@ -26,21 +31,22 @@ async function authorize(req, eventId) {
 
     const eventData = eventDoc.data();
     const eventGroups = eventData.visibleToGroups || [];
-    if (eventGroups.length === 0) return null; // Only admins can manage public events
+    if (eventGroups.length === 0) return null; // Only super admins can manage public events
 
-    for (const groupId of eventGroups) {
-      const groupRef = adminDb.collection('access_groups').doc(groupId);
-      const groupDoc = await groupRef.get();
-      if (groupDoc.exists) {
-        const groupData = groupDoc.data();
-        if (groupData.admins && groupData.admins.includes(userId)) {
-          return { authorized: true, user: decoded }; // Authorized as a group admin
-        }
-      }
+    const userDocRef = adminDb.collection('users').doc(userId);
+    const userDoc = await userDocRef.get();
+    if (!userDoc.exists) return null;
+
+    const userAdminGroups = userDoc.data().adminForGroups || [];
+    const canAdminEvent = eventGroups.some(groupId => userAdminGroups.includes(groupId));
+
+    if (canAdminEvent) {
+        return { authorized: true, user: decoded }; // Authorized as a group admin
     }
 
     return null; // Not authorized
   } catch (error) {
+    console.error("Authorization error:", error);
     return null;
   }
 }
@@ -111,6 +117,13 @@ async function updateEvent(req, res, eventId) {
 async function deleteEvent(req, res, eventId) {
   try {
     const eventRef = adminDb.collection('events').doc(eventId);
+    const eventDoc = await eventRef.get();
+    if (!eventDoc.exists) {
+        return res.status(404).json({ message: 'Event not found' });
+    }
+    const eventData = eventDoc.data();
+    const { title, visibleToGroups } = eventData;
+
 
     // Optional: Delete subcollections like RSVPs if they exist
     const rsvpsRef = eventRef.collection('rsvps');
@@ -123,6 +136,27 @@ async function deleteEvent(req, res, eventId) {
 
     // Delete the main event document
     await eventRef.delete();
+
+    // --- Send Push Notifications ---
+    try {
+        let usersQuery = adminDb.collection('users');
+        if (visibleToGroups && visibleToGroups.length > 0) {
+            usersQuery = usersQuery.where('groupIds', 'array-contains-any', visibleToGroups);
+        }
+        const usersSnapshot = await usersQuery.get();
+        const tokens = usersSnapshot.docs.flatMap(doc => doc.data().fcmTokens || []);
+
+        if (tokens.length > 0) {
+            await admin.messaging().sendMulticast({
+                notification: { title: 'Event Cancelled', body: title },
+                webpush: { fcm_options: { link: '/' } },
+                tokens,
+            });
+        }
+    } catch (e) {
+        console.error("Notification failed for event deletion:", e);
+    }
+    // --- End Notifications ---
 
     res.status(200).json({ message: 'Event deleted successfully.' });
   } catch (error) {

@@ -382,7 +382,7 @@ const CalendarSubscriptionModal = ({ isOpen, onClose }) => {
           <div id="news" className={styles.section}>
             <div className={styles.sectionHeader}>
               <h2>Club News</h2>
-              {user && user.roles && user.roles.includes('Admin') && (
+              {user && user.roles && (user.roles.includes('Admin') || user.roles.includes('Group Admin')) && (
                 <Link href="/create-news" className={styles.createEventBtn}>
                   + Create Article
                 </Link>
@@ -477,7 +477,7 @@ const CalendarSubscriptionModal = ({ isOpen, onClose }) => {
           <div id="events" className={styles.section}>
             <div className={styles.sectionHeader}>
               <h2>Club Events</h2>
-              {user && user.roles && user.roles.includes('Admin') && (
+              {user && user.roles && (user.roles.includes('Admin') || user.roles.includes('Group Admin')) && (
                 <Link href="/create-event" className={styles.createEventBtn}>
                   + Create Event
                 </Link>

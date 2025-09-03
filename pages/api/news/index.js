@@ -92,14 +92,36 @@ async function createNews(req, res) {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    // Authorize the user
-    if (!decoded.roles || !decoded.roles.includes('Admin')) {
-      return res.status(403).json({ message: 'Forbidden: You do not have permission to create articles.' });
+    // --- Authorization Check ---
+    const isSuperAdmin = decoded.roles && decoded.roles.includes('Admin');
+    const isGroupAdminRole = decoded.roles && decoded.roles.includes('Group Admin');
+
+    if (!isSuperAdmin && !isGroupAdminRole) {
+        return res.status(403).json({ message: 'Forbidden: You do not have permission to create articles.' });
     }
 
-    const userId = decoded.userId;
-
+    const userId = decoded.uid; // Ensure consistent user ID property
     const { title, content, imageUrl, visibleToGroups } = req.body;
+
+    if (!isSuperAdmin) { // This means the user is a Group Admin
+        if (!visibleToGroups || visibleToGroups.length === 0) {
+            return res.status(403).json({ message: 'Forbidden: Group Admins must select at least one group for the article.' });
+        }
+
+        const userDocRef = adminDb.collection('users').doc(userId);
+        const userDoc = await userDocRef.get();
+        if (!userDoc.exists) {
+            return res.status(404).json({ message: 'User not found.' });
+        }
+        const userAdminGroups = userDoc.data().adminForGroups || [];
+        const canAdminAllSelectedGroups = visibleToGroups.every(groupId => userAdminGroups.includes(groupId));
+
+        if (!canAdminAllSelectedGroups) {
+            return res.status(403).json({ message: 'Forbidden: You do not have permission to create news for all of the selected group(s).' });
+        }
+    }
+    // --- End Authorization Check ---
+
     if (!title || !content) {
       return res.status(400).json({ message: 'Missing required fields: title and content' });
     }
