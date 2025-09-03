@@ -182,3 +182,21 @@
 
 .deleteBtn { background-color: #e53e3e; }
 .deleteBtn:hover { background-color: #c53030; }
+
+.manageBtn {
+  background-color: #3498db;
+  color: white !important;
+  padding: 8px 12px;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 14px;
+  display: inline-block;
+  margin: 0 5px;
+  font-weight: bold;
+  border: none;
+}
+
+.manageBtn:hover {
+  background-color: #2980b9;
+  text-decoration: none;
+}

@@ -5,20 +5,6 @@ import { parse } from 'cookie';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// Helper function to check if a user is in a group via their token
-async function isUserInGroup(userGroups, groupId) {
-    // Get the group document to find its name
-    const groupDocRef = adminDb.collection('access_groups').doc(groupId);
-    const groupDoc = await groupDocRef.get();
-    if (!groupDoc.exists) {
-        return false; // Group doesn't exist
-    }
-    const groupName = groupDoc.data().name;
-
-    // Check if the user's token claims include this group name
-    return userGroups.includes(groupName);
-}
-
 export default async function handler(req, res) {
   // 1. Authenticate the user from the token in the cookie
   const cookies = parse(req.headers.cookie || '');
@@ -30,9 +16,8 @@ export default async function handler(req, res) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const userId = decoded.userId;
+    const userId = decoded.uid;
     const userName = decoded.name;
-    const userGroups = decoded.groups || [];
 
     const { groupId } = req.query;
 
@@ -40,8 +25,16 @@ export default async function handler(req, res) {
       return res.status(400).json({ message: 'Invalid group ID' });
     }
 
-    // 2. Authorize: Check if the user is a member of the group
-    if (!(await isUserInGroup(userGroups, groupId))) {
+    // 2. Authorize: Check if the user is a member of the group by checking their Firestore document
+    const userDocRef = adminDb.collection('users').doc(userId);
+    const userDoc = await userDocRef.get();
+    if (!userDoc.exists) {
+        return res.status(404).json({ message: 'User not found.' });
+    }
+    const userData = userDoc.data();
+    const userGroupIds = userData.groupIds || [];
+
+    if (!userGroupIds.includes(groupId)) {
       return res.status(403).json({ message: 'Forbidden: You are not a member of this group.' });
     }
 

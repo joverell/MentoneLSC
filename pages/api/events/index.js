@@ -65,28 +65,76 @@ async function getEvents(req, res) {
       let yes_count = 0;
       let no_count = 0;
       let maybe_count = 0;
+      let total_guests = 0;
       let currentUserRsvpStatus = null;
+      let rsvpList = [];
 
-      rsvpsSnapshot.forEach(rsvpDoc => {
-        const rsvpData = rsvpDoc.data();
-        if (rsvpData.status === 'Yes') yes_count++;
-        if (rsvpData.status === 'No') no_count++;
-        if (rsvpData.status === 'Maybe') maybe_count++;
-        if (user && rsvpDoc.id === String(user.userId)) {
-          currentUserRsvpStatus = rsvpData.status;
-        }
-      });
+      // If user is admin, fetch full RSVP details
+      if (isAdmin) {
+        const rsvpPromises = rsvpsSnapshot.docs.map(async (rsvpDoc) => {
+          const rsvpData = rsvpDoc.data();
+          const rsvpUserId = rsvpDoc.id;
+
+          // Fetch user name for the RSVP
+          const userDocRef = adminDb.collection('users').doc(rsvpUserId);
+          const userDoc = await userDocRef.get();
+          const userName = userDoc.exists() ? userDoc.data().name : 'Unknown User';
+
+          return {
+            userId: rsvpUserId,
+            userName: userName,
+            status: rsvpData.status,
+            comment: rsvpData.comment || '',
+            adultGuests: rsvpData.adultGuests || 0,
+            kidGuests: rsvpData.kidGuests || 0,
+            updatedAt: rsvpData.updatedAt.toDate().toISOString(),
+          };
+        });
+        rsvpList = await Promise.all(rsvpPromises);
+
+        let total_adults = 0;
+        let total_kids = 0;
+
+        // Calculate tallies from the fetched list
+        rsvpList.forEach(rsvp => {
+            if (rsvp.status === 'Yes') {
+                yes_count++;
+                total_adults += (rsvp.adultGuests || 0);
+                total_kids += (rsvp.kidGuests || 0);
+            }
+            if (rsvp.status === 'No') no_count++;
+            if (rsvp.status === 'Maybe') maybe_count++;
+        });
+        total_guests = total_adults + total_kids;
+
+      } else { // If not admin, just calculate tallies
+        rsvpsSnapshot.forEach(rsvpDoc => {
+            const rsvpData = rsvpDoc.data();
+            if (rsvpData.status === 'Yes') yes_count++;
+            if (rsvpData.status === 'No') no_count++;
+            if (rsvpData.status === 'Maybe') maybe_count++;
+        });
+      }
+
+      // Find current user's RSVP status regardless of admin status
+      const currentUserRsvpDoc = rsvpsSnapshot.docs.find(doc => user && doc.id === String(user.uid));
+      if (currentUserRsvpDoc) {
+          currentUserRsvpStatus = currentUserRsvpDoc.data().status;
+      }
+
 
       return {
         ...eventData,
-        id: encrypt(eventId),
-        created_by: encrypt(eventData.created_by),
+        id: eventId,
+        created_by: eventData.created_by,
         currentUserRsvpStatus,
         rsvpTally: {
           yes: yes_count,
           no: no_count,
           maybe: maybe_count,
-        }
+          guests: total_guests,
+        },
+        rsvps: isAdmin ? rsvpList.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)) : [], // Only send full list to admins
       };
     });
 
@@ -110,14 +158,37 @@ async function createEvent(req, res) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const userId = decoded.userId;
+    const userId = decoded.uid; // uid from custom claims
 
-    const { title, description, start_time, end_time, location, imageUrl, visibleToGroups } = req.body;
+    const { title, description, start_time, end_time, location, imageUrl, visibleToGroups, recurrence } = req.body;
     if (!title || !description || !start_time || !end_time) {
       return res.status(400).json({ message: 'Missing required event fields' });
     }
 
-    // Fetch author's name for denormalization
+    // --- Authorization Check ---
+    const isSuperAdmin = decoded.isSuperAdmin === true;
+    let isGroupAdmin = false;
+
+    if (!isSuperAdmin) {
+        if (!visibleToGroups || visibleToGroups.length === 0) {
+            return res.status(403).json({ message: 'Forbidden: Only Super Admins can create public events.' });
+        }
+
+        for (const groupId of visibleToGroups) {
+            const groupDocRef = adminDb.collection('access_groups').doc(groupId);
+            const groupDoc = await groupDocRef.get();
+            if (groupDoc.exists && groupDoc.data().admins && groupDoc.data().admins.includes(userId)) {
+                isGroupAdmin = true;
+                break;
+            }
+        }
+
+        if (!isGroupAdmin) {
+            return res.status(403).json({ message: 'Forbidden: You do not have permission to create events for the selected group(s).' });
+        }
+    }
+    // --- End Authorization Check ---
+
     const userDocRef = adminDb.collection('users').doc(String(userId));
     const userDoc = await userDocRef.get();
     if (!userDoc.exists) {
@@ -125,23 +196,72 @@ async function createEvent(req, res) {
     }
     const authorName = userDoc.data().name;
 
-    const newEventRef = await adminDb.collection('events').add({
-      title,
-      description,
-      start_time,
-      end_time,
-      location: location || null,
-      imageUrl: imageUrl || null,
-      created_by: userId,
-      authorName,
-      visibleToGroups: visibleToGroups || [],
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    const baseEvent = {
+        title,
+        description,
+        location: location || null,
+        imageUrl: imageUrl || null,
+        created_by: userId,
+        authorName,
+        visibleToGroups: visibleToGroups || [],
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
 
-    return res.status(201).json({
-      message: 'Event created successfully',
-      eventId: encrypt(newEventRef.id),
-    });
+    if (recurrence && recurrence.enabled) {
+        // --- Recurring Event Logic ---
+        const { frequency, endDate } = recurrence;
+        if (!frequency || !endDate) {
+            return res.status(400).json({ message: 'Frequency and end date are required for recurring events.' });
+        }
+
+        const seriesId = adminDb.collection('events').doc().id; // Generate a unique ID for the series
+        const batch = adminDb.batch();
+
+        let currentStartDate = new Date(start_time);
+        const finalEndDate = new Date(endDate);
+        const eventDuration = new Date(end_time).getTime() - new Date(start_time).getTime();
+
+        while (currentStartDate <= finalEndDate) {
+            const newDocRef = adminDb.collection('events').doc();
+            const currentEndDate = new Date(currentStartDate.getTime() + eventDuration);
+
+            batch.set(newDocRef, {
+                ...baseEvent,
+                start_time: currentStartDate.toISOString(),
+                end_time: currentEndDate.toISOString(),
+                seriesId: seriesId,
+            });
+
+            // Increment date based on frequency
+            switch (frequency) {
+                case 'weekly':
+                    currentStartDate.setDate(currentStartDate.getDate() + 7);
+                    break;
+                case 'fortnightly':
+                    currentStartDate.setDate(currentStartDate.getDate() + 14);
+                    break;
+                case 'monthly':
+                    currentStartDate.setMonth(currentStartDate.getMonth() + 1);
+                    break;
+                default:
+                    return res.status(400).json({ message: 'Invalid recurrence frequency.' });
+            }
+        }
+        await batch.commit();
+        return res.status(201).json({ message: `Recurring event series created successfully.` });
+
+    } else {
+        // --- Single Event Logic ---
+        const newEventRef = await adminDb.collection('events').add({
+            ...baseEvent,
+            start_time,
+            end_time,
+        });
+        return res.status(201).json({
+            message: 'Event created successfully',
+            eventId: newEventRef.id,
+        });
+    }
 
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {

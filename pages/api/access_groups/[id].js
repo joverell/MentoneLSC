@@ -40,13 +40,42 @@ export default async function handler(req, res) {
     return res.status(404).json({ message: 'Access group not found.' });
   }
 
-  if (req.method === 'PUT') {
-    return updateAccessGroup(req, res, docRef);
-  } else if (req.method === 'DELETE') {
-    return deleteAccessGroup(req, res, docRef);
-  } else {
-    res.setHeader('Allow', ['PUT', 'DELETE']);
-    return res.status(405).end(`Method ${req.method} Not Allowed`);
+  switch (req.method) {
+    case 'GET':
+      return getAccessGroupDetails(req, res, docSnap);
+    case 'PUT':
+      return updateAccessGroup(req, res, docRef);
+    case 'DELETE':
+      return deleteAccessGroup(req, res, docRef);
+    default:
+      res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
+      return res.status(405).end(`Method ${req.method} Not Allowed`);
+  }
+}
+
+async function getAccessGroupDetails(req, res, docSnap) {
+  try {
+    const groupData = docSnap.data();
+    const groupId = docSnap.id;
+
+    // Find all users who are members of this group
+    const usersRef = adminDb.collection('users');
+    const membersSnapshot = await usersRef.where('groupIds', 'array-contains', groupId).get();
+    const members = membersSnapshot.docs.map(doc => ({
+      id: doc.id,
+      name: doc.data().name,
+      email: doc.data().email,
+    }));
+
+    return res.status(200).json({
+      id: groupId,
+      name: groupData.name,
+      members: members,
+      admins: groupData.admins || [], // Return the list of admin UIDs
+    });
+  } catch (error) {
+    console.error('Get Access Group Details API Error:', error);
+    return res.status(500).json({ message: 'An error occurred while fetching group details.' });
   }
 }
 

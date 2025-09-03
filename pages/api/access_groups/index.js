@@ -40,7 +40,7 @@ async function getAccessGroups(req, res) {
   try {
     const groupsSnapshot = await adminDb.collection('access_groups').orderBy('name', 'asc').get();
     const groups = groupsSnapshot.docs.map(doc => ({
-      id: encrypt(doc.id),
+      id: doc.id,
       ...doc.data(),
     }));
     return res.status(200).json(groups);
@@ -68,7 +68,7 @@ async function createAccessGroup(req, res) {
     const newGroupRef = await groupsCollection.add({ name });
     return res.status(201).json({
       message: 'Access group created successfully.',
-      groupId: encrypt(newGroupRef.id),
+      groupId: newGroupRef.id,
     });
   } catch (error) {
     console.error('Create Access Group API Error:', error);

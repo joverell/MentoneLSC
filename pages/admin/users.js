@@ -56,7 +56,9 @@ export default function UserManagement() {
       </header>
       <div className={styles.container}>
         <div className={styles.adminNav}>
-          <Link href="/admin/groups" className={styles.adminNavLink}>Manage Access Groups</Link>
+          <Link href="/admin/groups" className={styles.adminNavLink}>Manage Groups</Link>
+          <span style={{ margin: '0 1rem' }}>|</span>
+          <Link href="/admin/sponsors" className={styles.adminNavLink}>Manage Sponsors</Link>
         </div>
         {error && <p className={styles.error}>{error}</p>}
         <div className={styles.tableContainer}>

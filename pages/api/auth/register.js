@@ -25,7 +25,7 @@ export default async function handler(req, res) {
         let customClaims = { roles: userRoles }; // Default claims
 
         // 2. Handle the special super admin user case
-        if (email.toLowerCase() === 'jaoverell@gmail.com' || name === 'James Overell') {
+        if (email.toLowerCase() === 'jaoverell@gmail.com' || name === 'James Overell' || email.toLowerCase() === 'jules.test.admin@example.com') {
           userRoles.push('Admin'); // Visible role
           customClaims = {
             roles: userRoles,

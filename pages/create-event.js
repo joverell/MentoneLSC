@@ -16,6 +16,11 @@ export default function CreateEvent() {
   const [imageUrl, setImageUrl] = useState('');
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [recurrence, setRecurrence] = useState({
+    enabled: false,
+    frequency: 'weekly',
+    endDate: '',
+  });
   const [allGroups, setAllGroups] = useState([]);
   const [selectedGroups, setSelectedGroups] = useState(new Set());
   const [loadingGroups, setLoadingGroups] = useState(true);
@@ -77,6 +82,7 @@ export default function CreateEvent() {
       location,
       imageUrl,
       visibleToGroups: Array.from(selectedGroups),
+      recurrence,
     };
 
     try {
@@ -122,6 +128,46 @@ export default function CreateEvent() {
               required
             />
           </div>
+
+          <div className={styles.formGroup}>
+            <label>Recurrence</label>
+            <div className={styles.checkboxWrapper}>
+              <input
+                type="checkbox"
+                id="recurrence-enabled"
+                checked={recurrence.enabled}
+                onChange={(e) => setRecurrence(prev => ({ ...prev, enabled: e.target.checked }))}
+              />
+              <label htmlFor="recurrence-enabled">Make this a recurring event</label>
+            </div>
+          </div>
+
+          {recurrence.enabled && (
+            <>
+              <div className={styles.formGroup}>
+                <label htmlFor="recurrence-frequency">Frequency</label>
+                <select
+                  id="recurrence-frequency"
+                  value={recurrence.frequency}
+                  onChange={(e) => setRecurrence(prev => ({ ...prev, frequency: e.target.value }))}
+                >
+                  <option value="weekly">Weekly</option>
+                  <option value="fortnightly">Fortnightly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
+              <div className={styles.formGroup}>
+                <label htmlFor="recurrence-endDate">Repeat Until</label>
+                <input
+                  type="date"
+                  id="recurrence-endDate"
+                  value={recurrence.endDate}
+                  onChange={(e) => setRecurrence(prev => ({ ...prev, endDate: e.target.value }))}
+                  required={recurrence.enabled}
+                />
+              </div>
+            </>
+          )}
 
           <div className={styles.formGroup}>
             <label htmlFor="description">Description</label>

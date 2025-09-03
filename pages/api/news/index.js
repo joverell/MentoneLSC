@@ -122,6 +122,45 @@ async function createNews(req, res) {
 
     });
 
+    // --- Send Push Notifications ---
+    try {
+        const usersSnapshot = await adminDb.collection('users').get();
+        const tokens = [];
+        usersSnapshot.forEach(doc => {
+            const userTokens = doc.data().fcmTokens;
+            if (userTokens && Array.isArray(userTokens)) {
+                tokens.push(...userTokens);
+            }
+        });
+
+        if (tokens.length > 0) {
+            const message = {
+                notification: {
+                    title: 'New Club News',
+                    body: title,
+                },
+                webpush: {
+                    fcm_options: {
+                        link: `/`, // Link to the news page
+                    },
+                },
+                tokens: tokens,
+            };
+
+            // Using sendMulticast instead of sendToDevice for multiple tokens
+            const response = await admin.messaging().sendMulticast(message);
+            console.log('Successfully sent message:', response.successCount, 'messages');
+            if (response.failureCount > 0) {
+                console.log('Failed to send to', response.failureCount, 'tokens');
+            }
+        }
+    } catch (notificationError) {
+        console.error('Failed to send push notifications:', notificationError);
+        // Do not fail the whole request if notifications fail
+    }
+    // --- End of Push Notifications ---
+
+
     return res.status(201).json({
       message: 'News article created successfully',
       articleId: newArticleRef.id,

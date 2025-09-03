@@ -7,6 +7,7 @@ import 'react-calendar/dist/Calendar.css';
 import styles from '../styles/Home.module.css';
 import Weather from '../components/Weather';
 import BottomNav from '../components/BottomNav';
+import Sponsors from '../components/Sponsors';
 import { useAuth } from '../context/AuthContext';
 
 // Helper function to decode HTML entities
@@ -74,6 +75,10 @@ export default function Home() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCommentSection, setActiveCommentSection] = useState(null);
   const [newComment, setNewComment] = useState('');
+  const [rsvpComments, setRsvpComments] = useState({});
+  const [rsvpGuests, setRsvpGuests] = useState({}); // Will store { [eventId]: { adults: 0, kids: 0 } }
+  const [expandedRsvps, setExpandedRsvps] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const activeTab = router.query.tab || 'events';
 
@@ -119,22 +124,27 @@ export default function Home() {
   }, [fetchEvents]);
 
   const handleRsvpSubmit = async (eventId, status) => {
-    // Note: eventId here is the normalized one, e.g., "internal-123"
     const internalId = eventId.replace('internal-', '');
+    const comment = rsvpComments[eventId] || '';
+    const adultGuests = rsvpGuests[eventId]?.adults || 0;
+    const kidGuests = rsvpGuests[eventId]?.kids || 0;
+
     try {
       const res = await fetch(`/api/events/${internalId}/rsvp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }), // Comment field can be added later
+        body: JSON.stringify({ status, comment, adultGuests, kidGuests }),
       });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.message || 'Failed to submit RSVP');
       }
-      // Refresh events to show the new RSVP status
+      // Refresh events and clear inputs
       fetchEvents();
+      setRsvpComments(prev => ({ ...prev, [eventId]: '' }));
+      setRsvpGuests(prev => ({ ...prev, [eventId]: { adults: '', kids: '' } }));
     } catch (err) {
-      alert(`Error: ${err.message}`); // Simple error feedback for now
+      alert(`Error: ${err.message}`);
     }
   };
 
@@ -320,8 +330,39 @@ export default function Home() {
       return titleLower.includes(searchLower);
     });
 
+const CalendarSubscriptionModal = ({ isOpen, onClose }) => {
+  if (!isOpen) return null;
+
+  const subscriptionUrl = `${window.location.origin}/api/events/ical`;
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(subscriptionUrl).then(() => {
+      alert('Subscription link copied to clipboard!');
+    }, (err) => {
+      alert('Failed to copy link. Please copy it manually.');
+      console.error('Could not copy text: ', err);
+    });
+  };
+
+  return (
+    <div className={styles.modalOverlay}>
+      <div className={styles.modalContent}>
+        <h2>Subscribe to Calendar</h2>
+        <p>Copy the following link and add it to your preferred calendar application (e.g., Google Calendar, Apple Calendar, Outlook).</p>
+        <input type="text" value={subscriptionUrl} readOnly className={styles.modalInput} />
+        <div className={styles.modalActions}>
+          <button onClick={copyToClipboard} className={styles.button}>Copy Link</button>
+          <button onClick={onClose} className={`${styles.button} ${styles.buttonSecondary}`}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ... inside the Home component's return statement ...
   return (
     <div className={styles.pageContainer}>
+      <CalendarSubscriptionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       <Head>
         <title>Mentone LSC Hub</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -418,7 +459,12 @@ export default function Home() {
 
         {activeTab === 'calendar' && (
           <div id="calendar" className={styles.section}>
-            <h2>Upcoming Activities</h2>
+            <div className={styles.sectionHeader}>
+              <h2>Upcoming Activities</h2>
+              <button onClick={() => setIsModalOpen(true)} className={styles.subscribeBtn}>
+                Subscribe
+              </button>
+            </div>
             <Calendar
               onClickDay={handleDateChange}
               tileClassName={tileClassName}
@@ -521,13 +567,76 @@ export default function Home() {
                               Maybe
                             </button>
                           </div>
+                          <div className={styles.rsvpInputsContainer}>
+                            <input
+                              type="text"
+                              placeholder="Add a comment (e.g., running late)"
+                              value={rsvpComments[event.id] || ''}
+                              onChange={(e) => setRsvpComments(prev => ({ ...prev, [event.id]: e.target.value }))}
+                              className={styles.rsvpCommentInput}
+                            />
+                            <input
+                              type="number"
+                              min="0"
+                              placeholder="Adults"
+                              value={rsvpGuests[event.id]?.adults || ''}
+                              onChange={(e) => setRsvpGuests(prev => ({ ...prev, [event.id]: { ...prev[event.id], adults: e.target.value } }))}
+                              className={styles.rsvpGuestInput}
+                            />
+                            <input
+                              type="number"
+                              min="0"
+                              placeholder="Kids"
+                              value={rsvpGuests[event.id]?.kids || ''}
+                              onChange={(e) => setRsvpGuests(prev => ({ ...prev, [event.id]: { ...prev[event.id], kids: e.target.value } }))}
+                              className={styles.rsvpGuestInput}
+                            />
+                          </div>
                         </div>
                       )}
 
                       {event.source === 'internal' && user && user.roles.includes('Admin') && event.rsvpTally && (
-                        <div className={styles.rsvpTally}>
-                          <strong>Tally:</strong> {event.rsvpTally.yes} Yes, {event.rsvpTally.no} No, {event.rsvpTally.maybe} Maybe
-                        </div>
+                        <>
+                          <div className={styles.rsvpTally}>
+                            <strong>Tally:</strong> {event.rsvpTally.yes} Yes, {event.rsvpTally.no} No, {event.rsvpTally.maybe} Maybe
+                            (<strong>Guests:</strong> {event.rsvpTally.guests} total)
+                            <button
+                              onClick={() => setExpandedRsvps(expandedRsvps === event.id ? null : event.id)}
+                              className={styles.toggleRsvpListBtn}
+                            >
+                              {expandedRsvps === event.id ? 'Hide List' : 'Show List'}
+                            </button>
+                          </div>
+                          {expandedRsvps === event.id && (
+                            <div className={styles.rsvpListContainer}>
+                              <table className={styles.rsvpTable}>
+                                <thead>
+                                  <tr>
+                                    <th>Name</th>
+                                    <th>Status</th>
+                                    <th>Adults</th>
+                                    <th>Kids</th>
+                                    <th>Comment</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {event.rsvps && event.rsvps.map(rsvp => (
+                                    <tr key={rsvp.userId}>
+                                      <td>{rsvp.userName}</td>
+                                      <td>{rsvp.status}</td>
+                                      <td>{rsvp.adultGuests}</td>
+                                      <td>{rsvp.kidGuests}</td>
+                                      <td>{rsvp.comment}</td>
+                                    </tr>
+                                  ))}
+                                  {(!event.rsvps || event.rsvps.length === 0) && (
+                                    <tr><td colSpan="5">No RSVPs yet.</td></tr>
+                                  )}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
@@ -551,6 +660,7 @@ export default function Home() {
                 Renewing Member Information
               </a>
             </div>
+            <Sponsors />
           </div>
         )}
       </div>
