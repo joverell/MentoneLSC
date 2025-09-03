@@ -9,7 +9,16 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { login, loading } = useAuth();
+  const { login, loading, loginWithGoogle } = useAuth();
+
+  const handleGoogleLogin = async () => {
+    setError('');
+    try {
+      await loginWithGoogle();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -57,6 +66,9 @@ export default function Login() {
             {error && <p className={formStyles.error}>{error}</p>}
             <button type="submit" disabled={loading} className={formStyles.button}>
               {loading ? 'Logging in...' : 'Login'}
+            </button>
+            <button type="button" onClick={handleGoogleLogin} disabled={loading} className={`${formStyles.button} ${formStyles.googleButton}`}>
+              Sign in with Google
             </button>
           </form>
         </div>
