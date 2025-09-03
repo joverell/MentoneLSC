@@ -672,6 +672,9 @@ const CalendarSubscriptionModal = ({ isOpen, onClose }) => {
               <a href="https://mentonelsc.com/renewing-member/" target="_blank" rel="noopener noreferrer">
                 Renewing Member Information
               </a>
+              <a href="https://donate.charidy.com/14361" target="_blank" rel="noopener noreferrer">
+                Donate to the Club
+              </a>
             </div>
             <Sponsors />
           </div>
