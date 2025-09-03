@@ -101,13 +101,13 @@ export default async function handler(req, res) {
 
         // Use the latest roles and claims for the session, including super admin status
         const roles = userRoles;
-        const groups = user.groups || user.groupIds || []; // Coalesce groups/groupIds for compatibility
+        const groupIds = user.groups || user.groupIds || []; // Coalesce groups/groupIds for compatibility
         const isSuperAdmin = customClaims.isSuperAdmin || false;
 
         // 4. Create a custom JWT for our application session
         console.log('Creating JWT...');
         const token = jwt.sign(
-          { userId: uid, email: user.email, name: user.name, roles, groups, isSuperAdmin },
+          { userId: uid, email: user.email, name: user.name, roles, groupIds, isSuperAdmin },
           JWT_SECRET,
           { expiresIn: '1h' }
         );
