@@ -29,22 +29,6 @@ export default function UserManagement() {
     }
   };
 
-  const handleDelete = async (userId) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      try {
-        const res = await fetch(`/api/users/${userId}`, {
-          method: 'DELETE',
-        });
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.message || 'Failed to delete user');
-        }
-        fetchUsers(); // Refresh the user list
-      } catch (err) {
-        setError(err.message);
-      }
-    }
-  };
 
   const handleSendReminders = async () => {
     setReminderStatus('Sending...');
@@ -117,14 +101,11 @@ export default function UserManagement() {
                   <td>{u.name}</td>
                   <td>{u.email}</td>
                   <td>{u.roles.join(', ')}</td>
-                  <td>{u.groups.join(', ')}</td>
+                  <td>{u.groupIds.map(id => groups[id] || 'Unknown').join(', ')}</td>
                   <td>
                     <Link href={`/admin/users/${u.id}`} className={styles.manageLink}>
                       Manage
                     </Link>
-                    <button onClick={() => handleDelete(u.id)} className={styles.deleteBtn}>
-                        Delete
-                    </button>
                   </td>
                 </tr>
               ))}
