@@ -1,7 +1,9 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../context/AuthContext';
 import Link from 'next/link';
+import { db } from '../../src/firebase'; // Import Firestore instance
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import styles from '../../styles/Chat.module.css';
 import { IoArrowBack, IoSend } from 'react-icons/io5';
 
@@ -22,36 +24,44 @@ export default function ChatRoom() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const fetchMessages = useCallback(async () => {
-    if (!groupId || !user) return;
-    try {
-      const res = await fetch(`/api/chat/${groupId}`);
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || 'Failed to fetch messages');
-      }
-      const data = await res.json();
-      setMessages(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [groupId, user]);
-
+  // Set up the real-time listener
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
       router.push('/login');
       return;
     }
-    fetchMessages();
+    if (!groupId) {
+        setLoading(false);
+        return; // Don't run if groupId isn't available yet
+    }
 
-    // Set up polling for new messages
-    const interval = setInterval(fetchMessages, 5000); // Poll every 5 seconds
+    setLoading(true);
+    const messagesColRef = collection(db, 'chats', groupId, 'messages');
+    const q = query(messagesColRef, orderBy('createdAt', 'asc'));
 
-    return () => clearInterval(interval); // Cleanup on unmount
-  }, [authLoading, user, router, fetchMessages]);
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const msgs = [];
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        msgs.push({
+          id: doc.id,
+          ...data,
+          // Convert Firestore Timestamp to JS Date
+          createdAt: data.createdAt?.toDate(),
+        });
+      });
+      setMessages(msgs);
+      setLoading(false);
+    }, (err) => {
+      console.error("Firestore listener error:", err);
+      setError("Could not load messages. You may not have permission to view this chat.");
+      setLoading(false);
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, [authLoading, user, groupId, router]);
 
   useEffect(() => {
     scrollToBottom();
@@ -59,29 +69,27 @@ export default function ChatRoom() {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || sending) return;
+    if (!newMessage.trim() || sending || !groupId) return;
 
     setSending(true);
     setError(null);
 
     try {
-      const res = await fetch(`/api/chat/${groupId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: newMessage }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || 'Failed to send message');
-      }
-
-      setNewMessage('');
-      await fetchMessages(); // Refresh messages immediately after sending
+        // NOTE: We are now writing directly to Firestore from the client
+        // This requires appropriate Firestore security rules to be in place
+        const messagesColRef = collection(db, 'chats', groupId, 'messages');
+        await addDoc(messagesColRef, {
+            message: newMessage.trim(),
+            userId: user.id,
+            userName: user.name,
+            createdAt: serverTimestamp()
+        });
+        setNewMessage('');
     } catch (err) {
-      setError(err.message);
+        console.error("Error sending message:", err);
+        setError("Failed to send message.");
     } finally {
-      setSending(false);
+        setSending(false);
     }
   };
 
@@ -106,7 +114,7 @@ export default function ChatRoom() {
             }`}
           >
             <div className={styles.messageMeta}>
-              {msg.userName} - {new Date(msg.createdAt).toLocaleTimeString()}
+              {msg.userName} - {msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString() : 'sending...'}
             </div>
             {msg.message}
           </div>

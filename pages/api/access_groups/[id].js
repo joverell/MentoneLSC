@@ -1,9 +1,8 @@
-import { decrypt } from '../../../lib/crypto';
 import { adminDb } from '../../../src/firebase-admin';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
-const JWT_SECRET = 'a-secure-and-long-secret-key-that-is-at-least-32-characters';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 function authorizeAdmin(req) {
   const cookies = parse(req.headers.cookie || '');
@@ -27,8 +26,7 @@ export default async function handler(req, res) {
     return res.status(403).json({ message: 'Forbidden: You do not have permission to perform this action.' });
   }
 
-  const { id: encryptedId } = req.query;
-  const id = decrypt(encryptedId);
+  const { id } = req.query;
 
   if (!id) {
     return res.status(400).json({ message: 'Invalid ID' });

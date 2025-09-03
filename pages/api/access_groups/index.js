@@ -1,9 +1,8 @@
-import { encrypt } from '../../../lib/crypto';
 import { adminDb } from '../../../src/firebase-admin';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
-const JWT_SECRET = 'a-secure-and-long-secret-key-that-is-at-least-32-characters';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 function authorizeAdmin(req) {
   const cookies = parse(req.headers.cookie || '');

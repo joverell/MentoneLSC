@@ -1,10 +1,9 @@
-import { decrypt, encrypt } from '../../../lib/crypto';
 import { adminDb } from '../../../src/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
-const JWT_SECRET = 'a-secure-and-long-secret-key-that-is-at-least-32-characters';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Helper function to check if a user is in a group via their token
 async function isUserInGroup(userGroups, groupId) {
@@ -35,8 +34,7 @@ export default async function handler(req, res) {
     const userName = decoded.name;
     const userGroups = decoded.groups || [];
 
-    const { groupId: encryptedGroupId } = req.query;
-    const groupId = decrypt(encryptedGroupId);
+    const { groupId } = req.query;
 
     if (!groupId) {
       return res.status(400).json({ message: 'Invalid group ID' });
@@ -55,10 +53,10 @@ export default async function handler(req, res) {
       const messages = messagesSnapshot.docs.map(msgDoc => {
         const msgData = msgDoc.data();
         return {
-          id: encrypt(msgDoc.id),
+          id: msgDoc.id,
           message: msgData.message,
           createdAt: msgData.createdAt.toDate(), // Convert Firestore timestamp to JS Date
-          userId: encrypt(msgData.userId),
+          userId: msgData.userId,
           userName: msgData.userName,
         };
       });
@@ -82,7 +80,7 @@ export default async function handler(req, res) {
 
       return res.status(201).json({
         message: 'Message sent successfully',
-        messageId: encrypt(newDocRef.id),
+        messageId: newDocRef.id,
       });
 
     } else {

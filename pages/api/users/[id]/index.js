@@ -1,9 +1,8 @@
-import { decrypt, encrypt } from '../../../../lib/crypto';
 import { adminDb } from '../../../../src/firebase-admin';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
-const JWT_SECRET = 'a-secure-and-long-secret-key-that-is-at-least-32-characters';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Helper function to get IDs from an array of names by querying a collection
 async function getIdsFromNames(collectionName, names) {
@@ -36,8 +35,7 @@ export default async function handler(req, res) {
       return res.status(403).json({ message: 'Forbidden: You do not have permission to access this resource.' });
     }
 
-    const { id: encryptedId } = req.query;
-    const userId = decrypt(encryptedId);
+    const { id: userId } = req.query;
 
     if (!userId) {
       return res.status(400).json({ message: 'Invalid user ID' });

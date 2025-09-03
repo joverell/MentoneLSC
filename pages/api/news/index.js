@@ -1,4 +1,3 @@
-import { encrypt } from '../../../lib/crypto';
 import { db } from '../../../src/firebase'; // Import Firestore instance
 import { adminDb } from '../../../src/firebase-admin';
 import admin from 'firebase-admin';
@@ -6,7 +5,7 @@ import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
-const JWT_SECRET = 'a-secure-and-long-secret-key-that-is-at-least-32-characters';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 export default function handler(req, res) {
   if (req.method === 'GET') {
@@ -63,7 +62,7 @@ async function getNews(req, res) {
         const currentUserHasLiked = user ? likes.includes(user.userId) : false;
 
         return {
-            id: encrypt(doc.id),
+            id: doc.id,
             title: data.title,
             content: data.content,
             authorName: data.authorName,
@@ -125,7 +124,7 @@ async function createNews(req, res) {
 
     return res.status(201).json({
       message: 'News article created successfully',
-      articleId: encrypt(newArticleRef.id),
+      articleId: newArticleRef.id,
     });
 
   } catch (error) {

@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { serialize } from 'cookie';
 import admin from 'firebase-admin';
 
-const JWT_SECRET = 'a-secure-and-long-secret-key-that-is-at-least-32-characters';
+const JWT_SECRET = process.env.JWT_SECRET;
 // This is your Web API Key from your Firebase project's client-side config.
 // It's safe to expose this. It's best to set this as an environment variable.
 const FIREBASE_WEB_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || 'AIzaSyDgvrCV5dZDz38RcTEjLimuptSjKzqHIG0';

@@ -1,10 +1,9 @@
-import { decrypt } from '../../../../lib/crypto';
 import { db } from '../../../../src/firebase';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
-const JWT_SECRET = 'a-secure-and-long-secret-key-that-is-at-least-32-characters';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -24,8 +23,7 @@ export default async function handler(req, res) {
     const decoded = jwt.verify(token, JWT_SECRET);
     const userId = String(decoded.userId); // Ensure userId is a string
 
-    const { id: encryptedEventId } = req.query;
-    const eventId = decrypt(encryptedEventId);
+    const { id: eventId } = req.query;
 
     if (!eventId) {
       return res.status(400).json({ message: 'Invalid event ID' });
