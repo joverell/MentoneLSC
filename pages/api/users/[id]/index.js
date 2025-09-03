@@ -102,6 +102,54 @@ const handlePutRequest = async (req, res, decoded) => {
     }
 };
 
+const handleDeleteRequest = async (req, res, decoded) => {
+  const { id: userId } = req.query;
+
+  // Authorization: Only admins can delete users
+  const isAdmin = decoded.roles && decoded.roles.includes('Admin');
+  if (!isAdmin) {
+    return res.status(403).json({ message: 'Forbidden: You do not have permission to delete users.' });
+  }
+
+  try {
+    // 1. Delete from Firebase Auth
+    await adminAuth.deleteUser(userId);
+
+    // 2. Delete from Firestore 'users' collection
+    await adminDb.collection('users').doc(userId).delete();
+
+    // 3. Remove user from all access groups
+    const groupsRef = adminDb.collection('access_groups');
+    const snapshot = await groupsRef.where('members', 'array-contains', userId).get();
+
+    const batch = adminDb.batch();
+    snapshot.docs.forEach(doc => {
+        const groupRef = adminDb.collection('access_groups').doc(doc.id);
+        batch.update(groupRef, {
+            members: adminDb.FieldValue.arrayRemove(userId)
+        });
+    });
+    await batch.commit();
+
+    res.status(200).json({ message: 'User deleted successfully.' });
+
+  } catch (error) {
+    console.error('Delete User API Error:', error);
+    if (error.code === 'auth/user-not-found') {
+        // If user is not in Auth, maybe they were already deleted.
+        // Proceed to delete from Firestore just in case.
+        try {
+            await adminDb.collection('users').doc(userId).delete();
+            return res.status(200).json({ message: 'User deleted from Firestore (was not in Auth).' });
+        } catch (dbError) {
+            console.error('Error deleting user from Firestore after Auth error:', dbError);
+            return res.status(500).json({ message: 'An error occurred while deleting user data.' });
+        }
+    }
+    res.status(500).json({ message: 'An error occurred while deleting the user.' });
+  }
+};
+
 
 export default async function handler(req, res) {
   const cookies = parse(req.headers.cookie || '');
@@ -123,8 +171,10 @@ export default async function handler(req, res) {
         return await handleGetRequest(req, res);
       case 'PUT':
         return await handlePutRequest(req, res, decoded);
+      case 'DELETE':
+        return await handleDeleteRequest(req, res, decoded);
       default:
-        res.setHeader('Allow', ['GET', 'PUT']);
+        res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
         return res.status(405).end(`Method ${req.method} Not Allowed`);
     }
 

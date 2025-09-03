@@ -13,6 +13,39 @@ export default function UserManagement() {
   const [error, setError] = useState(null);
   const [reminderStatus, setReminderStatus] = useState('');
 
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch('/api/users');
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || 'Failed to fetch users');
+      }
+      const data = await res.json();
+      setUsers(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (userId) => {
+    if (window.confirm('Are you sure you want to delete this user?')) {
+      try {
+        const res = await fetch(`/api/users/${userId}`, {
+          method: 'DELETE',
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.message || 'Failed to delete user');
+        }
+        fetchUsers(); // Refresh the user list
+      } catch (err) {
+        setError(err.message);
+      }
+    }
+  };
+
   const handleSendReminders = async () => {
     setReminderStatus('Sending...');
     try {
@@ -36,22 +69,6 @@ export default function UserManagement() {
       return;
     }
 
-    const fetchUsers = async () => {
-      try {
-        const res = await fetch('/api/users');
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.message || 'Failed to fetch users');
-        }
-        const data = await res.json();
-        setUsers(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUsers();
   }, [user, authLoading, router]);
 
@@ -72,6 +89,10 @@ export default function UserManagement() {
       <div className={styles.container}>
         <div className={styles.adminNav}>
           <Link href="/admin/groups" className={styles.adminNavLink}>Manage Groups</Link>
+          <span style={{ margin: '0 1rem' }}>|</span>
+          <Link href="/admin/news" className={styles.adminNavLink}>Manage News</Link>
+          <span style={{ margin: '0 1rem' }}>|</span>
+          <Link href="/admin/events" className={styles.adminNavLink}>Manage Events</Link>
           <span style={{ margin: '0 1rem' }}>|</span>
           <Link href="/admin/sponsors" className={styles.adminNavLink}>Manage Sponsors</Link>
           <span style={{ margin: '0 1rem' }}>|</span>
@@ -101,6 +122,9 @@ export default function UserManagement() {
                     <Link href={`/admin/users/${u.id}`} className={styles.manageLink}>
                       Manage
                     </Link>
+                    <button onClick={() => handleDelete(u.id)} className={styles.deleteBtn}>
+                        Delete
+                    </button>
                   </td>
                 </tr>
               ))}

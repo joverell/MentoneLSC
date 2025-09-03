@@ -105,11 +105,32 @@ async function updateAccessGroup(req, res, docRef) {
 }
 
 async function deleteAccessGroup(req, res, docRef) {
-  try {
-    await docRef.delete();
-    return res.status(200).json({ message: 'Access group deleted successfully.' });
-  } catch (error) {
-    console.error('Delete Access Group API Error:', error);
-    return res.status(500).json({ message: 'An error occurred while deleting the access group.' });
-  }
+    const groupId = docRef.id;
+    try {
+        const batch = adminDb.batch();
+
+        // 1. Find all users in the group and remove the group from their 'groupIds' array
+        const usersRef = adminDb.collection('users');
+        const snapshot = await usersRef.where('groupIds', 'array-contains', groupId).get();
+
+        if (!snapshot.empty) {
+            snapshot.docs.forEach(doc => {
+                const userDocRef = usersRef.doc(doc.id);
+                batch.update(userDocRef, {
+                    groupIds: adminDb.FieldValue.arrayRemove(groupId)
+                });
+            });
+        }
+
+        // 2. Delete the group document itself
+        batch.delete(docRef);
+
+        // 3. Commit the batch
+        await batch.commit();
+
+        return res.status(200).json({ message: 'Access group and all member references deleted successfully.' });
+    } catch (error) {
+        console.error('Delete Access Group API Error:', error);
+        return res.status(500).json({ message: 'An error occurred while deleting the access group.' });
+    }
 }
