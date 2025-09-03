@@ -211,7 +211,7 @@ export default function ManageGroupMembers() {
           <h3>Add New Member</h3>
           <form onSubmit={handleAddMember} className={styles.inlineForm}>
             <select value={userToAdd} onChange={(e) => setUserToAdd(e.target.value)} required>
-              <option value="">Select a user to add</-option>
+              <option value="">Select a user to add</option>
               {usersNotInGroup.map(user => (
                 <option key={user.id} value={user.id}>{user.name} ({user.email})</option>
               ))}

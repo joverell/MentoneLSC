@@ -1,4 +1,4 @@
-import { adminDb, adminStorage } from '../../../../../src/firebase-admin';
+import { adminDb, adminStorage } from '../../../../../../src/firebase-admin';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
