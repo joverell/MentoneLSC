@@ -1,6 +1,8 @@
 import { encrypt } from '../../../lib/crypto';
 import { db } from '../../../src/firebase';
-import { collection, getDocs, addDoc, doc, getDoc, query, orderBy, serverTimestamp, collectionGroup, where } from 'firebase/firestore';
+import { adminDb } from '../../../src/firebase-admin';
+import admin from 'firebase-admin';
+import { collection, getDocs, query, orderBy, collectionGroup, where } from 'firebase/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
@@ -90,7 +92,6 @@ async function createEvent(req, res) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-
     const userId = decoded.userId;
 
     const { title, description, start_time, end_time, location, imageUrl } = req.body;
@@ -99,14 +100,14 @@ async function createEvent(req, res) {
     }
 
     // Fetch author's name for denormalization
-    const userDocRef = doc(db, 'users', String(userId));
-    const userDoc = await getDoc(userDocRef);
-    if (!userDoc.exists()) {
+    const userDocRef = adminDb.collection('users').doc(String(userId));
+    const userDoc = await userDocRef.get();
+    if (!userDoc.exists) {
         return res.status(404).json({ message: 'User not found' });
     }
     const authorName = userDoc.data().name;
 
-    const newEventRef = await addDoc(collection(db, 'events'), {
+    const newEventRef = await adminDb.collection('events').add({
       title,
       description,
       start_time,
@@ -115,7 +116,7 @@ async function createEvent(req, res) {
       imageUrl: imageUrl || null,
       created_by: userId,
       authorName,
-      createdAt: serverTimestamp(),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
     return res.status(201).json({

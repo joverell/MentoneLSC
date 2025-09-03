@@ -1,6 +1,8 @@
 import { encrypt } from '../../../lib/crypto';
 import { db } from '../../../src/firebase'; // Import Firestore instance
-import { collection, getDocs, addDoc, doc, getDoc, query, orderBy, serverTimestamp } from 'firebase/firestore';
+import { adminDb } from '../../../src/firebase-admin';
+import admin from 'firebase-admin';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
@@ -68,21 +70,20 @@ async function createNews(req, res) {
     }
 
     // Fetch author's name from 'users' collection to denormalize data
-    const userDocRef = doc(db, 'users', String(userId)); // Ensure userId is a string for the doc path
-    const userDoc = await getDoc(userDocRef);
-    if (!userDoc.exists()) {
+    const userDocRef = adminDb.collection('users').doc(String(userId));
+    const userDoc = await userDocRef.get();
+    if (!userDoc.exists) {
         return res.status(404).json({ message: 'User not found' });
     }
     const authorName = userDoc.data().name;
 
 
-    const newsCollection = collection(db, 'news');
-    const newArticleRef = await addDoc(newsCollection, {
+    const newArticleRef = await adminDb.collection('news').add({
       title,
       content,
       created_by: userId,
       authorName, // Denormalized author's name
-      createdAt: serverTimestamp(),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
     return res.status(201).json({
