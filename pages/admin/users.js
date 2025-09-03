@@ -9,26 +9,10 @@ export default function UserManagement() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [users, setUsers] = useState([]);
+  const [groups, setGroups] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [reminderStatus, setReminderStatus] = useState('');
-
-  const fetchUsers = async () => {
-    try {
-      const res = await fetch('/api/users');
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || 'Failed to fetch users');
-      }
-      const data = await res.json();
-      setUsers(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
 
   const handleSendReminders = async () => {
     setReminderStatus('Sending...');
@@ -48,12 +32,43 @@ export default function UserManagement() {
     if (authLoading) return; // Wait for authentication to resolve
 
     if (!user || !user.roles.includes('Admin')) {
-      // Redirect if not an admin
       router.push('/');
       return;
     }
 
-    fetchUsers();
+    const fetchData = async () => {
+      try {
+        const [usersRes, groupsRes] = await Promise.all([
+          fetch('/api/users'),
+          fetch('/api/access_groups'),
+        ]);
+
+        if (!usersRes.ok) {
+          const data = await usersRes.json();
+          throw new Error(data.message || 'Failed to fetch users');
+        }
+        const usersData = await usersRes.json();
+        setUsers(usersData);
+
+        if (!groupsRes.ok) {
+            const data = await groupsRes.json();
+            throw new Error(data.message || 'Failed to fetch groups');
+        }
+        const groupsData = await groupsRes.json();
+        const groupsMap = groupsData.reduce((acc, group) => {
+            acc[group.id] = group.name;
+            return acc;
+        }, {});
+        setGroups(groupsMap);
+
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, [user, authLoading, router]);
 
   if (authLoading || loading) {
@@ -100,8 +115,8 @@ export default function UserManagement() {
                 <tr key={u.id}>
                   <td>{u.name}</td>
                   <td>{u.email}</td>
-                  <td>{u.roles.join(', ')}</td>
-                  <td>{u.groupIds.map(id => groups[id] || 'Unknown').join(', ')}</td>
+                  <td>{u.roles ? u.roles.join(', ') : 'N/A'}</td>
+                  <td>{u.groupIds && u.groupIds.length > 0 ? u.groupIds.map(id => groups[id] || 'Unknown').join(', ') : 'None'}</td>
                   <td>
                     <Link href={`/admin/users/${u.id}`} className={styles.manageLink}>
                       Manage
