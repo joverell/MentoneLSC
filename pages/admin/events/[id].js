@@ -26,6 +26,30 @@ export default function EditEvent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState('');
+  const [rsvps, setRsvps] = useState([]);
+  const [showRsvps, setShowRsvps] = useState(false);
+
+  const fetchRsvps = async () => {
+    if (!eventId) return;
+    try {
+      const res = await fetch(`/api/events/${eventId}/rsvps`);
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || 'Failed to fetch RSVPs');
+      }
+      const data = await res.json();
+      setRsvps(data);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleToggleRsvps = () => {
+    if (!showRsvps) {
+      fetchRsvps();
+    }
+    setShowRsvps(!showRsvps);
+  };
 
   useEffect(() => {
     if (authLoading) return;
@@ -186,6 +210,43 @@ export default function EditEvent() {
           <button type="submit" className={styles.button}>Save Changes</button>
           <button type="button" onClick={handleDelete} className={`${styles.button} ${styles.deleteBtn}`}>Delete Event</button>
         </form>
+
+        <div className={styles.rsvpSection}>
+          <button type="button" onClick={handleToggleRsvps} className={styles.button}>
+            {showRsvps ? 'Hide' : 'Show'} RSVPs ({rsvps.length})
+          </button>
+          {showRsvps && (
+            <div className={styles.tableContainer}>
+              <h3>RSVP List</h3>
+              {rsvps.length > 0 ? (
+                <table className={styles.userTable}>
+                  <thead>
+                    <tr>
+                      <th>User</th>
+                      <th>Status</th>
+                      <th>Guests (Adults/Kids)</th>
+                      <th>Comment</th>
+                      <th>Timestamp</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rsvps.map(rsvp => (
+                      <tr key={rsvp.userId}>
+                        <td>{rsvp.userName}</td>
+                        <td>{rsvp.rsvp}</td>
+                        <td>{rsvp.adultGuests || 0} / {rsvp.kidGuests || 0}</td>
+                        <td>{rsvp.comment}</td>
+                        <td>{new Date(rsvp.timestamp._seconds * 1000).toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p>No RSVPs yet.</p>
+              )}
+            </div>
+          )}
+        </div>
       </div>
       <BottomNav />
     </div>

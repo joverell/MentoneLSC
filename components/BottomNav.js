@@ -32,10 +32,10 @@ const BottomNav = () => {
         active={pathname === '/' && (router.query.tab === 'events' || !router.query.tab)}
       />
       <NavLink
-        href="/?tab=calendar"
+        href="/events"
         icon={<FaCalendarAlt />}
         label="Calendar"
-        active={pathname === '/' && router.query.tab === 'calendar'}
+        active={pathname.startsWith('/events')}
       />
       {user && (
         <NavLink

@@ -4,55 +4,73 @@ import { parse } from 'cookie';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// Helper to authorize if the user is an admin
-function authorizeAdmin(req) {
-  const cookies = parse(req.headers.cookie || '');
-  const token = cookies.auth_token;
-  if (!token) return null;
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    if (decoded.roles && decoded.roles.includes('Admin')) {
-      return decoded;
-    }
-    return null;
-  } catch (error) {
-    return null;
-  }
-}
-
-export default async function handler(req, res) {
-  const { id } = req.query;
-
-  // For PUT requests, the user can be an admin or themselves.
-  if (req.method === 'PUT') {
+// Helper to authorize viewing or managing a user
+async function authorizeUserAccess(req, targetUserId) {
     const cookies = parse(req.headers.cookie || '');
     const token = cookies.auth_token;
-    if (!token) {
-        return res.status(401).json({ message: 'Not authenticated' });
-    }
+    if (!token) return { authorized: false, reason: 'No token' };
+
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-        if (!decoded.roles.includes('Admin') && decoded.uid !== id) {
-            return res.status(403).json({ message: 'Forbidden: You can only update your own profile.' });
-        }
-        return await handlePutRequest(req, res, decoded);
-    } catch (error) {
-        return res.status(401).json({ message: 'Invalid token' });
-    }
-  }
+        const requesterId = decoded.uid;
 
-  // For GET and DELETE, user must be an admin
-  const adminUser = authorizeAdmin(req);
-  if (!adminUser) {
-    return res.status(403).json({ message: 'Forbidden: You do not have permission to perform this action.' });
+        // Users can always access their own profile
+        if (requesterId === targetUserId) {
+            return { authorized: true, user: decoded, level: 'self' };
+        }
+
+        // Super Admins can do anything
+        if (decoded.roles && decoded.roles.includes('Admin')) {
+            return { authorized: true, user: decoded, level: 'admin' };
+        }
+
+        // Group Admins can access users in their groups
+        const isGroupAdmin = decoded.roles && decoded.roles.includes('Group Admin');
+        if (isGroupAdmin) {
+            const requesterDoc = await adminDb.collection('users').doc(requesterId).get();
+            const targetUserDoc = await adminDb.collection('users').doc(targetUserId).get();
+
+            if (!requesterDoc.exists || !targetUserDoc.exists) {
+                return { authorized: false, reason: 'User not found' };
+            }
+
+            const requesterAdminGroups = requesterDoc.data().adminForGroups || [];
+            const targetUserGroups = targetUserDoc.data().groupIds || [];
+
+            const hasSharedGroup = requesterAdminGroups.some(adminGroup => targetUserGroups.includes(adminGroup));
+
+            if (hasSharedGroup) {
+                return { authorized: true, user: decoded, level: 'groupAdmin', adminGroups: requesterAdminGroups };
+            }
+        }
+
+        return { authorized: false, reason: 'Insufficient permissions' };
+    } catch (error) {
+        return { authorized: false, reason: 'Invalid token' };
+    }
+}
+
+
+export default async function handler(req, res) {
+  const { id: targetUserId } = req.query;
+
+  const authResult = await authorizeUserAccess(req, targetUserId);
+
+  if (!authResult.authorized) {
+    return res.status(403).json({ message: `Forbidden: ${authResult.reason}` });
   }
 
   switch (req.method) {
     case 'GET':
-      return getUser(req, res, id);
+      return getUser(req, res, targetUserId);
+    case 'PUT':
+        return handlePutRequest(req, res, authResult);
     case 'DELETE':
-      return deleteUser(req, res, id);
+        // Only full admins can delete users
+        if (authResult.level !== 'admin') {
+            return res.status(403).json({ message: 'Forbidden: Only full administrators can delete users.' });
+        }
+      return deleteUser(req, res, targetUserId);
     default:
       res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
       return res.status(405).end(`Method ${req.method} Not Allowed`);
@@ -83,37 +101,61 @@ async function getUser(req, res, userId) {
   }
 }
 
-async function handlePutRequest(req, res, decoded) {
-    const { id: userId } = req.query;
-    const { name, email, patrolQualifications, emergencyContact, uniformSize, roles, groupIds } = req.body;
-    const isSuperAdmin = decoded.isSuperAdmin === true;
+async function handlePutRequest(req, res, authResult) {
+    const { id: targetUserId } = req.query;
+    const { level, adminGroups } = authResult;
+    const { name, email, patrolQualifications, emergencyContact, uniformSize, roles, groupIds, notificationSettings } = req.body;
 
     try {
-        const userDocRef = adminDb.collection('users').doc(userId);
+        const userDocRef = adminDb.collection('users').doc(targetUserId);
         const updateData = {};
 
-        // These fields can be updated by the user themselves or an admin
-        if(patrolQualifications) updateData.patrolQualifications = patrolQualifications;
-        if(emergencyContact) updateData.emergencyContact = emergencyContact;
-        if(uniformSize) updateData.uniformSize = uniformSize;
-        if(name) updateData.name = name;
+        // Fields updatable by the user themselves or any admin level
+        if (notificationSettings !== undefined) updateData.notificationSettings = notificationSettings;
+        if (patrolQualifications !== undefined) updateData.patrolQualifications = patrolQualifications;
+        if (emergencyContact !== undefined) updateData.emergencyContact = emergencyContact;
+        if (uniformSize !== undefined) updateData.uniformSize = uniformSize;
+        if (name !== undefined) updateData.name = name;
 
-        // Only update email if it has changed, and propagate to Firebase Auth
-        if (email) {
-            const currentUser = await adminAuth.getUser(userId);
-            if(currentUser.email !== email){
-                await adminAuth.updateUser(userId, { email });
+        // Email update requires special handling and should be allowed for self and admins
+        if (email !== undefined) {
+            const currentUser = await adminAuth.getUser(targetUserId);
+            if (currentUser.email !== email) {
+                await adminAuth.updateUser(targetUserId, { email });
                 updateData.email = email;
             }
         }
 
-        // Only Super Admins can manage roles and groups
-        if (isSuperAdmin) {
-            if (roles) updateData.roles = roles;
-            if (groupIds) updateData.groupIds = groupIds;
+        // Role and Group updates are restricted
+        if (level === 'admin') {
+            // Full admins can update roles and any group memberships
+            if (roles !== undefined) updateData.roles = roles;
+            if (groupIds !== undefined) updateData.groupIds = groupIds;
+        } else if (level === 'groupAdmin') {
+            // Group admins can only update groupIds, and only for the groups they manage.
+            if (groupIds !== undefined) {
+                const targetUserDoc = await userDocRef.get();
+                const currentGroupIds = targetUserDoc.data().groupIds || [];
+                // Filter out groups the admin doesn't manage
+                const otherGroups = currentGroupIds.filter(gId => !adminGroups.includes(gId));
+                // Filer the incoming groupIds to only those the admin manages
+                const managedGroups = groupIds.filter(gId => adminGroups.includes(gId));
+                // Combine the two sets
+                updateData.groupIds = [...new Set([...otherGroups, ...managedGroups])];
+            }
+             if (roles !== undefined) {
+                return res.status(403).json({ message: 'Forbidden: You do not have permission to change user roles.' });
+            }
+        } else { // level === 'self'
+            if (roles !== undefined || groupIds !== undefined) {
+                return res.status(403).json({ message: 'Forbidden: You cannot change your own roles or group memberships.' });
+            }
         }
 
-        await userDocRef.update(updateData);
+        if (Object.keys(updateData).length > 0) {
+            await userDocRef.update(updateData);
+        }
+
         res.status(200).json({ message: 'User profile updated successfully.' });
 
     } catch (error) {
@@ -123,7 +165,7 @@ async function handlePutRequest(req, res, decoded) {
         }
         res.status(500).json({ message: 'An error occurred while updating user data' });
     }
-};
+}
 
 async function deleteUser(req, res, userId) {
   try {

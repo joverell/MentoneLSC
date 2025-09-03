@@ -35,9 +35,14 @@ export default async function handler(req, res) {
 
       const tokens = [];
       usersSnapshot.forEach(doc => {
-        const userTokens = doc.data().fcmTokens;
-        if (userTokens && Array.isArray(userTokens)) {
-          tokens.push(...userTokens);
+        const userData = doc.data();
+        const wantsEventNotifs = (userData.notificationSettings && userData.notificationSettings.events !== undefined) ? userData.notificationSettings.events : true;
+
+        if (wantsEventNotifs) {
+            const userTokens = userData.fcmTokens;
+            if (userTokens && Array.isArray(userTokens)) {
+              tokens.push(...userTokens);
+            }
         }
       });
 

@@ -82,7 +82,34 @@ async function getEvent(req, res, eventId) {
         if (!doc.exists) {
             return res.status(404).json({ message: 'Event not found' });
         }
-        res.status(200).json({ id: doc.id, ...doc.data() });
+
+        const eventData = doc.data();
+        let userRsvp = null;
+
+        // Check for user token to fetch their specific RSVP
+        const cookies = parse(req.headers.cookie || '');
+        const token = cookies.auth_token;
+        if (token) {
+            try {
+                const decoded = jwt.verify(token, JWT_SECRET);
+                const userId = decoded.uid;
+                if (userId) {
+                    const rsvpRef = eventRef.collection('rsvps').doc(userId);
+                    const rsvpDoc = await rsvpRef.get();
+                    if (rsvpDoc.exists) {
+                        userRsvp = rsvpDoc.data();
+                    }
+                }
+            } catch (e) {
+                // Ignore invalid token, just means user is not logged in
+            }
+        }
+
+        res.status(200).json({
+            id: doc.id,
+            ...eventData,
+            currentUserRsvp: userRsvp,
+        });
     } catch (error) {
         console.error(`Error fetching event ${eventId}:`, error);
         res.status(500).json({ message: 'An error occurred while fetching event details.' });
@@ -144,7 +171,11 @@ async function deleteEvent(req, res, eventId) {
             usersQuery = usersQuery.where('groupIds', 'array-contains-any', visibleToGroups);
         }
         const usersSnapshot = await usersQuery.get();
-        const tokens = usersSnapshot.docs.flatMap(doc => doc.data().fcmTokens || []);
+        const tokens = usersSnapshot.docs.flatMap(doc => {
+            const userData = doc.data();
+            const wantsEventNotifs = (userData.notificationSettings && userData.notificationSettings.events !== undefined) ? userData.notificationSettings.events : true;
+            return wantsEventNotifs ? (userData.fcmTokens || []) : [];
+        });
 
         if (tokens.length > 0) {
             await admin.messaging().sendMulticast({

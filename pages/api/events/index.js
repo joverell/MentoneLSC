@@ -259,7 +259,11 @@ async function createEvent(req, res) {
                 usersQuery = usersQuery.where('groupIds', 'array-contains-any', visibleToGroups);
             }
             const usersSnapshot = await usersQuery.get();
-            const tokens = usersSnapshot.docs.flatMap(doc => doc.data().fcmTokens || []);
+            const tokens = usersSnapshot.docs.flatMap(doc => {
+                const userData = doc.data();
+                const wantsEventNotifs = (userData.notificationSettings && userData.notificationSettings.events !== undefined) ? userData.notificationSettings.events : true;
+                return wantsEventNotifs ? (userData.fcmTokens || []) : [];
+            });
 
             if (tokens.length > 0) {
                 await admin.messaging().sendMulticast({
@@ -287,7 +291,11 @@ async function createEvent(req, res) {
                 usersQuery = usersQuery.where('groupIds', 'array-contains-any', visibleToGroups);
             }
             const usersSnapshot = await usersQuery.get();
-            const tokens = usersSnapshot.docs.flatMap(doc => doc.data().fcmTokens || []);
+            const tokens = usersSnapshot.docs.flatMap(doc => {
+                const userData = doc.data();
+                const wantsEventNotifs = (userData.notificationSettings && userData.notificationSettings.events !== undefined) ? userData.notificationSettings.events : true;
+                return wantsEventNotifs ? (userData.fcmTokens || []) : [];
+            });
 
             if (tokens.length > 0) {
                 await admin.messaging().sendMulticast({
