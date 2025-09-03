@@ -105,6 +105,8 @@ export default function GroupManagement() {
           <Link href="/admin/users" className={styles.adminNavLink}>Manage Users</Link>
           <span style={{ margin: '0 1rem' }}>|</span>
           <Link href="/admin/news" className={styles.adminNavLink}>Manage News</Link>
+          <span style={{ margin: '0 1rem' }}>|</span>
+          <Link href="/admin/settings" className={styles.adminNavLink}>Settings</Link>
         </div>
 
         {error && <p className={styles.error}>{error}</p>}
