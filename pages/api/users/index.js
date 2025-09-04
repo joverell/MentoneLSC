@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     const users = usersSnapshot.docs.map(doc => {
       const userData = doc.data();
       return {
-        id: encrypt(doc.id),
+        uid: doc.id,
         name: userData.name,
         email: userData.email,
         roles: userData.roles || [],

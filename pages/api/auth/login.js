@@ -128,7 +128,7 @@ export default async function handler(req, res) {
 
         // 4. Respond with user info
         res.status(200).json({
-          id: uid,
+          uid: uid,
           name: user.name,
           email: user.email,
           roles,

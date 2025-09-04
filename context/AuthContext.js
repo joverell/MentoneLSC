@@ -21,25 +21,26 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  useEffect(() => {
-    const checkUser = async () => {
-      try {
-        const res = await fetch('/api/auth/me');
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data);
-          handleFcmToken(data); // Handle FCM token on initial load
-        } else {
-          setUser(null);
-        }
-      } catch (error) {
-        console.error('Failed to fetch user', error);
+  const fetchUser = async () => {
+    try {
+      const res = await fetch('/api/auth/me');
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data);
+        handleFcmToken(data);
+      } else {
         setUser(null);
-      } finally {
-        setLoading(false);
       }
-    };
-    checkUser();
+    } catch (error) {
+      console.error('Failed to fetch user', error);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUser();
   }, []);
 
   const login = async (email, password) => {
@@ -104,6 +105,7 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     loginWithGoogle,
+    fetchUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

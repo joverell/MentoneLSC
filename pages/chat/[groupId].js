@@ -80,7 +80,7 @@ export default function ChatRoom() {
         const messagesColRef = collection(db, 'chats', groupId, 'messages');
         const messageData = {
             message: newMessage.trim(),
-            userId: user.id,
+            userId: user.uid,
             userName: user.name,
         };
         await addDoc(messagesColRef, {
@@ -123,7 +123,7 @@ export default function ChatRoom() {
           <div
             key={msg.id}
             className={`${styles.messageBubble} ${
-              msg.userId === user.id ? styles.myMessage : styles.theirMessage
+              msg.userId === user.uid ? styles.myMessage : styles.theirMessage
             }`}
           >
             <div className={styles.messageMeta}>
