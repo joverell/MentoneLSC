@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import axios from 'axios';
 import { getFcmToken, saveFcmToken, removeFcmToken } from '../src/fcm';
 import { auth, GoogleAuthProvider } from '../src/firebase';
-import { signInWithPopup } from 'firebase/auth';
+import { signInWithPopup, signInWithEmailAndPassword } from 'firebase/auth';
 
 const AuthContext = createContext();
 
@@ -44,7 +44,9 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      const res = await axios.post('/api/auth/login', { email, password });
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const idToken = await userCredential.user.getIdToken();
+      const res = await axios.post('/api/auth/login', { idToken });
       setUser(res.data);
       handleFcmToken(res.data); // Handle FCM token on login
       router.push('/account');

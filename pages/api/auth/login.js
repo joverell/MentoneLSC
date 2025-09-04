@@ -4,49 +4,24 @@ import { serialize } from 'cookie';
 import admin from 'firebase-admin';
 
 const JWT_SECRET = process.env.JWT_SECRET;
-// This is your Web API Key from your Firebase project's client-side config.
-// It's safe to expose this. It's best to set this as an environment variable.
-const firebaseConfig = JSON.parse(process.env.NEXT_PUBLIC_FIREBASE_CONFIG);
-const FIREBASE_WEB_API_KEY = firebaseConfig.apiKey;
-
-
-async function verifyPassword(email, password) {
-  const url = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${FIREBASE_WEB_API_KEY}`;
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      email: email,
-      password: password,
-      returnSecureToken: true,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error('Invalid credentials');
-  }
-
-  return response.json();
-}
 
 export default async function handler(req, res) {
   switch (req.method) {
     case 'POST':
       try {
         console.log('Login API - POST request received. Body:', req.body);
-        const { email, password } = req.body;
+        const { idToken } = req.body;
 
-        if (!email || !password) {
-          return res.status(400).json({ message: 'Email and password are required' });
+        if (!idToken) {
+          return res.status(400).json({ message: 'ID token is required' });
         }
 
-        // 1. Verify password with Firebase Auth REST API
-        console.log('Verifying password with Firebase...');
-        const authData = await verifyPassword(email, password);
-        console.log('Password verified. UID:', authData.localId);
-        const uid = authData.localId;
+        // 1. Verify the ID token with Firebase Admin SDK
+        console.log('Verifying ID token with Firebase...');
+        const decodedToken = await adminAuth.verifyIdToken(idToken);
+        const uid = decodedToken.uid;
+        const email = decodedToken.email;
+        console.log('ID token verified. UID:', uid);
 
         // 2. Fetch user auth record and Firestore document
         console.log('Fetching user records...');
@@ -162,8 +137,8 @@ export default async function handler(req, res) {
 
       } catch (error) {
         console.error('Login Error:', error);
-        if (error.message === 'Invalid credentials') {
-          return res.status(401).json({ message: 'Invalid credentials' });
+        if (error.code === 'auth/id-token-expired' || error.code === 'auth/argument-error') {
+            return res.status(401).json({ message: 'Invalid or expired session. Please log in again.' });
         }
         return res.status(500).json({ message: 'An error occurred during login' });
       }
