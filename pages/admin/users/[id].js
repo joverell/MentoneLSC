@@ -1,66 +1,19 @@
-import { useEffect, useState, useCallback } from 'react';
-import { useAuth } from '../../../context/AuthContext';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
+import { useAuth } from '../../../context/AuthContext';
 import styles from '../../../styles/Admin.module.css';
 import BottomNav from '../../../components/BottomNav';
 
-export default function ManageUser() {
+export default function EditUser() {
   const { user: adminUser, loading: authLoading } = useAuth();
   const router = useRouter();
   const { id: userId } = router.query;
 
-  const [userData, setUserData] = useState({
-    name: '',
-    email: '',
-    patrolQualifications: '',
-    emergencyContact: '',
-    uniformSize: ''
-  });
-  const [allRoles, setAllRoles] = useState([]);
+  const [userData, setUserData] = useState(null);
   const [allGroups, setAllGroups] = useState([]);
-  const [selectedRoles, setSelectedRoles] = useState(new Set());
-  const [selectedGroups, setSelectedGroups] = useState(new Set());
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
-
-  const fetchData = useCallback(async () => {
-    if (!userId) return;
-    setLoading(true);
-    try {
-      const [userRes, rolesRes, groupsRes] = await Promise.all([
-        fetch(`/api/users/${userId}`),
-        fetch('/api/roles'),
-        fetch('/api/access_groups'),
-      ]);
-
-      if (!userRes.ok || !rolesRes.ok || !groupsRes.ok) {
-        throw new Error('Failed to fetch required data.');
-      }
-
-      const fetchedUserData = await userRes.json();
-      const rolesData = await rolesRes.json();
-      const groupsData = await groupsRes.json();
-
-      setUserData({
-        name: fetchedUserData.name,
-        email: fetchedUserData.email,
-        patrolQualifications: fetchedUserData.patrolQualifications || '',
-        emergencyContact: fetchedUserData.emergencyContact || '',
-        uniformSize: fetchedUserData.uniformSize || '',
-      });
-      setAllRoles(rolesData);
-      setAllGroups(groupsData);
-      setSelectedRoles(new Set(fetchedUserData.roleIds));
-      setSelectedGroups(new Set(fetchedUserData.groupIds));
-
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [userId]);
+  const [success, setSuccess] = useState('');
 
   useEffect(() => {
     if (authLoading) return;
@@ -68,123 +21,212 @@ export default function ManageUser() {
       router.push('/');
       return;
     }
-    fetchData();
-  }, [adminUser, authLoading, router, fetchData]);
 
-  const handleProfileChange = (e) => {
+    const fetchData = async () => {
+      if (!userId) return;
+      try {
+        setLoading(true);
+        const [userRes, groupsRes] = await Promise.all([
+          fetch(`/api/users/${userId}`),
+          fetch('/api/access_groups'),
+        ]);
+
+        if (!userRes.ok) {
+          const data = await userRes.json();
+          throw new Error(data.message || 'Failed to fetch user data');
+        }
+        const userDetails = await userRes.json();
+        setUserData({
+          ...userDetails,
+          roles: userDetails.roles || [],
+          groupIds: userDetails.groupIds || [],
+        });
+
+        if (!groupsRes.ok) {
+          const data = await groupsRes.json();
+          throw new Error(data.message || 'Failed to fetch groups');
+        }
+        const groupsData = await groupsRes.json();
+        setAllGroups(groupsData);
+
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [userId, adminUser, authLoading, router]);
+
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
     setUserData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleRoleChange = (roleId) => {
-    setSelectedRoles(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(roleId)) newSet.delete(roleId);
-      else newSet.add(roleId);
-      return newSet;
-    });
-  };
-
-  const handleGroupChange = (groupId) => {
-    setSelectedGroups(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(groupId)) newSet.delete(groupId);
-      else newSet.add(groupId);
-      return newSet;
+  const handleCheckboxChange = (e) => {
+    const { name, value, checked } = e.target;
+    setUserData(prev => {
+      const currentValues = prev[name] || [];
+      if (checked) {
+        return { ...prev, [name]: [...currentValues, value] };
+      } else {
+        return { ...prev, [name]: currentValues.filter(item => item !== value) };
+      }
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
-    setSuccess(null);
+    setError('');
+    setSuccess('');
 
     try {
-      const roleIds = Array.from(selectedRoles);
-      const groupIds = Array.from(selectedGroups);
-
-      const profileUpdateRes = fetch(`/api/users/${userId}`, {
+      const res = await fetch(`/api/users/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData),
       });
 
-      const roleUpdateRes = fetch(`/api/users/${userId}/roles`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ roleIds }),
-      });
-
-      const groupUpdateRes = fetch(`/api/users/${userId}/groups`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupIds }),
-      });
-
-      const [profileRes, roleRes, groupRes] = await Promise.all([profileUpdateRes, roleUpdateRes, groupUpdateRes]);
-
-      if (!profileRes.ok || !roleRes.ok || !groupRes.ok) {
-        throw new Error('Failed to update one or more sections.');
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to update user');
       }
-
       setSuccess('User updated successfully!');
-      // Optionally, refetch data to confirm changes
-      fetchData();
-
     } catch (err) {
       setError(err.message);
     }
   };
 
-  if (authLoading || loading) return <p>Loading...</p>;
+  const handleDelete = async () => {
+    if (window.confirm('Are you sure you want to delete this user?')) {
+      try {
+        const res = await fetch(`/api/users/${userId}`, {
+          method: 'DELETE',
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.message || 'Failed to delete user');
+        }
+        router.push('/admin/users');
+      } catch (err) {
+        setError(err.message);
+      }
+    }
+  };
+
+  if (loading || authLoading) return <p>Loading...</p>;
   if (!adminUser || !adminUser.roles.includes('Admin')) return <p>Redirecting...</p>;
+  if (error) return <p className={styles.error}>{error}</p>;
+  if (!userData) return <p>User not found.</p>;
 
   return (
     <div className={styles.pageContainer}>
       <header className={styles.header}>
-        <h1>Manage User: {userData.name}</h1>
+        <h1>Edit User: {userData.name}</h1>
       </header>
       <div className={styles.container}>
-        {error && <p className={styles.error}>{error}</p>}
-        {success && <p className={styles.success}>{success}</p>}
         <form onSubmit={handleSubmit} className={styles.form}>
-          <div className={styles.formSection}>
-            <h3>Profile Information</h3>
+          <div className={styles.formGroup}>
             <label htmlFor="name">Name</label>
-            <input type="text" id="name" name="name" value={userData.name} onChange={handleProfileChange} />
-
+            <input
+              type="text"
+              id="name"
+              name="name"
+              value={userData.name}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+          <div className={styles.formGroup}>
             <label htmlFor="email">Email</label>
-            <input type="email" id="email" name="email" value={userData.email} onChange={handleProfileChange} />
-
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={userData.email}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+          <div className={styles.formGroup}>
             <label htmlFor="patrolQualifications">Patrol Qualifications</label>
-            <input type="text" id="patrolQualifications" name="patrolQualifications" value={userData.patrolQualifications} onChange={handleProfileChange} />
+            <input type="text" id="patrolQualifications" name="patrolQualifications" placeholder="e.g., Bronze Medallion, IRB Driver" value={userData.patrolQualifications || ''} onChange={handleInputChange} />
+          </div>
 
+          <div className={styles.formGroup}>
             <label htmlFor="emergencyContact">Emergency Contact</label>
-            <input type="text" id="emergencyContact" name="emergencyContact" value={userData.emergencyContact} onChange={handleProfileChange} />
+            <input type="text" id="emergencyContact" name="emergencyContact" placeholder="e.g., Jane Doe - 0400 123 456" value={userData.emergencyContact || ''} onChange={handleInputChange} />
+          </div>
 
+          <div className={styles.formGroup}>
             <label htmlFor="uniformSize">Uniform Size</label>
-            <input type="text" id="uniformSize" name="uniformSize" value={userData.uniformSize} onChange={handleProfileChange} />
+            <input type="text" id="uniformSize" name="uniformSize" placeholder="e.g., Mens L, Womens 12" value={userData.uniformSize || ''} onChange={handleInputChange} />
           </div>
-
-          <div className={styles.formSection}>
-            <h3>Roles</h3>
-            {allRoles.map(role => (
-              <div key={role.id} className={styles.checkboxWrapper}>
-                <input type="checkbox" id={`role-${role.id}`} checked={selectedRoles.has(role.id)} onChange={() => handleRoleChange(role.id)} />
-                <label htmlFor={`role-${role.id}`}>{role.name}</label>
-              </div>
-            ))}
+          <div className={styles.formGroup}>
+            <label>Roles</label>
+            <div className={styles.checkboxGroup}>
+              <label>
+                <input
+                  type="checkbox"
+                  name="roles"
+                  value="Admin"
+                  checked={userData.roles.includes('Admin')}
+                  onChange={handleCheckboxChange}
+                />
+                Admin (Super Admin)
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  name="roles"
+                  value="Group Admin"
+                  checked={userData.roles.includes('Group Admin')}
+                  onChange={handleCheckboxChange}
+                />
+                Group Admin
+              </label>
+            </div>
           </div>
-          <div className={styles.formSection}>
-            <h3>Access Groups</h3>
-            {allGroups.map(group => (
-              <div key={group.id} className={styles.checkboxWrapper}>
-                <input type="checkbox" id={`group-${group.id}`} checked={selectedGroups.has(group.id)} onChange={() => handleGroupChange(group.id)} />
-                <label htmlFor={`group-${group.id}`}>{group.name}</label>
-              </div>
-            ))}
+          <div className={styles.formGroup}>
+            <label>Member Of Groups</label>
+            <div className={styles.checkboxGroup}>
+              {allGroups.map(group => (
+                <label key={group.id}>
+                  <input
+                    type="checkbox"
+                    name="groupIds"
+                    value={group.id}
+                    checked={userData.groupIds.includes(group.id)}
+                    onChange={handleCheckboxChange}
+                  />
+                  {group.name}
+                </label>
+              ))}
+            </div>
           </div>
-          <button type="submit" className={styles.button}>Save All Changes</button>
+          <div className={styles.formGroup}>
+            <label>Admin For Groups</label>
+            <p className={styles.fieldDescription}>Select which groups this user can manage events and news for (if they have the 'Group Admin' role).</p>
+            <div className={styles.checkboxGroup}>
+              {allGroups.map(group => (
+                <label key={group.id}>
+                  <input
+                    type="checkbox"
+                    name="adminForGroups"
+                    value={group.id}
+                    checked={userData.adminForGroups && userData.adminForGroups.includes(group.id)}
+                    onChange={handleCheckboxChange}
+                  />
+                  {group.name}
+                </label>
+              ))}
+            </div>
+          </div>
+          {error && <p className={styles.error}>{error}</p>}
+          {success && <p className={styles.success}>{success}</p>}
+          <button type="submit" className={styles.button}>Save Changes</button>
+          <button type="button" onClick={handleDelete} className={`${styles.button} ${styles.deleteBtn}`}>Delete User</button>
         </form>
       </div>
       <BottomNav />

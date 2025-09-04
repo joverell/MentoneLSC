@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../context/AuthContext';
 import styles from '../styles/Form.module.css';
 import BottomNav from '../components/BottomNav';
+import { GoogleMap, useLoadScript, Marker, StandaloneSearchBox } from '@react-google-maps/api';
 
 export default function CreateEvent() {
   const { user, loading } = useAuth();
@@ -24,6 +25,25 @@ export default function CreateEvent() {
   const [allGroups, setAllGroups] = useState([]);
   const [selectedGroups, setSelectedGroups] = useState(new Set());
   const [loadingGroups, setLoadingGroups] = useState(true);
+
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
+    libraries: ['places'],
+  });
+
+  const [map, setMap] = useState(null);
+  const [searchBox, setSearchBox] = useState(null);
+  const [markerPosition, setMarkerPosition] = useState(null);
+
+  const mapContainerStyle = {
+    width: '100%',
+    height: '400px',
+  };
+
+  const center = {
+    lat: -37.975,
+    lng: 145.075,
+  };
 
   useEffect(() => {
     const fetchGroups = async () => {
@@ -202,13 +222,59 @@ export default function CreateEvent() {
           </div>
 
           <div className={styles.formGroup}>
-            <label htmlFor="location">Location</label>
-            <input
-              type="text"
-              id="location"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-            />
+            <label>Location</label>
+            {isLoaded && (
+              <StandaloneSearchBox
+                onLoad={ref => setSearchBox(ref)}
+                onPlacesChanged={() => {
+                  const places = searchBox.getPlaces();
+                  const place = places[0];
+                  if (place) {
+                    setLocation(place.formatted_address);
+                    setMarkerPosition({
+                      lat: place.geometry.location.lat(),
+                      lng: place.geometry.location.lng(),
+                    });
+                  }
+                }}
+              >
+                <input
+                  type="text"
+                  placeholder="Search for a location"
+                  style={{
+                    boxSizing: `border-box`,
+                    border: `1px solid transparent`,
+                    width: `100%`,
+                    height: `40px`,
+                    padding: `0 12px`,
+                    borderRadius: `3px`,
+                    boxShadow: `0 2px 6px rgba(0, 0, 0, 0.3)`,
+                    fontSize: `14px`,
+                    outline: `none`,
+                    textOverflow: `ellipses`,
+                    marginBottom: '10px',
+                  }}
+                />
+              </StandaloneSearchBox>
+            )}
+            {isLoaded && (
+              <GoogleMap
+                mapContainerStyle={mapContainerStyle}
+                zoom={12}
+                center={center}
+                onLoad={map => setMap(map)}
+                onClick={(e) => {
+                  setMarkerPosition({
+                    lat: e.latLng.lat(),
+                    lng: e.latLng.lng(),
+                  });
+                  // You might want to do a reverse geocode here to get the address
+                }}
+              >
+                {markerPosition && <Marker position={markerPosition} />}
+              </GoogleMap>
+            )}
+            {loadError && <p>Error loading maps</p>}
           </div>
 
           <div className={styles.formGroup}>

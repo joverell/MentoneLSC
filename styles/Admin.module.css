@@ -67,6 +67,7 @@
     color: #3182ce;
     text-decoration: none;
     font-weight: bold;
+    margin-right: 1rem;
 }
 
 .manageLink:hover {
@@ -125,6 +126,12 @@
 
 .button:hover {
     background-color: #2b6cb0;
+}
+
+.rsvpSection {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid #ccc;
 }
 
 .adminNav {

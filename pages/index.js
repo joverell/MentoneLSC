@@ -382,7 +382,7 @@ const CalendarSubscriptionModal = ({ isOpen, onClose }) => {
           <div id="news" className={styles.section}>
             <div className={styles.sectionHeader}>
               <h2>Club News</h2>
-              {user && user.roles && user.roles.includes('Admin') && (
+              {user && user.roles && (user.roles.includes('Admin') || user.roles.includes('Group Admin')) && (
                 <Link href="/create-news" className={styles.createEventBtn}>
                   + Create Article
                 </Link>
@@ -394,6 +394,7 @@ const CalendarSubscriptionModal = ({ isOpen, onClose }) => {
               {!newsLoading && !newsError && newsArticles.length > 0 ? (
                 newsArticles.map(article => (
                   <div key={article.id} className={styles.newsArticle}>
+                    {article.imageUrl && <img src={article.imageUrl} alt={article.title} className={styles.newsImage} />}
                     <h3>{article.title}</h3>
                     <p className={styles.articleMeta}>
                       By {article.authorName} on {new Date(article.createdAt).toLocaleDateString('en-AU')}
@@ -476,7 +477,7 @@ const CalendarSubscriptionModal = ({ isOpen, onClose }) => {
           <div id="events" className={styles.section}>
             <div className={styles.sectionHeader}>
               <h2>Club Events</h2>
-              {user && user.roles && user.roles.includes('Admin') && (
+              {user && user.roles && (user.roles.includes('Admin') || user.roles.includes('Group Admin')) && (
                 <Link href="/create-event" className={styles.createEventBtn}>
                   + Create Event
                 </Link>
@@ -500,7 +501,13 @@ const CalendarSubscriptionModal = ({ isOpen, onClose }) => {
               {loading && <p>Loading events...</p>}
               {error && <p>{error}</p>}
               {!loading && !error && filteredEvents.length > 0 ? (
-                filteredEvents.map(event => (
+                filteredEvents.map(event => {
+                  const isInternal = event.source === 'internal';
+                  const eventUrl = isInternal ? `/events/${event.id.replace('internal-', '')}` : event.externalUrl;
+                  const EventWrapper = isInternal ? ({ children }) => <Link href={eventUrl}>{children}</Link> : ({ children }) => <>{children}</>;
+
+                  return (
+                  <EventWrapper>
                   <div key={event.id} className={styles.event}>
                     {event.imageUrl && (
                       <img
@@ -542,6 +549,10 @@ const CalendarSubscriptionModal = ({ isOpen, onClose }) => {
                         <a href={event.externalUrl} target="_blank" rel="noopener noreferrer">
                           Find out more
                         </a>
+                      )}
+
+                      {event.source === 'internal' && (
+                        <a className={styles.detailsLink}>View Details & RSVP</a>
                       )}
 
                       {event.source === 'internal' && user && (
@@ -640,7 +651,9 @@ const CalendarSubscriptionModal = ({ isOpen, onClose }) => {
                       )}
                     </div>
                   </div>
-                ))
+                  </EventWrapper>
+                  );
+                })
               ) : (
                 !loading && !error && <p>{selectedDate ? 'No events found for this date.' : 'No upcoming events found.'}</p>
               )}
@@ -658,6 +671,9 @@ const CalendarSubscriptionModal = ({ isOpen, onClose }) => {
               </a>
               <a href="https://mentonelsc.com/renewing-member/" target="_blank" rel="noopener noreferrer">
                 Renewing Member Information
+              </a>
+              <a href="https://donate.charidy.com/14361" target="_blank" rel="noopener noreferrer">
+                Donate to the Club
               </a>
             </div>
             <Sponsors />

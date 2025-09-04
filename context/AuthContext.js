@@ -2,6 +2,8 @@ import { useState, useEffect, createContext, useContext } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import { getFcmToken, saveFcmToken, removeFcmToken } from '../src/fcm';
+import { auth, GoogleAuthProvider } from '../src/firebase';
+import { signInWithPopup } from 'firebase/auth';
 
 const AuthContext = createContext();
 
@@ -77,6 +79,21 @@ export const AuthProvider = ({ children }) => {
     router.push('/login');
   };
 
+  const loginWithGoogle = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+      const idToken = await result.user.getIdToken();
+
+      const res = await axios.post('/api/auth/google', { idToken });
+      setUser(res.data);
+      handleFcmToken(res.data);
+      router.push('/account');
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Google login failed');
+    }
+  };
+
   const value = {
     user,
     isAuthenticated: !!user,
@@ -84,6 +101,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    loginWithGoogle,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

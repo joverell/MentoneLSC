@@ -166,25 +166,29 @@ async function createEvent(req, res) {
     }
 
     // --- Authorization Check ---
-    const isSuperAdmin = decoded.isSuperAdmin === true;
-    let isGroupAdmin = false;
+    const isSuperAdmin = decoded.roles && decoded.roles.includes('Admin');
+    const isGroupAdminRole = decoded.roles && decoded.roles.includes('Group Admin');
 
     if (!isSuperAdmin) {
         if (!visibleToGroups || visibleToGroups.length === 0) {
             return res.status(403).json({ message: 'Forbidden: Only Super Admins can create public events.' });
         }
 
-        for (const groupId of visibleToGroups) {
-            const groupDocRef = adminDb.collection('access_groups').doc(groupId);
-            const groupDoc = await groupDocRef.get();
-            if (groupDoc.exists && groupDoc.data().admins && groupDoc.data().admins.includes(userId)) {
-                isGroupAdmin = true;
-                break;
-            }
+        if (!isGroupAdminRole) {
+            return res.status(403).json({ message: 'Forbidden: You do not have the Group Admin role.' });
         }
 
-        if (!isGroupAdmin) {
-            return res.status(403).json({ message: 'Forbidden: You do not have permission to create events for the selected group(s).' });
+        // Fetch the user's document to check their adminForGroups field
+        const userDocRef = adminDb.collection('users').doc(userId);
+        const userDoc = await userDocRef.get();
+        if (!userDoc.exists) {
+            return res.status(404).json({ message: 'User not found.' });
+        }
+        const userAdminGroups = userDoc.data().adminForGroups || [];
+        const canAdminAllSelectedGroups = visibleToGroups.every(groupId => userAdminGroups.includes(groupId));
+
+        if (!canAdminAllSelectedGroups) {
+            return res.status(403).json({ message: 'Forbidden: You do not have permission to create events for all of the selected group(s).' });
         }
     }
     // --- End Authorization Check ---
@@ -248,6 +252,28 @@ async function createEvent(req, res) {
             }
         }
         await batch.commit();
+        // --- Send Push Notifications for Recurring Events ---
+        try {
+            let usersQuery = adminDb.collection('users');
+            if (visibleToGroups && visibleToGroups.length > 0) {
+                usersQuery = usersQuery.where('groupIds', 'array-contains-any', visibleToGroups);
+            }
+            const usersSnapshot = await usersQuery.get();
+            const tokens = usersSnapshot.docs.flatMap(doc => {
+                const userData = doc.data();
+                const wantsEventNotifs = (userData.notificationSettings && userData.notificationSettings.events !== undefined) ? userData.notificationSettings.events : true;
+                return wantsEventNotifs ? (userData.fcmTokens || []) : [];
+            });
+
+            if (tokens.length > 0) {
+                await admin.messaging().sendMulticast({
+                    notification: { title: 'New Recurring Event Series', body: title },
+                    webpush: { fcm_options: { link: '/' } },
+                    tokens,
+                });
+            }
+        } catch (e) { console.error("Notification failed for recurring event:", e); }
+        // --- End Notifications ---
         return res.status(201).json({ message: `Recurring event series created successfully.` });
 
     } else {
@@ -257,6 +283,30 @@ async function createEvent(req, res) {
             start_time,
             end_time,
         });
+
+        // --- Send Push Notifications for Single Event ---
+        try {
+            let usersQuery = adminDb.collection('users');
+            if (visibleToGroups && visibleToGroups.length > 0) {
+                usersQuery = usersQuery.where('groupIds', 'array-contains-any', visibleToGroups);
+            }
+            const usersSnapshot = await usersQuery.get();
+            const tokens = usersSnapshot.docs.flatMap(doc => {
+                const userData = doc.data();
+                const wantsEventNotifs = (userData.notificationSettings && userData.notificationSettings.events !== undefined) ? userData.notificationSettings.events : true;
+                return wantsEventNotifs ? (userData.fcmTokens || []) : [];
+            });
+
+            if (tokens.length > 0) {
+                await admin.messaging().sendMulticast({
+                    notification: { title: 'New Event', body: title },
+                    webpush: { fcm_options: { link: '/' } },
+                    tokens,
+                });
+            }
+        } catch (e) { console.error("Notification failed for single event:", e); }
+        // --- End Notifications ---
+
         return res.status(201).json({
             message: 'Event created successfully',
             eventId: newEventRef.id,

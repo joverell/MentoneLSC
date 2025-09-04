@@ -26,6 +26,7 @@ export default function CreateNews() {
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [allGroups, setAllGroups] = useState([]);
@@ -134,6 +135,7 @@ export default function CreateNews() {
     const payload = {
         title,
         content,
+        imageUrl,
         visibleToGroups: Array.from(selectedGroups),
     };
 
@@ -178,6 +180,16 @@ export default function CreateNews() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="imageUrl">Image URL (optional)</label>
+            <input
+              type="text"
+              id="imageUrl"
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
             />
           </div>
 
