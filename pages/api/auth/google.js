@@ -1,19 +1,34 @@
-import { admin } from '../../../src/firebase-admin';
+import { adminDb, adminAuth } from '../../../src/firebase-admin';
 import { serialize } from 'cookie';
-import db from '../../../src/db';
+import jwt from 'jsonwebtoken';
 
-const registerUserWithProvider = (uid, email, displayName, provider) => {
-  const checkStmt = db.prepare('SELECT * FROM users WHERE email = ?');
-  const existingUser = checkStmt.get(email);
+const JWT_SECRET = process.env.JWT_SECRET;
 
-  if (existingUser) {
-    const updateStmt = db.prepare('UPDATE users SET firebase_uid = ?, provider = ? WHERE id = ?');
-    updateStmt.run(uid, provider, existingUser.id);
-    return existingUser.id;
+const registerUserWithProvider = async (uid, email, displayName, provider) => {
+  const usersRef = adminDb.collection('users');
+  const snapshot = await usersRef.where('email', '==', email).limit(1).get();
+
+  if (!snapshot.empty) {
+    // User exists, update their provider info
+    const userDoc = snapshot.docs[0];
+    await userDoc.ref.update({
+      firebase_uid: uid,
+      provider: provider,
+      // Also update name from provider, in case it has changed
+      name: displayName,
+    });
+    return userDoc.id;
   } else {
-    const insertStmt = db.prepare('INSERT INTO users (firebase_uid, email, name, provider) VALUES (?, ?, ?, ?)');
-    const result = insertStmt.run(uid, email, displayName, provider);
-    return result.lastInsertRowid;
+    // User does not exist, create a new one
+    const newUserRef = await usersRef.add({
+      firebase_uid: uid,
+      email: email,
+      name: displayName,
+      provider: provider,
+      roles: ['User'], // Assign a default role
+      createdAt: new Date().toISOString(),
+    });
+    return newUserRef.id;
   }
 };
 
@@ -25,16 +40,30 @@ export default async (req, res) => {
   const { idToken } = req.body;
 
   try {
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
     const { uid, email, name } = decodedToken;
 
-    const userId = registerUserWithProvider(uid, email, name, 'google');
+    // This now returns the Firestore document ID
+    const docId = await registerUserWithProvider(uid, email, name, 'google');
 
-    const userRecord = { uid, email, name, id: userId };
+    // Fetch the full user profile from Firestore to get roles, etc.
+    const userDoc = await adminDb.collection('users').doc(docId).get();
+    if (!userDoc.exists) {
+      return res.status(404).json({ message: 'User record not found in database.' });
+    }
+    const userData = userDoc.data();
 
-    const token = await admin.auth().createCustomToken(uid);
+    // Create a JWT token that includes the user's roles and other details
+    const tokenPayload = {
+      uid,
+      email: userData.email,
+      roles: userData.roles || [],
+      groupIds: userData.groupIds || [],
+      docId: userDoc.id,
+    };
+    const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '7d' });
 
-    res.setHeader('Set-Cookie', serialize('token', token, {
+    res.setHeader('Set-Cookie', serialize('auth_token', token, {
       path: '/',
       httpOnly: true,
       secure: process.env.NODE_ENV !== 'development',
@@ -42,9 +71,13 @@ export default async (req, res) => {
       sameSite: 'strict',
     }));
 
-    res.status(200).json(userRecord);
+    res.status(200).json({
+        message: "Authentication successful",
+        user: tokenPayload
+    });
+
   } catch (error) {
     console.error('Login with Google error:', error);
-    res.status(401).json({ message: 'Invalid token' });
+    res.status(401).json({ message: 'Authentication failed', error: error.message });
   }
 };
