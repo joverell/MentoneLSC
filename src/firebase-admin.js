@@ -1,31 +1,36 @@
 import admin from 'firebase-admin';
 
-// 1. Read the environment variable
-const serviceAccountBase64 = process.env.FIRESTORE_SERVICE_ACCOUNT_BASE64;
-
-// 2. Add a robust check WITH a clear, custom error message
-if (!serviceAccountBase64) {
+// Check for required environment variables
+if (
+  !process.env.FIREBASE_PROJECT_ID ||
+  !process.env.FIREBASE_CLIENT_EMAIL ||
+  !process.env.FIREBASE_PRIVATE_KEY ||
+  !process.env.FIREBASE_STORAGE_BUCKET
+) {
   throw new Error(
-    'CRITICAL: FIRESTORE_SERVICE_ACCOUNT_BASE64 environment variable is not set. The application cannot start.'
+    'CRITICAL: One or more Firebase Admin environment variables are not set. The application cannot start.'
   );
 }
 
-try {
-  // 3. Decode the Base64 string and parse it as JSON
-  const serviceAccountJson = Buffer.from(serviceAccountBase64, 'base64').toString('utf-8');
-  const serviceAccount = JSON.parse(serviceAccountJson);
 
-  // 4. Initialize Firebase Admin, preventing re-initialization
-  if (!admin.apps.length) {
+// Check if the app is already initialized to prevent errors
+if (!admin.apps.length) {
+  // Construct the service account object from environment variables
+  const serviceAccount = {
+    project_id: process.env.FIREBASE_PROJECT_ID,
+    client_email: process.env.FIREBASE_CLIENT_EMAIL,
+    private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  };
+
+  try {
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
       storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
     });
+  } catch (error) {
+    console.error('Firebase Admin Initialization Error:', error);
+    throw new Error('Failed to initialize Firebase Admin SDK. Check your service account credentials.');
   }
-} catch (error) {
-  // 5. Add a catch block to provide more context if the key is invalid
-  console.error('Firebase Admin Initialization Error:', error);
-  throw new Error('Failed to initialize Firebase Admin SDK. The service account key may be invalid or incorrectly encoded.');
 }
 
 export const adminAuth = admin.auth();
