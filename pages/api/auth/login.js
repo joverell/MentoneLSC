@@ -73,7 +73,8 @@ export default async function handler(req, res) {
           customClaims = { ...(userAuth.customClaims || {}), roles: userRoles, isSuperAdmin: true };
           await adminAuth.setCustomUserClaims(uid, customClaims);
         } else {
-          customClaims = userAuth.customClaims || { roles: userRoles };
+          // Always use the latest roles from Firestore, but preserve existing claims like isSuperAdmin
+          customClaims = { ...(userAuth.customClaims || {}), roles: userRoles };
         }
 
         // Use the latest roles and claims for the session, including super admin status
