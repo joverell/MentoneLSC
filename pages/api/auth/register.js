@@ -1,4 +1,4 @@
-import admin from 'firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import { adminAuth, adminDb } from '../../../src/firebase-admin';
 
 export default async function handler(req, res) {
@@ -43,7 +43,7 @@ export default async function handler(req, res) {
           name: name,
           email: email,
           roles: userRoles, // Store roles in the user document as well
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          createdAt: FieldValue.serverTimestamp(),
         });
 
         return res.status(201).json({ message: 'User created successfully', uid: uid });

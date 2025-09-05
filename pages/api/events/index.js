@@ -1,6 +1,7 @@
 import { db } from '../../../src/firebase';
 import { adminDb } from '../../../src/firebase-admin';
 import admin from 'firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import { collection, getDocs, query, orderBy, collectionGroup, where } from 'firebase/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
@@ -208,7 +209,7 @@ async function createEvent(req, res) {
         created_by: userId,
         authorName,
         visibleToGroups: visibleToGroups || [],
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: FieldValue.serverTimestamp(),
     };
 
     if (recurrence && recurrence.enabled) {

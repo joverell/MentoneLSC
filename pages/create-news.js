@@ -9,15 +9,7 @@ import { db } from '../src/firebase'; // Assuming you have this export
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 
-// Dynamically import ReactQuill to avoid SSR issues
-const ReactQuill = dynamic(
-  async () => {
-    const { default: RQ } = await import('react-quill');
-    // eslint-disable-next-line react/display-name
-    return ({ forwardedRef, ...props }) => <RQ ref={forwardedRef} {...props} />;
-  },
-  { ssr: false }
-);
+const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
 
 export default function CreateNews() {
   const { user, loading } = useAuth();
@@ -197,7 +189,7 @@ export default function CreateNews() {
             <label>Content</label>
             <div className={styles.quillEditor}>
                 <ReactQuill
-                    forwardedRef={quillRef}
+                    ref={quillRef}
                     theme="snow"
                     value={content}
                     onChange={setContent}
