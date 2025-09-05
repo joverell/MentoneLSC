@@ -65,7 +65,7 @@ async function createComment(req, res, articleId) {
     // Fetch author's name to denormalize
     const userDocRef = adminDb.collection('users').doc(String(userId));
     const userDoc = await userDocRef.get();
-    if (!userDoc.exists()) {
+    if (!userDoc.exists) {
         return res.status(404).json({ message: 'User not found' });
     }
     const authorName = userDoc.data().name || 'Anonymous';
