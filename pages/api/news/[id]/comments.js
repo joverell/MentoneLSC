@@ -5,41 +5,20 @@ import { parse } from 'cookie';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-function decrypt(encryptedId) {
-  try {
-    const decoded = jwt.verify(encryptedId, JWT_SECRET);
-    return decoded.id;
-  } catch (error) {
-    console.error("Error decrypting ID", error);
-    return null;
-  }
-}
-
 export default async function handler(req, res) {
-  const { id: encryptedArticleId } = req.query;
+  const { id: articleId } = req.query;
 
-  if (!encryptedArticleId) {
+  if (!articleId) {
     return res.status(400).json({ message: 'Article ID is required.' });
   }
 
-  try {
-    const articleId = decrypt(encryptedArticleId);
-
-    if (!articleId) {
-      return res.status(400).json({ message: 'Invalid article ID' });
-    }
-
-    if (req.method === 'GET') {
-      return getComments(req, res, articleId);
-    } else if (req.method === 'POST') {
-      return createComment(req, res, articleId);
-    } else {
-      res.setHeader('Allow', ['GET', 'POST']);
-      return res.status(405).end(`Method ${req.method} Not Allowed`);
-    }
-  } catch (error) {
-      console.error("Error decrypting article ID", error);
-      return res.status(400).json({ message: 'Invalid Article ID.' });
+  if (req.method === 'GET') {
+    return getComments(req, res, articleId);
+  } else if (req.method === 'POST') {
+    return createComment(req, res, articleId);
+  } else {
+    res.setHeader('Allow', ['GET', 'POST']);
+    return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }
 

@@ -5,16 +5,6 @@ import { parse } from 'cookie';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-function decrypt(encryptedId) {
-  try {
-    const decoded = jwt.verify(encryptedId, JWT_SECRET);
-    return decoded.id;
-  } catch (error) {
-    console.error("Error decrypting ID", error);
-    return null;
-  }
-}
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
@@ -32,15 +22,9 @@ export default async function handler(req, res) {
     const decoded = jwt.verify(token, JWT_SECRET);
     const userId = decoded.userId;
 
-    // The article ID from the URL is encrypted
-    const encryptedArticleId = req.query.id;
-    if (!encryptedArticleId) {
-        return res.status(400).json({ message: 'Article ID is required.' });
-    }
-    const articleId = decrypt(encryptedArticleId);
-
+    const { id: articleId } = req.query;
     if (!articleId) {
-      return res.status(400).json({ message: 'Invalid article ID' });
+        return res.status(400).json({ message: 'Article ID is required.' });
     }
 
     const articleRef = adminDb.collection('news').doc(articleId);
