@@ -30,7 +30,7 @@ export default function handler(req, res) {
     }
 
     res.status(200).json({
-      uid: userId,
+      id: userId,
       name: name,
       email: email,
       roles: roles || [],
