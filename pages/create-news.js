@@ -1,15 +1,20 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react'; // Added useCallback
 import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
-import 'react-quill/dist/quill.snow.css'; // Import styles
+import 'react-quill/dist/quill.snow.css';
 import { useAuth } from '../context/AuthContext';
 import styles from '../styles/Form.module.css';
 import BottomNav from '../components/BottomNav';
-import { db } from '../src/firebase'; // Assuming you have this export
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
-
-const ReactQuill = dynamic(() => import('react-quill'), { ssr: false });
+const ReactQuill = dynamic(
+  async () => {
+    const { default: RQ } = await import('react-quill');
+    // eslint-disable-next-line react/display-name
+    return ({ forwardedRef, ...props }) => <RQ ref={forwardedRef} {...props} />;
+  },
+  { ssr: false }
+);
 
 export default function CreateNews() {
   const { user, loading } = useAuth();
@@ -41,19 +46,8 @@ export default function CreateNews() {
     fetchGroups();
   }, []);
 
-  // Protect the route
-  if (loading || loadingGroups) {
-    return <p>Loading...</p>;
-  }
-  if (!user) {
-    if (typeof window !== 'undefined') {
-      router.push('/login');
-    }
-    return null; // Prevent rendering before redirect
-  }
-
-  // Image handler for the Quill editor
-  const imageHandler = () => {
+  // FIX: Wrap imageHandler in useCallback to make it stable
+  const imageHandler = useCallback(() => {
     const input = document.createElement('input');
     input.setAttribute('type', 'file');
     input.setAttribute('accept', 'image/*');
@@ -64,16 +58,10 @@ export default function CreateNews() {
       if (file) {
         try {
             const storage = getStorage();
-            // Create a unique file name
             const storageRef = ref(storage, `news-images/${Date.now()}_${file.name}`);
-
-            // Upload the file
             const snapshot = await uploadBytes(storageRef, file);
-
-            // Get the download URL
             const downloadURL = await getDownloadURL(snapshot.ref);
 
-            // Insert the image into the editor
             const quill = quillRef.current.getEditor();
             const range = quill.getSelection(true);
             quill.insertEmbed(range.index, 'image', downloadURL);
@@ -84,7 +72,7 @@ export default function CreateNews() {
         }
       }
     };
-  };
+  }, []); // Empty dependency array because it doesn't depend on any props or state
 
   const modules = useMemo(() => ({
     toolbar: {
@@ -99,8 +87,7 @@ export default function CreateNews() {
         image: imageHandler,
       },
     },
-  }), []);
-
+  }), [imageHandler]); // FIX: Add the stable imageHandler as a dependency
 
   const handleGroupChange = (groupId) => {
     setSelectedGroups(prev => {
@@ -154,6 +141,17 @@ export default function CreateNews() {
     }
   };
 
+  // Return null during loading or before user is checked
+  if (loading || loadingGroups) {
+    return <p>Loading...</p>;
+  }
+  if (!user) {
+    if (typeof window !== 'undefined') {
+      router.push('/login');
+    }
+    return null;
+  }
+
   return (
     <div className={styles.pageContainer}>
       <header className={styles.header}>
@@ -189,7 +187,7 @@ export default function CreateNews() {
             <label>Content</label>
             <div className={styles.quillEditor}>
                 <ReactQuill
-                    ref={quillRef}
+                    forwardedRef={quillRef}
                     theme="snow"
                     value={content}
                     onChange={setContent}
