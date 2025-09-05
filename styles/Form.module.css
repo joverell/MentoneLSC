@@ -68,6 +68,17 @@
   cursor: not-allowed;
 }
 
+.googleButton {
+  background-color: #ffffff;
+  color: #4285F4;
+  border: 1px solid #4285F4;
+}
+
+.googleButton:hover {
+  background-color: #f2f2f2;
+  color: #4285F4;
+}
+
 .error {
   color: #d9534f;
   background-color: #f2dede;

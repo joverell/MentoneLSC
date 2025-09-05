@@ -18,7 +18,7 @@ export default function ChatLobby() {
 
     if (!user) {
       // Redirect if not logged in
-      router.push('/login');
+      router.push('/account');
       return;
     }
 

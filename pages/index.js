@@ -173,7 +173,7 @@ export default function Home() {
 
   const handleLikeClick = async (articleId) => {
     if (!user) {
-        router.push('/login');
+        router.push('/account');
         return;
     }
 
@@ -240,7 +240,7 @@ export default function Home() {
   const handleCommentSubmit = async (e, articleId) => {
     e.preventDefault();
     if (!user) {
-        router.push('/login');
+        router.push('/account');
         return;
     }
     if (!newComment.trim()) return;
@@ -445,7 +445,7 @@ const CalendarSubscriptionModal = ({ isOpen, onClose }) => {
                                     <button type="submit">Post</button>
                                 </form>
                             ) : (
-                                <p>You must be <Link href="/login">logged in</Link> to comment.</p>
+                                <p>You must be <Link href="/account">logged in</Link> to comment.</p>
                             )}
                         </div>
                     )}
