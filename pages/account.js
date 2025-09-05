@@ -99,45 +99,53 @@ export default function Account() {
           {error && <p className={formStyles.error}>{error}</p>}
           {success && <p className={formStyles.success}>{success}</p>}
 
-          <div className={formStyles.inputGroup}>
+          <div className={formStyles.formGroup}>
             <label htmlFor="name">Name</label>
             <input type="text" id="name" name="name" value={userData.name} onChange={handleChange} />
           </div>
 
-          <div className={formStyles.inputGroup}>
+          <div className={formStyles.formGroup}>
             <label htmlFor="email">Email</label>
             <input type="email" id="email" name="email" value={userData.email} onChange={handleChange} />
           </div>
 
-          <div className={formStyles.inputGroup}>
+          <div className={formStyles.formGroup}>
             <label htmlFor="patrolQualifications">Patrol Qualifications</label>
             <input type="text" id="patrolQualifications" name="patrolQualifications" placeholder="e.g., Bronze Medallion, IRB Driver" value={userData.patrolQualifications} onChange={handleChange} />
           </div>
 
-          <div className={formStyles.inputGroup}>
+          <div className={formStyles.formGroup}>
             <label htmlFor="emergencyContact">Emergency Contact</label>
             <input type="text" id="emergencyContact" name="emergencyContact" placeholder="e.g., Jane Doe - 0400 123 456" value={userData.emergencyContact} onChange={handleChange} />
           </div>
 
-          <div className={formStyles.inputGroup}>
+          <div className={formStyles.formGroup}>
             <label htmlFor="uniformSize">Uniform Size</label>
             <input type="text" id="uniformSize" name="uniformSize" placeholder="e.g., Mens L, Womens 12" value={userData.uniformSize} onChange={handleChange} />
           </div>
 
-          <div className={formStyles.inputGroup}>
+          <div className={formStyles.formGroup}>
             <h3>Notification Settings</h3>
-            <label>
-              <input type="checkbox" name="notification_news" checked={userData.notificationSettings.news} onChange={handleChange} />
-              Notify me about new News Articles
-            </label>
-            <label>
-              <input type="checkbox" name="notification_events" checked={userData.notificationSettings.events} onChange={handleChange} />
-              Notify me about new Events & Reminders
-            </label>
-            <label>
-              <input type="checkbox" name="notification_chat" checked={userData.notificationSettings.chat} onChange={handleChange} />
-              Notify me about new Chat Messages
-            </label>
+            <ul>
+              <li>
+                <label>
+                  <input type="checkbox" name="notification_news" checked={userData.notificationSettings.news} onChange={handleChange} />
+                  Notify me about new News Articles
+                </label>
+              </li>
+              <li>
+                <label>
+                  <input type="checkbox" name="notification_events" checked={userData.notificationSettings.events} onChange={handleChange} />
+                  Notify me about new Events & Reminders
+                </label>
+              </li>
+              <li>
+                <label>
+                  <input type="checkbox" name="notification_chat" checked={userData.notificationSettings.chat} onChange={handleChange} />
+                  Notify me about new Chat Messages
+                </label>
+              </li>
+            </ul>
           </div>
 
           <button type="submit" className={formStyles.button}>Update Profile</button>
