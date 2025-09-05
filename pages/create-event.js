@@ -5,6 +5,9 @@ import styles from '../styles/Form.module.css';
 import BottomNav from '../components/BottomNav';
 import { GoogleMap, useLoadScript, Marker, StandaloneSearchBox } from '@react-google-maps/api';
 
+// Define libraries outside the component to prevent re-renders
+const libraries = ['places'];
+
 export default function CreateEvent() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -28,7 +31,7 @@ export default function CreateEvent() {
 
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
-    libraries: ['places'],
+    libraries: libraries, // Use the constant here
   });
 
   const [map, setMap] = useState(null);
@@ -52,7 +55,8 @@ export default function CreateEvent() {
             if (!res.ok) throw new Error('Failed to fetch access groups');
             const data = await res.json();
             setAllGroups(data);
-        } catch (err) {
+        } catch (err)
+{
             setError(err.message);
         } finally {
             setLoadingGroups(false);
