@@ -22,24 +22,27 @@ export default async function handler(req, res) {
     const decoded = jwt.verify(token, JWT_SECRET);
     const groupNames = decoded.groups || [];
 
-    if (groupNames.length === 0) {
-      return res.status(200).json([]);
+    let fetchedGroups = [];
+    if (groupNames.length > 0) {
+        // 2. Fetch the access groups documents based on the names in the token
+        const groupsCollection = adminDb.collection('access_groups');
+        const q = groupsCollection.where('name', 'in', groupNames);
+        const groupsSnapshot = await q.get();
+
+        fetchedGroups = groupsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          name: doc.data().name,
+        }));
     }
 
-    // 2. Fetch the access groups documents based on the names in the token
-    const groupsCollection = adminDb.collection('access_groups');
-    const q = groupsCollection.where('name', 'in', groupNames);
-    const groupsSnapshot = await q.get();
+    const generalGroup = { id: 'general', name: 'General' };
 
-    const groups = groupsSnapshot.docs.map(doc => ({
-      id: doc.id,
-      name: doc.data().name,
-    }));
+    // Sort fetched groups
+    fetchedGroups.sort((a, b) => a.name.localeCompare(b.name));
 
-    // Sort alphabetically by name
-    groups.sort((a, b) => a.name.localeCompare(b.name));
+    const allGroups = [generalGroup, ...fetchedGroups];
 
-    return res.status(200).json(groups);
+    return res.status(200).json(allGroups);
 
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {
