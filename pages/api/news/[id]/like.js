@@ -30,7 +30,7 @@ export default async function handler(req, res) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const userId = decoded.uid;
+    const userId = decoded.userId;
 
     // The article ID from the URL is encrypted
     const encryptedArticleId = req.query.id;

@@ -53,7 +53,7 @@ async function createAlbum(req, res) {
             description: description || '',
             coverImageUrl: null, // Will be set when the first photo is uploaded
             createdAt: FieldValue.serverTimestamp(),
-            createdBy: decoded.uid,
+            createdBy: decoded.userId,
         });
 
         return res.status(201).json({ message: 'Album created successfully.', albumId: newAlbumRef.id });

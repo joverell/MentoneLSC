@@ -57,7 +57,7 @@ async function getNews(req, res) {
         if (!canView) return null;
 
         const likes = data.likes || [];
-        const currentUserHasLiked = user ? likes.includes(user.uid) : false;
+        const currentUserHasLiked = user ? likes.includes(user.userId) : false;
 
         return {
             id: doc.id,
@@ -98,7 +98,7 @@ async function createNews(req, res) {
         return res.status(403).json({ message: 'Forbidden: You do not have permission to create articles.' });
     }
 
-    const userId = decoded.uid; // Ensure consistent user ID property
+    const userId = decoded.userId; // Ensure consistent user ID property
     const { title, content, imageUrl, visibleToGroups } = req.body;
 
     if (!isSuperAdmin) { // This means the user is a Group Admin

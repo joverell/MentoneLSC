@@ -12,7 +12,7 @@ async function authorize(req, eventId) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const userId = decoded.uid;
+    const userId = decoded.userId;
 
     // Super Admins can do anything
     if (decoded.roles && decoded.roles.includes('Admin')) {
@@ -92,7 +92,7 @@ async function getEvent(req, res, eventId) {
         if (token) {
             try {
                 const decoded = jwt.verify(token, JWT_SECRET);
-                const userId = decoded.uid;
+                const userId = decoded.userId;
                 if (userId) {
                     const rsvpRef = eventRef.collection('rsvps').doc(userId);
                     const rsvpDoc = await rsvpRef.get();

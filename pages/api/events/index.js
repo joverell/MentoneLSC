@@ -115,7 +115,7 @@ async function getEvents(req, res) {
       }
 
       // Find current user's RSVP status regardless of admin status
-      const currentUserRsvpDoc = rsvpsSnapshot.docs.find(doc => user && doc.id === String(user.uid));
+      const currentUserRsvpDoc = rsvpsSnapshot.docs.find(doc => user && doc.id === String(user.userId));
       if (currentUserRsvpDoc) {
           currentUserRsvpStatus = currentUserRsvpDoc.data().status;
       }
@@ -156,7 +156,7 @@ async function createEvent(req, res) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const userId = decoded.uid; // uid from custom claims
+    const userId = decoded.userId; // uid from custom claims
 
     const { title, description, start_time, end_time, location, imageUrl, visibleToGroups, recurrence } = req.body;
     if (!title || !description || !start_time || !end_time) {

@@ -78,7 +78,7 @@ export default async function handler(req, res) {
                     mimetype: file.mimetype,
                     size: file.size,
                     createdAt: admin.firestore.FieldValue.serverTimestamp(),
-                    createdBy: decoded.uid,
+                    createdBy: decoded.userId,
                 });
 
                 const albumSnap = await albumRef.get();

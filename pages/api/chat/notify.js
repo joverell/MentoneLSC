@@ -44,7 +44,7 @@ export default async function handler(req, res) {
             const wantsChatNotifs = (userData.notificationSettings && userData.notificationSettings.chat !== undefined) ? userData.notificationSettings.chat : true;
 
             // Do not send notification to the sender, and check their preference
-            if (wantsChatNotifs && userData.fcmTokens && doc.id !== decoded.uid) {
+            if (wantsChatNotifs && userData.fcmTokens && doc.id !== decoded.userId) {
                 // fcmTokens is an array of tokens
                 if(Array.isArray(userData.fcmTokens)) {
                     tokens.push(...userData.fcmTokens);
