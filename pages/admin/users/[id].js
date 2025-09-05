@@ -16,7 +16,7 @@ export default function EditUser() {
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading || !router.isReady) return;
     if (!adminUser || !adminUser.roles.includes('Admin')) {
       router.push('/');
       return;
@@ -57,7 +57,7 @@ export default function EditUser() {
     };
 
     fetchData();
-  }, [userId, adminUser, authLoading, router]);
+  }, [userId, adminUser, authLoading, router.isReady]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

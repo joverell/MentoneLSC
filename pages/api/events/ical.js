@@ -1,5 +1,4 @@
-import { db } from '../../../src/firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { adminDb } from '../../../src/firebase-admin';
 
 // Helper to format dates for iCal
 // YYYYMMDDTHHMMSSZ
@@ -20,11 +19,11 @@ export default async function handler(req, res) {
 
     try {
         // Fetch all public events
-        const eventsCollection = collection(db, 'events');
+        const eventsCollection = adminDb.collection('events');
         // An event is public if 'visibleToGroups' is null, undefined, or an empty array.
         // Firestore doesn't have a direct query for this, so we fetch all and filter.
         // For larger scale, this might need optimization or a dedicated 'isPublic' field.
-        const eventsSnapshot = await getDocs(eventsCollection);
+        const eventsSnapshot = await eventsCollection.get();
 
         let icalContent = [
             'BEGIN:VCALENDAR',

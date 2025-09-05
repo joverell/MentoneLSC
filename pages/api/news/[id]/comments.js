@@ -1,5 +1,5 @@
-import { db } from '../../../../src/firebase';
-import { collection, query, orderBy, getDocs, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
+import { adminDb } from '../../../../src/firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
@@ -45,9 +45,8 @@ export default async function handler(req, res) {
 
 async function getComments(req, res, articleId) {
   try {
-    const commentsCollectionRef = collection(db, 'news', articleId, 'comments');
-    const q = query(commentsCollectionRef, orderBy('createdAt', 'asc'));
-    const commentsSnapshot = await getDocs(q);
+    const commentsCollectionRef = adminDb.collection('news').doc(articleId).collection('comments').orderBy('createdAt', 'asc');
+    const commentsSnapshot = await commentsCollectionRef.get();
 
     const comments = commentsSnapshot.docs.map(doc => {
         const data = doc.data();
@@ -77,7 +76,7 @@ async function createComment(req, res, articleId) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const userId = decoded.userId;
+    const userId = decoded.uid;
 
     const { content } = req.body;
     if (!content || typeof content !== 'string' || content.trim() === '') {
@@ -85,20 +84,20 @@ async function createComment(req, res, articleId) {
     }
 
     // Fetch author's name to denormalize
-    const userDocRef = doc(db, 'users', String(userId));
-    const userDoc = await getDoc(userDocRef);
+    const userDocRef = adminDb.collection('users').doc(String(userId));
+    const userDoc = await userDocRef.get();
     if (!userDoc.exists()) {
         return res.status(404).json({ message: 'User not found' });
     }
     const authorName = userDoc.data().name || 'Anonymous';
 
 
-    const commentsCollectionRef = collection(db, 'news', articleId, 'comments');
-    const newCommentRef = await addDoc(commentsCollectionRef, {
+    const commentsCollectionRef = adminDb.collection('news').doc(articleId).collection('comments');
+    const newCommentRef = await commentsCollectionRef.add({
       content: content.trim(),
       authorId: userId,
       authorName: authorName,
-      createdAt: serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
     });
 
     // We can return the new comment data if needed, including the generated ID

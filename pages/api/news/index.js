@@ -1,8 +1,6 @@
-import { db } from '../../../src/firebase'; // Import Firestore instance
 import { adminDb } from '../../../src/firebase-admin';
 import admin from 'firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
@@ -34,9 +32,8 @@ async function getNews(req, res) {
   }
 
   try {
-    const newsCollection = collection(db, 'news');
-    const q = query(newsCollection, orderBy('createdAt', 'desc'));
-    const newsSnapshot = await getDocs(q);
+    const newsCollection = adminDb.collection('news').orderBy('createdAt', 'desc');
+    const newsSnapshot = await newsCollection.get();
 
     const articles = newsSnapshot.docs.map(doc => {
         const data = doc.data();
@@ -60,7 +57,7 @@ async function getNews(req, res) {
         if (!canView) return null;
 
         const likes = data.likes || [];
-        const currentUserHasLiked = user ? likes.includes(user.userId) : false;
+        const currentUserHasLiked = user ? likes.includes(user.uid) : false;
 
         return {
             id: doc.id,
