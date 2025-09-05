@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import styles from '../styles/Form.module.css';
 import BottomNav from '../components/BottomNav';
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import FileUploadInput from '../components/FileUploadInput';
 
 const ReactQuill = dynamic(
   async () => {
@@ -174,13 +175,17 @@ export default function CreateNews() {
           </div>
 
           <div className={styles.formGroup}>
-            <label htmlFor="imageUrl">Image URL (optional)</label>
-            <input
-              type="text"
-              id="imageUrl"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
+            <label>Header Image (optional)</label>
+            <FileUploadInput
+              onUploadSuccess={(url) => setImageUrl(url)}
+              folder="news"
             />
+            {imageUrl && (
+              <div className={styles.imagePreview}>
+                <p>Current image:</p>
+                <img src={imageUrl} alt="News header" style={{ maxWidth: '200px', marginTop: '10px' }} />
+              </div>
+            )}
           </div>
 
           <div className={styles.formGroup}>
