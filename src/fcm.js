@@ -11,7 +11,7 @@ export const getFcmToken = async () => {
     if (permission === 'granted') {
       console.log('Notification permission granted.');
       const token = await getToken(messaging, {
-        vapidKey: 'AIzaSyDgvrCV5dZDz38RcTEjLimuptSjKzqHIG0', // Using public API key as VAPID key
+        vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
       });
       console.log('FCM Token:', token);
       return token;

@@ -30,7 +30,7 @@ export default function handler(req, res) {
     }
 
     res.status(200).json({
-      id: encrypt(userId), // Encrypt for consistency
+      uid: userId,
       name: name,
       email: email,
       roles: roles || [],

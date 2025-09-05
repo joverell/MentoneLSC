@@ -150,11 +150,11 @@ export default function ManageGroupMembers() {
   if (!group) return <p>Group not found.</p>;
 
   const usersNotInGroup = allUsers.filter(user =>
-    !group.members.some(member => member.id === user.id)
+    !group.members.some(member => member.id === user.uid)
   );
 
-  const groupAdmins = allUsers.filter(user => group.admins.includes(user.id));
-  const usersNotAdmin = allUsers.filter(user => !group.admins.includes(user.id));
+  const groupAdmins = allUsers.filter(user => group.admins.includes(user.uid));
+  const usersNotAdmin = allUsers.filter(user => !group.admins.includes(user.uid));
 
   return (
     <div className={styles.pageContainer}>
@@ -176,7 +176,7 @@ export default function ManageGroupMembers() {
               <select value={adminToAdd} onChange={(e) => setAdminToAdd(e.target.value)} required>
                 <option value="">Select a user to make admin</option>
                 {usersNotAdmin.map(user => (
-                  <option key={user.id} value={user.id}>{user.name} ({user.email})</option>
+                  <option key={user.uid} value={user.uid}>{user.name} ({user.email})</option>
                 ))}
               </select>
               <button type="submit" className={styles.button}>Add Admin</button>
@@ -191,11 +191,11 @@ export default function ManageGroupMembers() {
               </thead>
               <tbody>
                 {groupAdmins.map((admin) => (
-                  <tr key={admin.id}>
+                  <tr key={admin.uid}>
                     <td>{admin.name}</td>
                     <td>{admin.email}</td>
                     <td className={styles.actionsCell}>
-                      <button onClick={() => handleRemoveAdmin(admin.id)} className={styles.deleteBtn}>Remove Admin</button>
+                      <button onClick={() => handleRemoveAdmin(admin.uid)} className={styles.deleteBtn}>Remove Admin</button>
                     </td>
                   </tr>
                 ))}
@@ -213,7 +213,7 @@ export default function ManageGroupMembers() {
             <select value={userToAdd} onChange={(e) => setUserToAdd(e.target.value)} required>
               <option value="">Select a user to add</option>
               {usersNotInGroup.map(user => (
-                <option key={user.id} value={user.id}>{user.name} ({user.email})</option>
+                <option key={user.uid} value={user.uid}>{user.name} ({user.email})</option>
               ))}
             </select>
             <button type="submit" className={styles.button}>Add Member</button>
@@ -232,11 +232,11 @@ export default function ManageGroupMembers() {
             </thead>
             <tbody>
               {group.members && group.members.map((member) => (
-                <tr key={member.id}>
+                <tr key={member.uid}>
                   <td>{member.name}</td>
                   <td>{member.email}</td>
                   <td className={styles.actionsCell}>
-                    <button onClick={() => handleRemoveMember(member.id)} className={styles.deleteBtn}>Remove</button>
+                    <button onClick={() => handleRemoveMember(member.uid)} className={styles.deleteBtn}>Remove</button>
                   </td>
                 </tr>
               ))}
