@@ -52,7 +52,7 @@ async function authorizeUserAccess(req, targetUserId) {
 
 
 export default async function handler(req, res) {
-  const { uid: targetUserId } = req.query;
+  const { id: targetUserId } = req.query;
 
   const authResult = await authorizeUserAccess(req, targetUserId);
 
@@ -102,7 +102,7 @@ async function getUser(req, res, userId) {
 }
 
 async function handlePutRequest(req, res, authResult) {
-    const { uid: targetUserId } = req.query;
+    const { id: targetUserId } = req.query;
     const { level, adminGroups } = authResult;
     const { name, email, patrolQualifications, emergencyContact, uniformSize, roles, groupIds, notificationSettings } = req.body;
 

@@ -27,8 +27,7 @@ export default async function handler(req, res) {
     return res.status(403).json({ message: 'Forbidden: You do not have permission to perform this action.' });
   }
 
-  const { id: groupId } = req.query;
-  const { userId } = req.body;
+  const { id: groupId, userId } = req.query;
 
   if (!groupId || !userId) {
     return res.status(400).json({ message: 'Group ID and User ID are required.' });

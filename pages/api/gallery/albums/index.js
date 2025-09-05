@@ -1,5 +1,5 @@
 import { adminDb } from '../../../../src/firebase-admin';
-import admin from 'firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
@@ -52,7 +52,7 @@ async function createAlbum(req, res) {
             title,
             description: description || '',
             coverImageUrl: null, // Will be set when the first photo is uploaded
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            createdAt: FieldValue.serverTimestamp(),
             createdBy: decoded.uid,
         });
 

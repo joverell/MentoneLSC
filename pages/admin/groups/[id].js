@@ -82,11 +82,8 @@ export default function ManageGroupMembers() {
     setError(null);
     setSuccess(null);
     try {
-      // Note: The API expects userId in the body, which is unusual for DELETE, but we'll match it.
-      const res = await fetch(`/api/access_groups/${groupId}/members`, {
+      const res = await fetch(`/api/access_groups/${groupId}/members?userId=${userId}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: userId }),
       });
       if (!res.ok) {
         const data = await res.json();

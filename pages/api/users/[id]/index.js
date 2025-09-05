@@ -16,7 +16,7 @@ async function getIdsFromNames(collectionName, names) {
 }
 
 const handleGetRequest = async (req, res) => {
-  const { uid: userId } = req.query;
+  const { id: userId } = req.query;
 
   if (!userId) {
     return res.status(400).json({ message: 'Invalid user ID' });
@@ -56,7 +56,7 @@ const handleGetRequest = async (req, res) => {
 };
 
 const handlePutRequest = async (req, res, decoded) => {
-    const { uid: userId } = req.query;
+    const { id: userId } = req.query;
     const { name, email, patrolQualifications, emergencyContact, uniformSize, roles } = req.body;
 
     // Authorization: Either admin or the user themselves
@@ -103,7 +103,7 @@ const handlePutRequest = async (req, res, decoded) => {
 };
 
 const handleDeleteRequest = async (req, res, decoded) => {
-  const { uid: userId } = req.query;
+  const { id: userId } = req.query;
 
   // Authorization: Only admins can delete users
   const isAdmin = decoded.roles && decoded.roles.includes('Admin');

@@ -1,7 +1,7 @@
 import { adminAuth, adminDb } from '../../../src/firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import jwt from 'jsonwebtoken';
 import { serialize } from 'cookie';
-import admin from 'firebase-admin';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -48,7 +48,7 @@ export default async function handler(req, res) {
             name: userAuth.displayName || 'New User',
             email: email,
             roles: userRoles,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            createdAt: FieldValue.serverTimestamp(),
           };
           await userDocRef.set(newUser);
           user = newUser;
@@ -92,7 +92,7 @@ export default async function handler(req, res) {
 
           await userDocRef.update({
               groupIds: foundGroupIds,
-              groups: admin.firestore.FieldValue.delete()
+              groups: FieldValue.delete()
           });
 
           // Also update custom claims

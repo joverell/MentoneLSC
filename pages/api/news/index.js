@@ -1,6 +1,7 @@
 import { db } from '../../../src/firebase'; // Import Firestore instance
 import { adminDb } from '../../../src/firebase-admin';
 import admin from 'firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
@@ -142,7 +143,7 @@ async function createNews(req, res) {
       created_by: userId,
       authorName, // Denormalized author's name
       visibleToGroups: visibleToGroups || [],
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: FieldValue.serverTimestamp(),
 
     });
 
