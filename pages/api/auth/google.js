@@ -36,7 +36,7 @@ export default async (req, res) => {
 
     // Create a JWT token that includes the user's roles and other details
     const tokenPayload = {
-      uid: uid,
+      userId: uid, // <-- CHANGE THIS LINE from 'uid' to 'userId'
       name: userData.name,
       email: userData.email,
       roles: userData.roles || [],
