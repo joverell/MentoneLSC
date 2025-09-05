@@ -16,7 +16,7 @@
 
 .formGroup label {
   font-weight: bold;
-  color: #333;
+  color: var(--text-color);
   text-align: right;
 }
 
@@ -28,31 +28,50 @@
 
 .formGroup input {
   padding: 12px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   border-radius: 5px;
   font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.formGroup input:focus {
+  border-color: var(--action-color);
 }
 
 .button {
   padding: 15px;
-  background-color: #007bff;
-  color: white;
+  background-color: var(--action-color);
+  color: var(--background-color-white);
   text-decoration: none;
   border-radius: 5px;
   text-align: center;
   font-weight: bold;
-  transition: background-color 0.3s ease;
+  transition: filter 0.2s ease-in-out, transform 0.2s ease-in-out;
   border: none;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .button:hover {
-  background-color: #0056b3;
+  filter: brightness(90%);
+  transform: scale(1.02);
+}
+
+.googleButton {
+    background-color: #4285F4;
+    color: var(--background-color-white);
+}
+
+.googleButton:hover {
+    background-color: #357ae8;
 }
 
 .deleteButton {
     background-color: #e53e3e;
-    color: white;
+    color: var(--background-color-white);
     padding: 0.4rem 0.8rem;
     border: none;
     border-radius: 5px;
@@ -60,11 +79,11 @@
     cursor: pointer;
 }
 .deleteButton:hover {
-    background-color: #c53030;
+    filter: brightness(90%);
 }
 
 .button:disabled {
-  background-color: #ccc;
+  background-color: var(--border-color);
   cursor: not-allowed;
 }
 
@@ -90,7 +109,7 @@
 .quillEditor .ql-toolbar {
   border-top-left-radius: 5px;
   border-top-right-radius: 5px;
-  background-color: #f8f9fa;
+  background-color: var(--background-color-light);
 }
 
 .quillEditor .ql-container {
@@ -115,10 +134,10 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 10px;
-    background-color: #f8f9fa;
+    background-color: var(--background-color-light);
     padding: 1rem;
     border-radius: 5px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--border-color);
 }
 
 .checkboxWrapper {
@@ -132,5 +151,5 @@
 
 .checkboxWrapper label {
     font-weight: normal;
-    color: #333;
+    color: var(--text-color);
 }

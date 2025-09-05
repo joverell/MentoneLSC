@@ -3,12 +3,12 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background-color: #ffffff;
+  background-color: var(--background-color-white);
   display: flex;
   justify-content: space-around;
   box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
   z-index: 1000;
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--border-color);
 }
 
 .navButton {
@@ -31,9 +31,10 @@
 }
 
 .navButton.active {
-  color: #007bff;
+  color: var(--action-color);
 }
 
 .navButton:hover {
-  color: #0056b3;
+  color: var(--action-color);
+  filter: brightness(90%);
 }
