@@ -104,13 +104,14 @@ async function getUser(req, res, userId) {
 async function handlePutRequest(req, res, authResult) {
     const { id: targetUserId } = req.query;
     const { level, adminGroups } = authResult;
-    const { name, email, patrolQualifications, emergencyContact, uniformSize, roles, groupIds, notificationSettings } = req.body;
+    const { name, email, patrolQualifications, emergencyContact, uniformSize, roles, groupIds, notificationSettings, photoURL } = req.body;
 
     try {
         const userDocRef = adminDb.collection('users').doc(targetUserId);
         const updateData = {};
 
         // Fields updatable by the user themselves or any admin level
+        if (photoURL !== undefined) updateData.photoURL = photoURL;
         if (notificationSettings !== undefined) updateData.notificationSettings = notificationSettings;
         if (patrolQualifications !== undefined) updateData.patrolQualifications = patrolQualifications;
         if (emergencyContact !== undefined) updateData.emergencyContact = emergencyContact;

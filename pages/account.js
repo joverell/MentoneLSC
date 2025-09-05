@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
+import { storage } from '../src/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import homeStyles from '../styles/Home.module.css';
 import formStyles from '../styles/Form.module.css';
 import BottomNav from '../components/BottomNav';
@@ -16,11 +18,13 @@ export default function Account() {
   const [userData, setUserData] = useState({
     name: '',
     email: '',
+    photoURL: '',
     patrolQualifications: '',
     emergencyContact: '',
     uniformSize: '',
     notificationSettings: { news: true, events: true, chat: true },
   });
+  const [photoFile, setPhotoFile] = useState(null);
   const [success, setSuccess] = useState(null);
 
   // State for the login form
@@ -40,6 +44,7 @@ export default function Account() {
       setUserData({
         name: user.name || '',
         email: user.email || '',
+        photoURL: user.photoURL || '',
         patrolQualifications: user.patrolQualifications || '',
         emergencyContact: user.emergencyContact || '',
         uniformSize: user.uniformSize || '',
@@ -61,6 +66,12 @@ export default function Account() {
     }
   };
 
+  const handlePhotoChange = (e) => {
+    if (e.target.files[0]) {
+      setPhotoFile(e.target.files[0]);
+    }
+  };
+
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
     setError(null);
@@ -69,11 +80,22 @@ export default function Account() {
       setError("You are not logged in.");
       return;
     }
+
+    let photoURL = userData.photoURL;
+
+    if (photoFile) {
+      const photoRef = ref(storage, `profile-photos/${user.uid}/${photoFile.name}`);
+      await uploadBytes(photoRef, photoFile);
+      photoURL = await getDownloadURL(photoRef);
+    }
+
+    const updatedUserData = { ...userData, photoURL };
+
     try {
       const res = await fetch(`/api/users/${user.uid}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData),
+        body: JSON.stringify(updatedUserData),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to update profile.');
@@ -130,6 +152,11 @@ export default function Account() {
             <h2>Welcome, {userData.name}!</h2>
             {error && <p className={formStyles.error}>{error}</p>}
             {success && <p className={formStyles.success}>{success}</p>}
+            <div className={formStyles.formGroup}>
+                {userData.photoURL && <img src={userData.photoURL} alt="Profile" style={{ width: '100px', height: '100px', borderRadius: '50%' }} />}
+                <label htmlFor="photo">Profile Photo</label>
+                <input type="file" id="photo" name="photo" onChange={handlePhotoChange} />
+            </div>
             <div className={formStyles.formGroup}>
               <label htmlFor="name">Name</label>
               <input type="text" id="name" name="name" value={userData.name} onChange={handleProfileChange} />
