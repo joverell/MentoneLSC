@@ -1,5 +1,5 @@
-import { db } from '../../../../src/firebase';
-import { doc, runTransaction, arrayUnion, arrayRemove, increment } from 'firebase/firestore';
+import { adminDb } from '../../../../src/firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
@@ -30,7 +30,7 @@ export default async function handler(req, res) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const userId = decoded.userId;
+    const userId = decoded.uid;
 
     // The article ID from the URL is encrypted
     const encryptedArticleId = req.query.id;
@@ -43,12 +43,12 @@ export default async function handler(req, res) {
       return res.status(400).json({ message: 'Invalid article ID' });
     }
 
-    const articleRef = doc(db, 'news', articleId);
+    const articleRef = adminDb.collection('news').doc(articleId);
 
     // Use a transaction to ensure atomic read/write
-    const result = await runTransaction(db, async (transaction) => {
+    const result = await adminDb.runTransaction(async (transaction) => {
       const articleDoc = await transaction.get(articleRef);
-      if (!articleDoc.exists()) {
+      if (!articleDoc.exists) {
         throw new Error('Article not found');
       }
 
@@ -59,15 +59,15 @@ export default async function handler(req, res) {
       if (userHasLiked) {
         // User is unliking the article
         transaction.update(articleRef, {
-          likes: arrayRemove(userId),
-          likeCount: increment(-1),
+          likes: FieldValue.arrayRemove(userId),
+          likeCount: FieldValue.increment(-1),
         });
         return { liked: false, newCount: (articleData.likeCount || 1) - 1 };
       } else {
         // User is liking the article
         transaction.update(articleRef, {
-          likes: arrayUnion(userId),
-          likeCount: increment(1),
+          likes: FieldValue.arrayUnion(userId),
+          likeCount: FieldValue.increment(1),
         });
         return { liked: true, newCount: (articleData.likeCount || 0) + 1 };
       }

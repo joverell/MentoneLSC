@@ -1,5 +1,5 @@
-import { db } from '../../../../src/firebase';
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { adminDb } from '../../../../src/firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
@@ -21,7 +21,7 @@ export default async function handler(req, res) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const userId = String(decoded.userId); // Ensure userId is a string
+    const userId = String(decoded.uid); // Ensure userId is a string from the JWT `uid` claim
 
     const { id: eventId } = req.query;
 
@@ -46,22 +46,22 @@ export default async function handler(req, res) {
     }
 
     // 3. Check if the event exists before trying to RSVP
-    const eventDocRef = doc(db, 'events', eventId);
-    const eventDoc = await getDoc(eventDocRef);
+    const eventDocRef = adminDb.collection('events').doc(eventId);
+    const eventDoc = await eventDocRef.get();
     if (!eventDoc.exists()) {
       return res.status(404).json({ message: 'Event not found.' });
     }
 
-    // 4. Perform UPSERT operation using setDoc
+    // 4. Perform UPSERT operation using set
     // The doc path is 'events/{eventId}/rsvps/{userId}'
-    const rsvpDocRef = doc(db, 'events', eventId, 'rsvps', userId);
+    const rsvpDocRef = adminDb.collection('events').doc(eventId).collection('rsvps').doc(userId);
 
-    await setDoc(rsvpDocRef, {
+    await rsvpDocRef.set({
       status,
       comment: comment || null,
       adultGuests: adults,
       kidGuests: kids,
-      updatedAt: serverTimestamp()
+      updatedAt: FieldValue.serverTimestamp()
     });
 
     // Note: To keep the rsvpTally on the event document updated,

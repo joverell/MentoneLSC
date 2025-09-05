@@ -1,8 +1,6 @@
-import { db } from '../../../src/firebase';
 import { adminDb } from '../../../src/firebase-admin';
 import admin from 'firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import { collection, getDocs, query, orderBy, collectionGroup, where } from 'firebase/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
@@ -33,9 +31,8 @@ async function getEvents(req, res) {
   }
 
   try {
-    const eventsCollection = collection(db, 'events');
-    const q = query(eventsCollection, orderBy('start_time', 'asc'));
-    const eventsSnapshot = await getDocs(q);
+    const eventsCollection = adminDb.collection('events').orderBy('start_time', 'asc');
+    const eventsSnapshot = await eventsCollection.get();
 
     const eventPromises = eventsSnapshot.docs.map(async (eventDoc) => {
       const eventData = eventDoc.data();
@@ -60,8 +57,8 @@ async function getEvents(req, res) {
       if (!canView) return null;
 
       // Fetch RSVPs for this event
-      const rsvpsCollection = collection(db, 'events', eventId, 'rsvps');
-      const rsvpsSnapshot = await getDocs(rsvpsCollection);
+      const rsvpsCollection = adminDb.collection('events').doc(eventId).collection('rsvps');
+      const rsvpsSnapshot = await rsvpsCollection.get();
 
       let yes_count = 0;
       let no_count = 0;
