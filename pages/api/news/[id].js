@@ -13,7 +13,7 @@ async function authorize(req, articleId) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const userId = decoded.uid;
+    const userId = decoded.userId;
 
     // Super Admins can do anything
     if (decoded.roles && decoded.roles.includes('Admin')) {

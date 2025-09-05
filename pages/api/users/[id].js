@@ -12,7 +12,7 @@ async function authorizeUserAccess(req, targetUserId) {
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-        const requesterId = decoded.uid;
+        const requesterId = decoded.userId;
 
         // Users can always access their own profile
         if (requesterId === targetUserId) {

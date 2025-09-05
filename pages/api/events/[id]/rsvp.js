@@ -21,7 +21,7 @@ export default async function handler(req, res) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const userId = String(decoded.uid); // Ensure userId is a string from the JWT `uid` claim
+    const userId = String(decoded.userId); // Ensure userId is a string from the JWT `uid` claim
 
     const { id: eventId } = req.query;
 

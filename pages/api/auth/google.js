@@ -19,14 +19,14 @@ export default async function handler(req, res) {
         // 1. Verify the ID token with Firebase Admin SDK
         console.log('Verifying ID token with Firebase...');
         const decodedToken = await adminAuth.verifyIdToken(idToken);
-        const uid = decodedToken.uid;
+        const userId = decodedToken.uid;
         const email = decodedToken.email;
-        console.log('ID token verified. UID:', uid);
+        console.log('ID token verified. UID:', userId);
 
         // 2. Fetch user auth record and Firestore document
         console.log('Fetching user records...');
-        const userAuth = await adminAuth.getUser(uid);
-        const userDocRef = adminDb.collection('users').doc(uid);
+        const userAuth = await adminAuth.getUser(userId);
+        const userDocRef = adminDb.collection('users').doc(userId);
         let userDoc = await userDocRef.get();
         let user, userRoles, customClaims;
 
@@ -71,7 +71,7 @@ export default async function handler(req, res) {
         if (needsSuperAdminClaim) {
           console.log(`Setting isSuperAdmin claim for ${email}`);
           customClaims = { ...(userAuth.customClaims || {}), roles: userRoles, isSuperAdmin: true };
-          await adminAuth.setCustomUserClaims(uid, customClaims);
+          await adminAuth.setCustomUserClaims(userId, customClaims);
         } else {
           customClaims = userAuth.customClaims || { roles: userRoles };
         }
@@ -99,7 +99,7 @@ export default async function handler(req, res) {
           const newClaims = { ...(userAuth.customClaims || {}) };
           delete newClaims.groups;
           newClaims.groupIds = foundGroupIds;
-          await adminAuth.setCustomUserClaims(uid, newClaims);
+          await adminAuth.setCustomUserClaims(userId, newClaims);
 
           // Use the newly migrated IDs for the current session
           groupIds = foundGroupIds;
@@ -109,7 +109,7 @@ export default async function handler(req, res) {
         // 4. Create a custom JWT for our application session
         console.log('Creating JWT...');
         const token = jwt.sign(
-          { userId: uid, email: user.email, name: user.name, roles, groupIds, isSuperAdmin },
+          { userId: userId, email: user.email, name: user.name, roles, groupIds, isSuperAdmin },
           JWT_SECRET,
           { expiresIn: '1h' }
         );
@@ -128,7 +128,7 @@ export default async function handler(req, res) {
 
         // 4. Respond with user info
         res.status(200).json({
-          uid: uid,
+          userId: userId,
           name: user.name,
           email: user.email,
           roles,

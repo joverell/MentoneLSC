@@ -62,7 +62,7 @@ const handlePutRequest = async (req, res, decoded) => {
     // Authorization: Either admin or the user themselves
     const isSuperAdmin = decoded.isSuperAdmin === true;
     const isAdmin = decoded.roles && decoded.roles.includes('Admin');
-    if (!isAdmin && decoded.uid !== userId) {
+    if (!isAdmin && decoded.userId !== userId) {
         return res.status(403).json({ message: 'Forbidden: You can only update your own profile.' });
     }
 
@@ -76,7 +76,7 @@ const handlePutRequest = async (req, res, decoded) => {
 
         // Only admins or users updating their own name/email can change them.
         // Also ensure email updates are propagated to Firebase Auth.
-        if (isAdmin || decoded.uid === userId) {
+        if (isAdmin || decoded.userId === userId) {
             if (name) updateData.name = name;
             if (email) {
                 updateData.email = email;

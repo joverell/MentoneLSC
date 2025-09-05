@@ -94,7 +94,7 @@ function uploadDocument(req, res) {
                     mimetype: file.mimetype,
                     size: file.size,
                     createdAt: FieldValue.serverTimestamp(),
-                    createdBy: decoded.uid,
+                    createdBy: decoded.userId,
                 });
 
                 return res.status(201).json({ message: 'Document uploaded successfully.' });

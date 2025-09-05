@@ -76,7 +76,7 @@ async function createComment(req, res, articleId) {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const userId = decoded.uid;
+    const userId = decoded.userId;
 
     const { content } = req.body;
     if (!content || typeof content !== 'string' || content.trim() === '') {
