@@ -268,7 +268,8 @@ export default function Home() {
         if (!res.ok) {
             // Revert on failure
             setNewsArticles(originalArticles);
-            alert('Failed to post comment.');
+            const data = await res.json();
+            alert(data.message || 'Failed to post comment.');
             return;
         }
 
@@ -279,7 +280,7 @@ export default function Home() {
     } catch (error) {
         console.error("Error submitting comment:", error);
         setNewsArticles(originalArticles);
-        alert('An error occurred while posting your comment.');
+        alert('An error occurred while posting your comment. ' + error.message);
     }
   };
 
