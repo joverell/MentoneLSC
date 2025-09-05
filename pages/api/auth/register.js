@@ -46,7 +46,7 @@ export default async function handler(req, res) {
           createdAt: FieldValue.serverTimestamp(),
         });
 
-        return res.status(201).json({ message: 'User created successfully', uid: uid });
+        return res.status(201).json({ message: 'User created successfully', id: uid });
 
       } catch (error) {
         console.error('Registration Error:', error);

@@ -16,7 +16,7 @@ export const AuthProvider = ({ children }) => {
     if (currentUser && typeof window !== 'undefined') {
       const token = await getFcmToken();
       if (token) {
-        await saveFcmToken(currentUser.uid, token);
+        await saveFcmToken(currentUser.id, token);
       }
     }
   };
@@ -74,7 +74,7 @@ export const AuthProvider = ({ children }) => {
     if (user && typeof window !== 'undefined') {
         const token = await getFcmToken();
         if (token) {
-            await removeFcmToken(user.uid, token);
+            await removeFcmToken(user.id, token);
         }
     }
     await fetch('/api/auth/logout', { method: 'POST' });
