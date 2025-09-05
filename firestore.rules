@@ -29,6 +29,16 @@ service cloud.firestore {
     match /news/{newsId} {
       allow read: if true;
       allow write: if isAdmin();
+
+      // Comments sub-collection for news articles
+      // - Anyone can read comments.
+      // - Any authenticated user can create a comment.
+      // - No one can update or delete comments from the client.
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if request.auth != null;
+        allow update, delete: if false;
+      }
     }
 
     // Events:
@@ -62,10 +72,14 @@ service cloud.firestore {
     }
 
     // Chat Messages:
-    // - To read or write, the user must be a member of the group.
-    // - We check this by seeing if the group's name exists in the user's auth token.
+    // To read or write, the user must be a member of the group.
+    // This is checked by looking up the user's document and seeing if the
+    // group ID is in their 'groupIds' array.
     match /chats/{groupId}/messages/{messageId} {
-        allow read, write: if get(/databases/$(database)/documents/access_groups/$(groupId)).data.name in request.auth.token.groups;
+      allow read, create: if groupId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupIds;
+
+      // Users should not be able to update or delete messages from the client
+      allow update, delete: if false;
     }
 
     // Default deny all other access
