@@ -55,10 +55,12 @@ export default function EventDetails() {
     setSuccessMessage('');
     setError('');
     try {
+      const token = await user.getIdToken();
       const response = await fetch(`/api/events/${id}/rsvp`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ status: rsvpStatus, comment, adultGuests, kidGuests }),
       });
