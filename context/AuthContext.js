@@ -97,6 +97,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const getIdToken = async () => {
+    if (auth.currentUser) {
+      return await auth.currentUser.getIdToken();
+    }
+    return null;
+  };
+
   const value = {
     user,
     isAuthenticated: !!user,
@@ -106,6 +113,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     loginWithGoogle,
     fetchUser,
+    getIdToken,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
