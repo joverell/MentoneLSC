@@ -28,7 +28,7 @@ export default function ChatRoom() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      router.push('/login');
+      router.push('/account');
       return;
     }
     if (!groupId) {

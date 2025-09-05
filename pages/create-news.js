@@ -147,7 +147,7 @@ export default function CreateNews() {
   }
   if (!user) {
     if (typeof window !== 'undefined') {
-      router.push('/login');
+      router.push('/account');
     }
     return null;
   }

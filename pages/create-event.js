@@ -71,7 +71,7 @@ export default function CreateEvent() {
   }
   if (!user) {
     if (typeof window !== 'undefined') {
-      router.push('/login');
+      router.push('/account');
     }
     return null; // Return null to prevent rendering before redirect
   }

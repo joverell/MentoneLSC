@@ -48,7 +48,7 @@ export default function EventDetails() {
   const handleRsvp = async (e) => {
     e.preventDefault();
     if (!user) {
-      router.push('/login');
+      router.push('/account');
       return;
     }
     setIsSubmitting(true);

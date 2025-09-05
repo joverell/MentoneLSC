@@ -54,7 +54,7 @@ export default function EditEvent() {
   useEffect(() => {
     if (authLoading) return;
     if (!adminUser) {
-      router.push('/login');
+      router.push('/account');
       return;
     }
 

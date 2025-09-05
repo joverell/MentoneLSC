@@ -59,7 +59,7 @@ export const AuthProvider = ({ children }) => {
   const register = async (name, email, password) => {
     try {
       await axios.post('/api/auth/register', { name, email, password });
-      router.push('/login');
+      router.push('/account');
     } catch (error) {
       if (error.response && error.response.status === 409) {
         // Use a more user-friendly message as suggested by the user
@@ -79,7 +79,7 @@ export const AuthProvider = ({ children }) => {
     }
     await fetch('/api/auth/logout', { method: 'POST' });
     setUser(null);
-    router.push('/login');
+    router.push('/account');
   };
 
   const loginWithGoogle = async () => {

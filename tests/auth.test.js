@@ -5,30 +5,20 @@
 // Since setting up emulators is not feasible in this environment, this file outlines the test structure and logic.
 
 // Mocking dependencies
-// In a real test, we would use libraries like 'jest' to mock these modules.
-const mockAdminAuth = {
-  verifyIdToken: jest.fn(),
-  getUser: jest.fn(),
-  setCustomUserClaims: jest.fn(),
-};
-
-const mockAdminDb = {
-  collection: jest.fn(() => ({
-    doc: jest.fn(() => ({
-      get: jest.fn(),
-      set: jest.fn(),
-      update: jest.fn(),
-    })),
-  })),
-};
-
 jest.mock('../src/firebase-admin', () => ({
-  adminAuth: mockAdminAuth,
-  adminDb: mockAdminDb,
+  adminAuth: {
+    verifyIdToken: jest.fn(),
+    getUser: jest.fn(),
+    setCustomUserClaims: jest.fn(),
+  },
+  adminDb: {
+    collection: jest.fn(),
+  },
 }));
 
 // The handler for the login API route
 import loginHandler from '../pages/api/auth/login';
+import { adminAuth, adminDb } from '../src/firebase-admin';
 
 describe('Login API - Custom Claims', () => {
   beforeEach(() => {
@@ -45,20 +35,25 @@ describe('Login API - Custom Claims', () => {
     const updatedRoles = ['Member', 'Paddler'];
 
     // Mock the Firebase Admin SDK functions
-    mockAdminAuth.verifyIdToken.mockResolvedValue({ uid, email });
-    mockAdminAuth.getUser.mockResolvedValue({
+    adminAuth.verifyIdToken.mockResolvedValue({ uid, email });
+    adminAuth.getUser.mockResolvedValue({
       uid,
       email,
       customClaims: { roles: initialRoles }, // Old roles in custom claims
     });
-    mockAdminDb.collection().doc().get.mockResolvedValue({
+
+    const userDocMock = {
       exists: true,
       data: () => ({
         name: 'Test User',
         email,
         roles: updatedRoles, // Updated roles in Firestore
       }),
-    });
+    };
+    const docMock = { get: jest.fn().mockResolvedValue(userDocMock) };
+    const collectionMock = { doc: jest.fn().mockReturnValue(docMock) };
+    adminDb.collection.mockReturnValue(collectionMock);
+
 
     // Mock the request and response objects
     const req = {
@@ -76,7 +71,7 @@ describe('Login API - Custom Claims', () => {
 
     // 3. Assert the results
     // Check that setCustomUserClaims was called with the updated roles
-    expect(mockAdminAuth.setCustomUserClaims).toHaveBeenCalledWith(uid, {
+    expect(adminAuth.setCustomUserClaims).toHaveBeenCalledWith(uid, {
       roles: updatedRoles,
     });
 
