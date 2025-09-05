@@ -6,6 +6,11 @@ import { parse } from 'cookie';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
+function encrypt(id) {
+  // Encrypt the ID into a short-lived JWT
+  return jwt.sign({ id }, JWT_SECRET, { expiresIn: '1h' });
+}
+
 export default function handler(req, res) {
   if (req.method === 'GET') {
     return getNews(req, res);
@@ -60,7 +65,7 @@ async function getNews(req, res) {
         const currentUserHasLiked = user ? likes.includes(user.userId) : false;
 
         return {
-            id: doc.id,
+            id: encrypt(doc.id),
             title: data.title,
             content: data.content,
             imageUrl: data.imageUrl || null,
