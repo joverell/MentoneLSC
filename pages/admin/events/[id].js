@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../../../context/AuthContext';
 import styles from '../../../styles/Admin.module.css';
 import BottomNav from '../../../components/BottomNav';
+import FileUploadInput from '../../../components/FileUploadInput';
 
 // Helper function to format a date for datetime-local input
 const formatDateTimeForInput = (date) => {
@@ -185,8 +186,17 @@ export default function EditEvent() {
             <input type="text" id="location" name="location" value={eventData.location || ''} onChange={handleInputChange} />
           </div>
           <div className={styles.formGroup}>
-            <label htmlFor="imageUrl">Image URL</label>
-            <input type="text" id="imageUrl" name="imageUrl" value={eventData.imageUrl || ''} onChange={handleInputChange} />
+            <label>Image</label>
+            <FileUploadInput
+              onUploadSuccess={(url) => setEventData(prev => ({ ...prev, imageUrl: url }))}
+              folder="events"
+            />
+            {eventData.imageUrl && (
+              <div className={styles.imagePreview}>
+                <p>Current image:</p>
+                <img src={eventData.imageUrl} alt="Event" style={{ maxWidth: '200px', marginTop: '10px' }} />
+              </div>
+            )}
           </div>
           <div className={styles.formGroup}>
             <label>Visible To Groups</label>

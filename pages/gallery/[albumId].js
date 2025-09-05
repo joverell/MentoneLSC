@@ -5,6 +5,7 @@ import Link from 'next/link';
 import styles from '../../styles/Home.module.css';
 import galleryStyles from '../../styles/Gallery.module.css';
 import BottomNav from '../../components/BottomNav';
+import GalleryUploadForm from '../../components/GalleryUploadForm';
 
 export default function AlbumPage() {
     const { user } = useAuth();
@@ -14,11 +15,6 @@ export default function AlbumPage() {
     const [album, setAlbum] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-
-    // State for uploading a new photo
-    const [file, setFile] = useState(null);
-    const [caption, setCaption] = useState('');
-    const [uploading, setUploading] = useState(false);
 
     const fetchAlbumDetails = useCallback(async () => {
         if (!albumId) return;
@@ -38,33 +34,6 @@ export default function AlbumPage() {
     useEffect(() => {
         fetchAlbumDetails();
     }, [fetchAlbumDetails]);
-
-    const handleUploadPhoto = async (e) => {
-        e.preventDefault();
-        if (!file) return;
-        setUploading(true);
-        setError(null);
-        const formData = new FormData();
-        formData.append('caption', caption);
-        formData.append('file', file);
-
-        try {
-            const res = await fetch(`/api/gallery/albums/${albumId}/photos`, {
-                method: 'POST',
-                body: formData,
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'Upload failed');
-            setCaption('');
-            setFile(null);
-            e.target.reset();
-            fetchAlbumDetails(); // Refresh album
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setUploading(false);
-        }
-    };
 
     const handleDeleteAlbum = async () => {
         if (!window.confirm('Are you sure you want to delete this entire album and all its photos? This cannot be undone.')) return;
@@ -105,14 +74,10 @@ export default function AlbumPage() {
                 </div>
 
                 {user && user.roles.includes('Admin') && (
-                    <form onSubmit={handleUploadPhoto} className={galleryStyles.createForm}>
-                        <h3>Upload New Photo</h3>
-                        <input type="file" onChange={(e) => setFile(e.target.files[0])} required />
-                        <input type="text" placeholder="Optional caption" value={caption} onChange={(e) => setCaption(e.target.value)} />
-                        <button type="submit" disabled={uploading} className={styles.button}>
-                            {uploading ? 'Uploading...' : 'Upload Photo'}
-                        </button>
-                    </form>
+                    <GalleryUploadForm
+                        albumId={albumId}
+                        onUploadSuccess={fetchAlbumDetails}
+                    />
                 )}
 
                 <div className={galleryStyles.photoGrid}>

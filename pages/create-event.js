@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import styles from '../styles/Form.module.css';
 import BottomNav from '../components/BottomNav';
 import { GoogleMap, useLoadScript, Marker, StandaloneSearchBox } from '@react-google-maps/api';
+import FileUploadInput from '../components/FileUploadInput';
 
 // Define libraries outside the component to prevent re-renders
 const libraries = ['places'];
@@ -282,14 +283,17 @@ export default function CreateEvent() {
           </div>
 
           <div className={styles.formGroup}>
-            <label htmlFor="imageUrl">Image URL (Optional)</label>
-            <input
-              type="url"
-              id="imageUrl"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="https://example.com/image.jpg"
+            <label>Event Image (Optional)</label>
+            <FileUploadInput
+              onUploadSuccess={(url) => setImageUrl(url)}
+              folder="events"
             />
+            {imageUrl && (
+                <div className={styles.imagePreview}>
+                    <p>Current image:</p>
+                    <img src={imageUrl} alt="Event" style={{ maxWidth: '200px', marginTop: '10px' }} />
+                </div>
+            )}
           </div>
 
           <div className={styles.formGroup}>
