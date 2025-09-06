@@ -20,6 +20,12 @@
     flex-grow: 1;
 }
 
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+}
+
 .error {
     color: #e53e3e;
     background-color: #fed7d7;
@@ -206,4 +212,48 @@
 .manageBtn:hover {
   background-color: #2980b9;
   text-decoration: none;
+}
+
+/* Add this entire media query block to the end of the file */
+@media (max-width: 768px) {
+  .userTable thead {
+    /* Hide the table headers */
+    display: none;
+  }
+
+  .userTable, .userTable tbody, .userTable tr, .userTable td {
+    display: block;
+    width: 100%;
+  }
+
+  .userTable tr {
+    margin-bottom: 1rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+  }
+
+  .userTable td {
+    text-align: right; /* Align content to the right */
+    padding-left: 50%; /* Create space for the label */
+    position: relative;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .userTable td:before {
+    /* Use data-label attribute to create a "header" for each cell */
+    content: attr(data-label);
+    position: absolute;
+    left: 1rem;
+    width: 45%;
+    padding-right: 10px;
+    white-space: nowrap;
+    text-align: left;
+    font-weight: bold;
+  }
+
+  .actionsCell {
+     /* Adjust the actions cell to be more mobile friendly */
+    display: flex;
+    justify-content: flex-end;
+  }
 }

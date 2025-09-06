@@ -115,11 +115,11 @@ export default function UserManagement() {
             <tbody>
               {users.map((u) => (
                 <tr key={u.id}>
-                  <td>{u.name}</td>
-                  <td>{u.email}</td>
-                  <td>{u.roles ? u.roles.join(', ') : 'N/A'}</td>
-                  <td>{u.groupIds && u.groupIds.length > 0 ? u.groupIds.map(id => groups[id] || 'Unknown').join(', ') : 'None'}</td>
-                  <td>
+                  <td data-label="Name">{u.name}</td>
+                  <td data-label="Email">{u.email}</td>
+                  <td data-label="Roles">{u.roles ? u.roles.join(', ') : 'N/A'}</td>
+                  <td data-label="Groups">{u.groupIds && u.groupIds.length > 0 ? u.groupIds.map(id => groups[id] || 'Unknown').join(', ') : 'None'}</td>
+                  <td data-label="Actions" className={styles.actionsCell}>
                     <Link href={`/admin/users/${u.id}`} className={styles.manageLink}>
                       Manage
                     </Link>
