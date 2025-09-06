@@ -9,7 +9,9 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 export const config = {
   api: {
-    bodyParser: false,
+    bodyParser: {
+      sizeLimit: '10mb',
+    },
   },
 };
 
