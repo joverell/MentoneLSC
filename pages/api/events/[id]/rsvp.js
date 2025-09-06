@@ -61,10 +61,26 @@ export default async function handler(req, res) {
         return res.status(200).json({ message: 'RSVP submitted successfully.' });
 
     } catch (error) {
-        if (error.code === 'auth/id-token-expired' || error.code === 'auth/argument-error' || error.code === 'auth/id-token-revoked') {
-            return res.status(401).json({ message: 'Invalid or expired token' });
+        console.error('RSVP API Error:', error); // Always log the full error for debugging
+
+        // Handle Firebase Auth errors
+        if (error.code && error.code.startsWith('auth/')) {
+            return res.status(401).json({ message: 'Authentication error: ' + error.message });
         }
-        console.error('RSVP API Error:', error);
-        res.status(500).json({ message: 'An error occurred while submitting RSVP.' });
+
+        // Handle Firestore errors
+        if (error.code) {
+            switch (error.code) {
+                case 'permission-denied':
+                    return res.status(403).json({ message: 'You do not have permission to RSVP for this event.' });
+                case 'not-found':
+                     return res.status(404).json({ message: 'The event could not be found.' });
+                default:
+                    return res.status(500).json({ message: `A database error occurred: ${error.message}` });
+            }
+        }
+
+        // Generic fallback for other types of errors
+        res.status(500).json({ message: 'An unexpected error occurred while processing your RSVP.' });
     }
 }
