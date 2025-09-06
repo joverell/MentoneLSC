@@ -1,4 +1,5 @@
-import { adminStorage } from '@/src/firebase-admin.js';
+import { adminDb, adminStorage } from '@/src/firebase-admin.js';
+import { v4 as uuidv4 } from 'uuid';
 import jwt from 'jsonwebtoken';
 import { parse as parseCookie } from 'cookie';
 import { parseForm } from '@/utils/fileUploadParser.js';
@@ -32,32 +33,72 @@ export default async function handler(req, res) {
 
         const { fields, files } = await parseForm(req);
 
-        const folder = fields.folder?.[0] || 'general';
-        const file = files.file?.[0];
+        const albumId = fields.albumId?.[0];
+        const caption = fields.caption?.[0] || '';
+        const photoFile = files.photo?.[0];
 
-        if (!file) {
-            return res.status(400).json({ message: 'File is required.' });
+        if (!albumId) {
+            return res.status(400).json({ message: 'Album ID is required.' });
+        }
+        if (!photoFile) {
+            return res.status(400).json({ message: 'No photo uploaded.' });
         }
 
-        filePath = file.filepath; // Store the filepath to delete it later
+        filePath = photoFile.filepath;
         const bucket = adminStorage.bucket();
-        const fileName = `${Date.now()}-${file.originalFilename}`;
-        const destination = `${folder}/${fileName}`;
+        const fileExt = photoFile.originalFilename.split('.').pop();
+        const fileName = `${uuidv4()}.${fileExt}`;
+        const destination = `gallery/${albumId}/${fileName}`;
 
         await bucket.upload(filePath, {
             destination: destination,
             metadata: {
-                contentType: file.mimetype,
+                contentType: photoFile.mimetype,
             },
         });
 
         const fileRef = bucket.file(destination);
-        const [downloadURL] = await fileRef.getSignedUrl({
+        const [url] = await fileRef.getSignedUrl({
             action: 'read',
-            expires: '03-09-2491', // A long, long time in the future
+            expires: '03-09-2491',
         });
 
-        return res.status(201).json({ downloadURL });
+        const photoData = {
+            id: uuidv4(),
+            albumId,
+            fileName,
+            downloadURL: url,
+            caption: caption,
+            uploadedAt: new Date().toISOString(),
+            createdBy: decoded.userId,
+            storagePath: destination,
+        };
+
+        const albumRef = adminDb.collection('photo_albums').doc(albumId);
+        const albumDoc = await albumRef.get();
+
+        if (!albumDoc.exists) {
+            // If album doesn't exist, we can't add photos to it.
+            return res.status(404).json({ message: 'Album not found' });
+        }
+
+        // Add photo data to the 'photos' subcollection
+        await albumRef.collection('photos').add(photoData);
+
+        // Update the album's cover image if it doesn't have one
+        if (!albumDoc.data().coverImageUrl) {
+            await albumRef.update({
+                coverImageUrl: url,
+                lastUpdated: new Date().toISOString(),
+            });
+        } else {
+            await albumRef.update({
+                lastUpdated: new Date().toISOString(),
+            });
+        }
+
+
+        return res.status(201).json(photoData);
 
     } catch (error) {
         console.error('Upload API Error:', error);
