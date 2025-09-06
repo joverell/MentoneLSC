@@ -71,13 +71,22 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Helper function to check if a user is a member of a group by checking their user document
+    function isGroupMember(groupId) {
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      // Check if user document exists, has a 'groupIds' list, and if the groupId is in that list.
+      return userDoc != null &&
+             'groupIds' in userDoc.data &&
+             groupId in userDoc.data.groupIds;
+    }
+
     // Chat Messages:
     // To read or write, the user must be a member of the group,
     // OR the group must be the 'general' group (which is public to all authenticated users).
     match /chats/{groupId}/messages/{messageId} {
       allow read, create: if (
         (groupId == 'general' && request.auth != null) ||
-        (groupId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupIds)
+        isGroupMember(groupId)
       );
 
       // Users should not be able to update or delete messages from the client
