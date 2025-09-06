@@ -50,7 +50,7 @@ export default function ChatLobby() {
   }
 
   return (
-    <div className={styles.pageContainer}>
+    <div className={styles.container}>
       <header className={styles.header}>
         <h1>Chat Groups</h1>
       </header>

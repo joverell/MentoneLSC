@@ -362,7 +362,7 @@ const CalendarSubscriptionModal = ({ isOpen, onClose }) => {
 
 // ... inside the Home component's return statement ...
   return (
-    <div className={styles.pageContainer}>
+    <div className={styles.container}>
       <CalendarSubscriptionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       <Head>
         <title>Mentone LSC Hub</title>

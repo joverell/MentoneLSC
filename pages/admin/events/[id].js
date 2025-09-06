@@ -159,7 +159,7 @@ export default function EditEvent() {
   if (!eventData) return <p>Event not found.</p>;
 
   return (
-    <div className={styles.pageContainer}>
+    <div className={styles.container}>
       <header className={styles.header}>
         <h1>Edit Event: {eventData.title}</h1>
       </header>

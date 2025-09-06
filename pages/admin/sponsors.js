@@ -88,7 +88,7 @@ export default function SponsorsAdminPage() {
     }
 
     return (
-        <div className={styles.pageContainer}>
+        <div className={styles.container}>
             <header className={styles.header}>
                 <h1>Manage Sponsors</h1>
             </header>

@@ -68,7 +68,7 @@ export default function SettingsAdminPage() {
     }
 
     return (
-        <div className={styles.pageContainer}>
+        <div className={styles.container}>
             <header className={styles.header}>
                 <h1>Application Settings</h1>
             </header>
