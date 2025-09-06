@@ -115,11 +115,27 @@
   min-height: 250px; /* Match container height */
 }
 
+/* Add these styles to your form stylesheet */
+.form fieldset {
+  border: 1px solid #e0e0e0;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border-radius: 8px;
+}
+
+.form legend {
+  font-weight: bold;
+  font-size: 1.2rem;
+  padding: 0 0.5rem;
+  color: var(--primary-brand-color); /* Using a brand color for emphasis */
+}
+
+/* Make field descriptions more subtle */
 .fieldDescription {
-    font-size: 0.9rem;
-    color: #666;
-    margin-top: -10px;
-    margin-bottom: 10px;
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: -10px;
+  margin-bottom: 10px;
 }
 
 .checkboxGrid {

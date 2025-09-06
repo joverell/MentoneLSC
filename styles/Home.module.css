@@ -33,6 +33,14 @@
   max-width: 1200px;
   margin: 0 auto;
 }
+
+/* Add this media query */
+@media (max-width: 768px) {
+  .container {
+    /* Reduce padding on mobile to use more horizontal space */
+    padding: 15px 15px 80px 15px;
+  }
+}
 .section {
   margin-bottom: 40px;
   background: white;
@@ -64,6 +72,13 @@
 
 .eventContent {
   padding: 20px;
+}
+
+/* Add this media query */
+@media (max-width: 768px) {
+  .eventContent {
+    padding: 15px; /* Reduce internal padding for a tighter layout */
+  }
 }
 .event:hover {
   transform: translateY(-5px);

@@ -143,181 +143,192 @@ export default function CreateEvent() {
           {error && <p className={styles.error}>{error}</p>}
           {success && <p className={styles.success}>{success}</p>}
 
-          <div className={styles.formGroup}>
-            <label htmlFor="title">Event Title</label>
-            <input
-              type="text"
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className={styles.formGroup}>
-            <label>Recurrence</label>
-            <div className={styles.checkboxWrapper}>
+          <fieldset>
+            <legend>Event Details</legend>
+            <div className={styles.formGroup}>
+              <label htmlFor="title">Event Title</label>
               <input
-                type="checkbox"
-                id="recurrence-enabled"
-                checked={recurrence.enabled}
-                onChange={(e) => setRecurrence(prev => ({ ...prev, enabled: e.target.checked }))}
+                type="text"
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
               />
-              <label htmlFor="recurrence-enabled">Make this a recurring event</label>
             </div>
-          </div>
+            <div className={styles.formGroup}>
+              <label htmlFor="description">Description</label>
+              <textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                required
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label htmlFor="start_time">Start Time</label>
+              <input
+                type="datetime-local"
+                id="start_time"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                required
+              />
+            </div>
+            <div className={styles.formGroup}>
+              <label htmlFor="end_time">End Time</label>
+              <input
+                type="datetime-local"
+                id="end_time"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                required
+              />
+            </div>
+          </fieldset>
 
-          {recurrence.enabled && (
-            <>
-              <div className={styles.formGroup}>
-                <label htmlFor="recurrence-frequency">Frequency</label>
-                <select
-                  id="recurrence-frequency"
-                  value={recurrence.frequency}
-                  onChange={(e) => setRecurrence(prev => ({ ...prev, frequency: e.target.value }))}
-                >
-                  <option value="weekly">Weekly</option>
-                  <option value="fortnightly">Fortnightly</option>
-                  <option value="monthly">Monthly</option>
-                </select>
-              </div>
-              <div className={styles.formGroup}>
-                <label htmlFor="recurrence-endDate">Repeat Until</label>
+          <fieldset>
+            <legend>Recurrence</legend>
+            <div className={styles.formGroup}>
+              <label>Recurrence</label>
+              <div className={styles.checkboxWrapper}>
                 <input
-                  type="date"
-                  id="recurrence-endDate"
-                  value={recurrence.endDate}
-                  onChange={(e) => setRecurrence(prev => ({ ...prev, endDate: e.target.value }))}
-                  required={recurrence.enabled}
+                  type="checkbox"
+                  id="recurrence-enabled"
+                  checked={recurrence.enabled}
+                  onChange={(e) => setRecurrence(prev => ({ ...prev, enabled: e.target.checked }))}
                 />
+                <label htmlFor="recurrence-enabled">Make this a recurring event</label>
               </div>
-            </>
-          )}
-
-          <div className={styles.formGroup}>
-            <label htmlFor="description">Description</label>
-            <textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className={styles.formGroup}>
-            <label htmlFor="start_time">Start Time</label>
-            <input
-              type="datetime-local"
-              id="start_time"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className={styles.formGroup}>
-            <label htmlFor="end_time">End Time</label>
-            <input
-              type="datetime-local"
-              id="end_time"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className={styles.formGroup}>
-            <label>Event Image (Optional)</label>
-            <FileUploadInput
-              onUploadSuccess={(url) => setImageUrl(url)}
-              folder="events"
-            />
-            {imageUrl && (
-                <div className={styles.imagePreview}>
-                    <p>Current image:</p>
-                    <img src={imageUrl} alt="Event" style={{ maxWidth: '200px', marginTop: '10px' }} />
-                </div>
-            )}
-          </div>
-
-          <div className={styles.formGroup}>
-            <label>Visible To (optional)</label>
-            <p className={styles.fieldDescription}>If no groups are selected, the event will be visible to everyone.</p>
-            <div className={styles.checkboxGrid}>
-                {allGroups.map(group => (
-                    <div key={group.id} className={styles.checkboxWrapper}>
-                        <input
-                            type="checkbox"
-                            id={`group-${group.id}`}
-                            checked={selectedGroups.has(group.id)}
-                            onChange={() => handleGroupChange(group.id)}
-                        />
-                        <label htmlFor={`group-${group.id}`}>{group.name}</label>
-                    </div>
-                ))}
             </div>
-          </div>
+            {recurrence.enabled && (
+              <>
+                <div className={styles.formGroup}>
+                  <label htmlFor="recurrence-frequency">Frequency</label>
+                  <select
+                    id="recurrence-frequency"
+                    value={recurrence.frequency}
+                    onChange={(e) => setRecurrence(prev => ({ ...prev, frequency: e.target.value }))}
+                  >
+                    <option value="weekly">Weekly</option>
+                    <option value="fortnightly">Fortnightly</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                </div>
+                <div className={styles.formGroup}>
+                  <label htmlFor="recurrence-endDate">Repeat Until</label>
+                  <input
+                    type="date"
+                    id="recurrence-endDate"
+                    value={recurrence.endDate}
+                    onChange={(e) => setRecurrence(prev => ({ ...prev, endDate: e.target.value }))}
+                    required={recurrence.enabled}
+                  />
+                </div>
+              </>
+            )}
+          </fieldset>
+
+          <fieldset>
+            <legend>Media</legend>
+            <div className={styles.formGroup}>
+              <label>Event Image (Optional)</label>
+              <FileUploadInput
+                onUploadSuccess={(url) => setImageUrl(url)}
+                folder="events"
+              />
+              {imageUrl && (
+                  <div className={styles.imagePreview}>
+                      <p>Current image:</p>
+                      <img src={imageUrl} alt="Event" style={{ maxWidth: '200px', marginTop: '10px' }} />
+                  </div>
+              )}
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Visibility</legend>
+            <div className={styles.formGroup}>
+              <label>Visible To (optional)</label>
+              <p className={styles.fieldDescription}>If no groups are selected, the event will be visible to everyone.</p>
+              <div className={styles.checkboxGrid}>
+                  {allGroups.map(group => (
+                      <div key={group.id} className={styles.checkboxWrapper}>
+                          <input
+                              type="checkbox"
+                              id={`group-${group.id}`}
+                              checked={selectedGroups.has(group.id)}
+                              onChange={() => handleGroupChange(group.id)}
+                          />
+                          <label htmlFor={`group-${group.id}`}>{group.name}</label>
+                      </div>
+                  ))}
+              </div>
+            </div>
+          </fieldset>
 
           <button type="submit" className={styles.button}>Create Event</button>
         </form>
 
-        <div className={styles.mapContainerFullWidth}>
-          <div className={styles.formGroup}>
-            <label>Location</label>
-            {isLoaded && (
-              <StandaloneSearchBox
-                onLoad={ref => setSearchBox(ref)}
-                onPlacesChanged={() => {
-                  const places = searchBox.getPlaces();
-                  const place = places[0];
-                  if (place) {
-                    setLocation(place.formatted_address);
-                    setMarkerPosition({
-                      lat: place.geometry.location.lat(),
-                      lng: place.geometry.location.lng(),
-                    });
-                  }
-                }}
-              >
-                <input
-                  type="text"
-                  placeholder="Search for a location"
-                  style={{
-                    boxSizing: `border-box`,
-                    border: `1px solid transparent`,
-                    width: `100%`,
-                    height: `40px`,
-                    padding: `0 12px`,
-                    borderRadius: `3px`,
-                    boxShadow: `0 2px 6px rgba(0, 0, 0, 0.3)`,
-                    fontSize: `14px`,
-                    outline: `none`,
-                    textOverflow: `ellipses`,
-                    marginBottom: '10px',
+        <fieldset>
+          <legend>Location</legend>
+          <div className={styles.mapContainerFullWidth}>
+            <div className={styles.formGroup}>
+              <label>Location</label>
+              {isLoaded && (
+                <StandaloneSearchBox
+                  onLoad={ref => setSearchBox(ref)}
+                  onPlacesChanged={() => {
+                    const places = searchBox.getPlaces();
+                    const place = places[0];
+                    if (place) {
+                      setLocation(place.formatted_address);
+                      setMarkerPosition({
+                        lat: place.geometry.location.lat(),
+                        lng: place.geometry.location.lng(),
+                      });
+                    }
                   }}
-                />
-              </StandaloneSearchBox>
-            )}
-            {isLoaded && (
-              <GoogleMap
-                mapContainerStyle={mapContainerStyle}
-                zoom={12}
-                center={center}
-                onLoad={map => setMap(map)}
-                onClick={(e) => {
-                  setMarkerPosition({
-                    lat: e.latLng.lat(),
-                    lng: e.latLng.lng(),
-                  });
-                  // You might want to do a reverse geocode here to get the address
-                }}
-              >
-                {markerPosition && <Marker position={markerPosition} />}
-              </GoogleMap>
-            )}
-            {loadError && <p>Error loading maps</p>}
+                >
+                  <input
+                    type="text"
+                    placeholder="Search for a location"
+                    style={{
+                      boxSizing: `border-box`,
+                      border: `1px solid transparent`,
+                      width: `100%`,
+                      height: `40px`,
+                      padding: `0 12px`,
+                      borderRadius: `3px`,
+                      boxShadow: `0 2px 6px rgba(0, 0, 0, 0.3)`,
+                      fontSize: `14px`,
+                      outline: `none`,
+                      textOverflow: `ellipses`,
+                      marginBottom: '10px',
+                    }}
+                  />
+                </StandaloneSearchBox>
+              )}
+              {isLoaded && (
+                <GoogleMap
+                  mapContainerStyle={mapContainerStyle}
+                  zoom={12}
+                  center={center}
+                  onLoad={map => setMap(map)}
+                  onClick={(e) => {
+                    setMarkerPosition({
+                      lat: e.latLng.lat(),
+                      lng: e.latLng.lng(),
+                    });
+                    // You might want to do a reverse geocode here to get the address
+                  }}
+                >
+                  {markerPosition && <Marker position={markerPosition} />}
+                </GoogleMap>
+              )}
+              {loadError && <p>Error loading maps</p>}
+            </div>
           </div>
-        </div>
+        </fieldset>
       </div>
       <BottomNav />
     </div>
