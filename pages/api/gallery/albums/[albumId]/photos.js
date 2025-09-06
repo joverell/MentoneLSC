@@ -1,9 +1,13 @@
-import { adminDb } from '../../../../../src/firebase-admin';
-import admin from 'firebase-admin';
+import { adminDb, adminStorage } from '../../../../src/firebase-admin';
+import { v4 as uuidv4 } from 'uuid';
+import { parseForm, fileUploadConfig } from '../../../../utils/fileUploadParser';
+import fs from 'fs';
 import jwt from 'jsonwebtoken';
 import { parse as parseCookie } from 'cookie';
 
 const JWT_SECRET = process.env.JWT_SECRET;
+
+export const config = fileUploadConfig;
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -15,6 +19,8 @@ export default async function handler(req, res) {
     const token = cookies.auth_token;
     if (!token) return res.status(401).json({ message: 'Not authenticated' });
 
+    let filePath;
+
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
         if (!decoded.roles || !decoded.roles.includes('Admin')) {
@@ -22,37 +28,70 @@ export default async function handler(req, res) {
         }
 
         const { albumId } = req.query;
-        if (!albumId) {
-            return res.status(400).json({ message: 'Album ID is required.' });
+        const { files } = await parseForm(req);
+        const photoFile = files.photo?.[0];
+
+        if (!photoFile) {
+            return res.status(400).json({ message: 'No photo uploaded.' });
         }
 
-        const { downloadURL, caption } = req.body;
-        if (!downloadURL) {
-            return res.status(400).json({ message: 'downloadURL is required.' });
-        }
+        filePath = photoFile.filepath;
+        const bucket = adminStorage.bucket();
+        const fileExt = photoFile.originalFilename.split('.').pop();
+        const fileName = `${uuidv4()}.${fileExt}`;
 
-        const albumRef = adminDb.collection('photo_albums').doc(albumId);
-        const newPhotoRef = albumRef.collection('photos').doc();
+        const destination = `gallery/${albumId}/${fileName}`;
 
-        await newPhotoRef.set({
-            caption: caption || '',
-            downloadURL,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            createdBy: decoded.userId,
+        await bucket.upload(filePath, {
+            destination: destination,
         });
 
-        const albumSnap = await albumRef.get();
-        if (!albumSnap.data().coverImageUrl) {
-            await albumRef.update({ coverImageUrl: downloadURL });
+        const fileRef = bucket.file(destination);
+        const [url] = await fileRef.getSignedUrl({
+            action: 'read',
+            expires: '03-09-2491',
+        });
+
+        const photoData = {
+            id: uuidv4(),
+            albumId,
+            fileName,
+            downloadURL: url,
+            uploadedAt: new Date().toISOString(),
+            createdBy: decoded.userId,
+        };
+
+        const albumRef = adminDb.collection('gallery_albums').doc(albumId);
+        const albumDoc = await albumRef.get();
+
+        if (!albumDoc.exists) {
+            // If album doesn't exist, we can't add photos to it.
+            return res.status(404).json({ message: 'Album not found' });
         }
 
-        return res.status(201).json({ message: 'Photo added to album successfully.' });
+        // Add photo data to the 'photos' subcollection
+        await albumRef.collection('photos').add(photoData);
+
+        // Optionally, update a 'lastUpdated' field or photo count on the album
+        await albumRef.update({
+            lastUpdated: new Date().toISOString(),
+        });
+
+        res.status(201).json(photoData);
 
     } catch (error) {
-        console.error('Add Photo to Album Error:', error);
+        console.error('Error uploading photo:', error);
         if (error.name === 'JsonWebTokenError') {
             return res.status(401).json({ message: 'Invalid token' });
         }
-        return res.status(500).json({ message: 'An error occurred while adding the photo.' });
+        res.status(500).json({ message: 'An error occurred during the file upload process' });
+    } finally {
+        if (filePath) {
+            try {
+                fs.unlinkSync(filePath);
+            } catch (unlinkError) {
+                console.error('Error deleting temporary file:', unlinkError);
+            }
+        }
     }
 }
