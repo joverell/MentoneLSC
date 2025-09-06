@@ -23,6 +23,7 @@
   cursor: pointer;
   flex-grow: 1;
   transition: color 0.2s ease-in-out;
+  text-decoration: none;
 }
 
 .navButton svg {
