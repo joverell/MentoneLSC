@@ -1,6 +1,6 @@
-import { adminDb, adminStorage } from '../../../../../../src/firebase-admin';
-import { withAuth } from '../../../../../../utils/api-auth';
-import { parseForm } from '../../../../../../utils/fileUploadParser';
+import { adminDb, adminStorage } from '@/src/firebase-admin';
+import { withAuth } from '@/utils/api-auth';
+import { parseForm } from '@/utils/fileUploadParser';
 
 // Disable the default body parser for file uploads
 export const config = {
