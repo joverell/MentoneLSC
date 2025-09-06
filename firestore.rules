@@ -72,11 +72,13 @@ service cloud.firestore {
     }
 
     // Chat Messages:
-    // To read or write, the user must be a member of the group.
-    // This is checked by looking up the user's document and seeing if the
-    // group ID is in their 'groupIds' array.
+    // To read or write, the user must be a member of the group,
+    // OR the group must be the 'general' group (which is public to all authenticated users).
     match /chats/{groupId}/messages/{messageId} {
-      allow read, create: if groupId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupIds;
+      allow read, create: if (
+        (groupId == 'general' && request.auth != null) ||
+        (groupId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.groupIds)
+      );
 
       // Users should not be able to update or delete messages from the client
       allow update, delete: if false;
