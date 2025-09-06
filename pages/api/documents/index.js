@@ -1,13 +1,17 @@
-import { adminDb, adminStorage } from '../../../src/firebase-admin';
+import { adminDb, adminStorage } from '@/src/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import jwt from 'jsonwebtoken';
 import { parse as parseCookie } from 'cookie';
-import { parseForm, fileUploadConfig } from '../../../utils/fileUploadParser';
+import { parseForm } from '@/utils/fileUploadParser';
 import fs from 'fs';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-export const config = fileUploadConfig;
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
 export default async function handler(req, res) {
     if (req.method === 'GET') {
