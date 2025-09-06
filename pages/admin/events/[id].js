@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../../context/AuthContext';
 import styles from '../../../styles/Admin.module.css';
-import BottomNav from '../../../components/BottomNav';
+import AdminLayout from '../../../components/admin/AdminLayout';
 import FileUploadInput from '../../../components/FileUploadInput';
 
 // Helper function to format a date for datetime-local input
@@ -159,106 +159,101 @@ export default function EditEvent() {
   if (!eventData) return <p>Event not found.</p>;
 
   return (
-    <div className={styles.container}>
-      <header className={styles.header}>
-        <h1>Edit Event: {eventData.title}</h1>
-      </header>
-      <div className={styles.container}>
-        <form onSubmit={handleSubmit} className={styles.form}>
-          <div className={styles.formGroup}>
-            <label htmlFor="title">Title</label>
-            <input type="text" id="title" name="title" value={eventData.title || ''} onChange={handleInputChange} required />
-          </div>
-          <div className={styles.formGroup}>
-            <label htmlFor="description">Description</label>
-            <textarea id="description" name="description" value={eventData.description || ''} onChange={handleInputChange} required />
-          </div>
-          <div className={styles.formGroup}>
-            <label htmlFor="start_time">Start Time</label>
-            <input type="datetime-local" id="start_time" name="start_time" value={eventData.start_time} onChange={handleInputChange} required />
-          </div>
-          <div className={styles.formGroup}>
-            <label htmlFor="end_time">End Time</label>
-            <input type="datetime-local" id="end_time" name="end_time" value={eventData.end_time} onChange={handleInputChange} required />
-          </div>
-          <div className={styles.formGroup}>
-            <label htmlFor="location">Location</label>
-            <input type="text" id="location" name="location" value={eventData.location || ''} onChange={handleInputChange} />
-          </div>
-          <div className={styles.formGroup}>
-            <label>Image</label>
-            <FileUploadInput
-              onUploadSuccess={(url) => setEventData(prev => ({ ...prev, imageUrl: url }))}
-              folder="events"
-            />
-            {eventData.imageUrl && (
-              <div className={styles.imagePreview}>
-                <p>Current image:</p>
-                <img src={eventData.imageUrl} alt="Event" style={{ maxWidth: '200px', marginTop: '10px' }} />
-              </div>
-            )}
-          </div>
-          <div className={styles.formGroup}>
-            <label>Visible To Groups</label>
-            <div className={styles.checkboxGroup}>
-              {allGroups.map(group => (
-                <label key={group.id}>
-                  <input
-                    type="checkbox"
-                    name="visibleToGroups"
-                    value={group.id}
-                    checked={eventData.visibleToGroups.includes(group.id)}
-                    onChange={handleCheckboxChange}
-                  />
-                  {group.name}
-                </label>
-              ))}
-            </div>
-          </div>
-          {error && <p className={styles.error}>{error}</p>}
-          {success && <p className={styles.success}>{success}</p>}
-          <button type="submit" className={styles.button}>Save Changes</button>
-          <button type="button" onClick={handleDelete} className={`${styles.button} ${styles.deleteBtn}`}>Delete Event</button>
-        </form>
-
-        <div className={styles.rsvpSection}>
-          <button type="button" onClick={handleToggleRsvps} className={styles.button}>
-            {showRsvps ? 'Hide' : 'Show'} RSVPs ({rsvps.length})
-          </button>
-          {showRsvps && (
-            <div className={styles.tableContainer}>
-              <h3>RSVP List</h3>
-              {rsvps.length > 0 ? (
-                <table className={styles.userTable}>
-                  <thead>
-                    <tr>
-                      <th>User</th>
-                      <th>Status</th>
-                      <th>Guests (Adults/Kids)</th>
-                      <th>Comment</th>
-                      <th>Timestamp</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rsvps.map(rsvp => (
-                      <tr key={rsvp.userId}>
-                        <td>{rsvp.userName}</td>
-                        <td>{rsvp.rsvp}</td>
-                        <td>{rsvp.adultGuests || 0} / {rsvp.kidGuests || 0}</td>
-                        <td>{rsvp.comment}</td>
-                        <td>{new Date(rsvp.timestamp._seconds * 1000).toLocaleString()}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                <p>No RSVPs yet.</p>
-              )}
+    <AdminLayout>
+      <h1 className={styles.pageTitle}>Edit Event: {eventData.title}</h1>
+      <form onSubmit={handleSubmit} className={styles.form}>
+        <div className={styles.formGroup}>
+          <label htmlFor="title">Title</label>
+          <input type="text" id="title" name="title" value={eventData.title || ''} onChange={handleInputChange} required />
+        </div>
+        <div className={styles.formGroup}>
+          <label htmlFor="description">Description</label>
+          <textarea id="description" name="description" value={eventData.description || ''} onChange={handleInputChange} required />
+        </div>
+        <div className={styles.formGroup}>
+          <label htmlFor="start_time">Start Time</label>
+          <input type="datetime-local" id="start_time" name="start_time" value={eventData.start_time} onChange={handleInputChange} required />
+        </div>
+        <div className={styles.formGroup}>
+          <label htmlFor="end_time">End Time</label>
+          <input type="datetime-local" id="end_time" name="end_time" value={eventData.end_time} onChange={handleInputChange} required />
+        </div>
+        <div className={styles.formGroup}>
+          <label htmlFor="location">Location</label>
+          <input type="text" id="location" name="location" value={eventData.location || ''} onChange={handleInputChange} />
+        </div>
+        <div className={styles.formGroup}>
+          <label>Image</label>
+          <FileUploadInput
+            onUploadSuccess={(url) => setEventData(prev => ({ ...prev, imageUrl: url }))}
+            folder="events"
+          />
+          {eventData.imageUrl && (
+            <div className={styles.imagePreview}>
+              <p>Current image:</p>
+              <img src={eventData.imageUrl} alt="Event" style={{ maxWidth: '200px', marginTop: '10px' }} />
             </div>
           )}
         </div>
+        <div className={styles.formGroup}>
+          <label>Visible To Groups</label>
+          <div className={styles.checkboxGroup}>
+            {allGroups.map(group => (
+              <label key={group.id}>
+                <input
+                  type="checkbox"
+                  name="visibleToGroups"
+                  value={group.id}
+                  checked={eventData.visibleToGroups.includes(group.id)}
+                  onChange={handleCheckboxChange}
+                />
+                {group.name}
+              </label>
+            ))}
+          </div>
+        </div>
+        {error && <p className={styles.error}>{error}</p>}
+        {success && <p className={styles.success}>{success}</p>}
+        <button type="submit" className={styles.button}>Save Changes</button>
+        <button type="button" onClick={handleDelete} className={`${styles.button} ${styles.deleteBtn}`}>Delete Event</button>
+      </form>
+
+      <div className={styles.rsvpSection}>
+        <button type="button" onClick={handleToggleRsvps} className={styles.button}>
+          {showRsvps ? 'Hide' : 'Show'} RSVPs ({rsvps.length})
+        </button>
+        {showRsvps && (
+          <div className={styles.tableContainer}>
+            <h3>RSVP List</h3>
+            {rsvps.length > 0 ? (
+              <table className={styles.userTable}>
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Status</th>
+                    <th>Guests (Adults/Kids)</th>
+                    <th>Comment</th>
+                    <th>Timestamp</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rsvps.map(rsvp => (
+                    <tr key={rsvp.userId}>
+                      <td>{rsvp.userName}</td>
+                      <td>{rsvp.rsvp}</td>
+                      <td>{rsvp.adultGuests || 0} / {rsvp.kidGuests || 0}</td>
+                      <td>{rsvp.comment}</td>
+                      <td>{new Date(rsvp.timestamp._seconds * 1000).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p>No RSVPs yet.</p>
+            )}
+          </div>
+        )}
       </div>
-      <BottomNav />
-    </div>
+    </AdminLayout>
   );
 }
