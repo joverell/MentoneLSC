@@ -92,8 +92,6 @@ export default function DocumentsPage() {
                 {!loading && documents.length === 0 && (
                     <EmptyState
                         isAdmin={isAdmin}
-                        accessGroups={accessGroups}
-                        onUploadSuccess={onUploadSuccess}
                     />
                 )}
             </main>
