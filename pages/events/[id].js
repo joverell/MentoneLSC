@@ -33,7 +33,13 @@ export default function EventDetails() {
 
     const fetchEvent = async () => {
       try {
-        const response = await fetch(`/api/events/${id}`);
+        const token = await getIdToken();
+        const headers = {};
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`/api/events/${id}`, { headers });
         if (!response.ok) {
           throw new Error('Event not found');
         }
@@ -52,8 +58,10 @@ export default function EventDetails() {
       }
     };
 
-    fetchEvent();
-  }, [id]);
+    if (getIdToken) {
+        fetchEvent();
+    }
+  }, [id, getIdToken]);
 
   useEffect(() => {
     if (event && event.location) {

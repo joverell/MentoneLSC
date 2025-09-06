@@ -86,13 +86,12 @@ async function getEvent(req, res, eventId) {
         const eventData = doc.data();
         let userRsvp = null;
 
-        // Check for user token to fetch their specific RSVP
-        const cookies = parse(req.headers.cookie || '');
-        const token = cookies.auth_token;
-        if (token) {
+        const { authorization } = req.headers;
+        if (authorization && authorization.startsWith('Bearer ')) {
+            const token = authorization.split('Bearer ')[1];
             try {
-                const decoded = jwt.verify(token, JWT_SECRET);
-                const userId = decoded.userId;
+                const decodedToken = await adminAuth.verifyIdToken(token);
+                const userId = decodedToken.uid;
                 if (userId) {
                     const rsvpRef = eventRef.collection('rsvps').doc(userId);
                     const rsvpDoc = await rsvpRef.get();
@@ -101,9 +100,11 @@ async function getEvent(req, res, eventId) {
                     }
                 }
             } catch (e) {
-                // Ignore invalid token, just means user is not logged in
+                // Don't throw an error, just means we can't get the RSVP status
+                console.error("Error verifying token in getEvent:", e);
             }
         }
+
 
         res.status(200).json({
             id: doc.id,
