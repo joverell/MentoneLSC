@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import styles from '../../styles/Admin.module.css';
-import BottomNav from '../../components/BottomNav';
+import AdminLayout from '../../components/admin/AdminLayout';
 
 export default function EventManagement() {
   const { user, loading: authLoading } = useAuth();
@@ -59,54 +59,40 @@ export default function EventManagement() {
   if (!user || !user.roles.includes('Admin')) return <p>Redirecting...</p>;
 
   return (
-    <div className={styles.container}>
-      <header className={styles.header}>
-        <h1>Event Management</h1>
-      </header>
-      <div className={styles.container}>
-        <div className={styles.adminNav}>
-            <Link href="/admin/users" className={styles.adminNavLink}>Manage Users</Link>
-            <span style={{ margin: '0 1rem' }}>|</span>
-            <Link href="/admin/groups" className={styles.adminNavLink}>Manage Groups</Link>
-            <span style={{ margin: '0 1rem' }}>|</span>
-            <Link href="/admin/news" className={styles.adminNavLink}>Manage News</Link>
-        </div>
-
-        {error && <p className={styles.error}>{error}</p>}
-
-        <div className={styles.tableContainer}>
-          <table className={styles.userTable}>
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Date</th>
-                <th>Location</th>
-                <th>Actions</th>
+    <AdminLayout>
+      <h1 className={styles.pageTitle}>Event Management</h1>
+      {error && <p className={styles.error}>{error}</p>}
+      <div className={styles.tableContainer}>
+        <table className={styles.userTable}>
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Date</th>
+              <th>Location</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {events.map((event) => (
+              <tr key={event.id}>
+                <td>{event.title}</td>
+                <td>{new Date(event.start_time).toLocaleString()}</td>
+                <td>{event.location}</td>
+                <td>
+                  <Link href={`/admin/events/${event.id}`} className={styles.manageLink}>
+                    Manage
+                  </Link>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {events.map((event) => (
-                <tr key={event.id}>
-                  <td>{event.title}</td>
-                  <td>{new Date(event.start_time).toLocaleString()}</td>
-                  <td>{event.location}</td>
-                  <td>
-                    <Link href={`/admin/events/${event.id}`} className={styles.manageLink}>
-                      Manage
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-              {events.length === 0 && (
-                <tr>
-                  <td colSpan="4">No events found.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+            ))}
+            {events.length === 0 && (
+              <tr>
+                <td colSpan="4">No events found.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
-      <BottomNav />
-    </div>
+    </AdminLayout>
   );
 }

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import styles from '../../styles/Admin.module.css';
 import formStyles from '../../styles/Form.module.css';
-import BottomNav from '../../components/BottomNav';
+import AdminLayout from '../../components/admin/AdminLayout';
 import Link from 'next/link';
 
 export default function SettingsAdminPage() {
@@ -68,45 +68,32 @@ export default function SettingsAdminPage() {
     }
 
     return (
-        <div className={styles.container}>
-            <header className={styles.header}>
-                <h1>Application Settings</h1>
-            </header>
-            <div className={styles.container}>
-                <div className={styles.adminNav}>
-                    <Link href="/admin/users" className={styles.adminNavLink}>Manage Users</Link>
-                    <span style={{ margin: '0 1rem' }}>|</span>
-                    <Link href="/admin/groups" className={styles.adminNavLink}>Manage Groups</Link>
-                    <span style={{ margin: '0 1rem' }}>|</span>
-                    <Link href="/admin/sponsors" className={styles.adminNavLink}>Manage Sponsors</Link>
-                </div>
+        <AdminLayout>
+            <h1 className={styles.pageTitle}>Application Settings</h1>
+            {loading && <p>Loading settings...</p>}
+            {error && <p className={styles.error}>{error}</p>}
 
-                {loading && <p>Loading settings...</p>}
-                {error && <p className={styles.error}>{error}</p>}
-
-                {!loading && (
-                    <div className={formStyles.form}>
-                        <h3>Integrations</h3>
-                        <div className={formStyles.formGroup}>
-                            <label htmlFor="instagram-toggle">
-                                Show Instagram Feed in Gallery
-                            </label>
-                            <label className={formStyles.switch}>
-                                <input
-                                    id="instagram-toggle"
-                                    type="checkbox"
-                                    checked={settings.instagram?.enabled || false}
-                                    onChange={handleInstagramToggle}
-                                    disabled={saving}
-                                />
-                                <span className={`${formStyles.slider} ${formStyles.round}`}></span>
-                            </label>
-                            {saving && <small>Saving...</small>}
-                        </div>
+            {!loading && (
+                <div className={formStyles.form}>
+                    <h3>Integrations</h3>
+                    <div className={formStyles.formGroup}>
+                        <label htmlFor="instagram-toggle">
+                            Show Instagram Feed in Gallery
+                        </label>
+                        <label className={formStyles.switch}>
+                            <input
+                                id="instagram-toggle"
+                                type="checkbox"
+                                checked={settings.instagram?.enabled || false}
+                                onChange={handleInstagramToggle}
+                                disabled={saving}
+                            />
+                            <span className={`${formStyles.slider} ${formStyles.round}`}></span>
+                        </label>
+                        {saving && <small>Saving...</small>}
                     </div>
-                )}
-            </div>
-            <BottomNav />
-        </div>
+                </div>
+            )}
+        </AdminLayout>
     );
 }

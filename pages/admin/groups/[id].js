@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../../context/AuthContext';
 import styles from '../../../styles/Admin.module.css';
-import BottomNav from '../../../components/BottomNav';
+import AdminLayout from '../../../components/admin/AdminLayout';
 import Link from 'next/link';
 
 export default function ManageGroupMembers() {
@@ -154,99 +154,90 @@ export default function ManageGroupMembers() {
   const usersNotAdmin = allUsers.filter(user => !group.admins.includes(user.uid));
 
   return (
-    <div className={styles.container}>
-      <header className={styles.header}>
-        <h1>Manage Members for "{group.name}"</h1>
-      </header>
-      <div className={styles.container}>
-        <div className={styles.adminNav}>
-            <Link href="/admin/groups" className={styles.adminNavLink}>Back to Groups</Link>
-        </div>
+    <AdminLayout>
+      <h1 className={styles.pageTitle}>Manage Members for "{group.name}"</h1>
+      {error && <p className={styles.error}>{error}</p>}
+      {success && <p className={styles.success}>{success}</p>}
 
-        {error && <p className={styles.error}>{error}</p>}
-        {success && <p className={styles.success}>{success}</p>}
-
-        {adminUser && adminUser.isSuperAdmin && (
-          <div className={styles.formSection}>
-            <h3>Manage Group Administrators</h3>
-            <form onSubmit={handleAddAdmin} className={styles.inlineForm}>
-              <select value={adminToAdd} onChange={(e) => setAdminToAdd(e.target.value)} required>
-                <option value="">Select a user to make admin</option>
-                {usersNotAdmin.map(user => (
-                  <option key={user.uid} value={user.uid}>{user.name} ({user.email})</option>
-                ))}
-              </select>
-              <button type="submit" className={styles.button}>Add Admin</button>
-            </form>
-            <table className={styles.userTable} style={{ marginTop: '1rem' }}>
-              <thead>
-                <tr>
-                  <th>Admin Name</th>
-                  <th>Email</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {groupAdmins.map((admin) => (
-                  <tr key={admin.uid}>
-                    <td>{admin.name}</td>
-                    <td>{admin.email}</td>
-                    <td className={styles.actionsCell}>
-                      <button onClick={() => handleRemoveAdmin(admin.uid)} className={styles.deleteBtn}>Remove Admin</button>
-                    </td>
-                  </tr>
-                ))}
-                {groupAdmins.length === 0 && (
-                  <tr><td colSpan="3">No group-specific admins.</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-
+      {adminUser && adminUser.isSuperAdmin && (
         <div className={styles.formSection}>
-          <h3>Add New Member</h3>
-          <form onSubmit={handleAddMember} className={styles.inlineForm}>
-            <select value={userToAdd} onChange={(e) => setUserToAdd(e.target.value)} required>
-              <option value="">Select a user to add</option>
-              {usersNotInGroup.map(user => (
+          <h3>Manage Group Administrators</h3>
+          <form onSubmit={handleAddAdmin} className={styles.inlineForm}>
+            <select value={adminToAdd} onChange={(e) => setAdminToAdd(e.target.value)} required>
+              <option value="">Select a user to make admin</option>
+              {usersNotAdmin.map(user => (
                 <option key={user.uid} value={user.uid}>{user.name} ({user.email})</option>
               ))}
             </select>
-            <button type="submit" className={styles.button}>Add Member</button>
+            <button type="submit" className={styles.button}>Add Admin</button>
           </form>
-        </div>
-
-        <div className={styles.tableContainer}>
-          <h3>Current Members</h3>
-          <table className={styles.userTable}>
+          <table className={styles.userTable} style={{ marginTop: '1rem' }}>
             <thead>
               <tr>
-                <th>Name</th>
+                <th>Admin Name</th>
                 <th>Email</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {group.members && group.members.map((member) => (
-                <tr key={member.uid}>
-                  <td>{member.name}</td>
-                  <td>{member.email}</td>
+              {groupAdmins.map((admin) => (
+                <tr key={admin.uid}>
+                  <td>{admin.name}</td>
+                  <td>{admin.email}</td>
                   <td className={styles.actionsCell}>
-                    <button onClick={() => handleRemoveMember(member.uid)} className={styles.deleteBtn}>Remove</button>
+                    <button onClick={() => handleRemoveAdmin(admin.uid)} className={styles.deleteBtn}>Remove Admin</button>
                   </td>
                 </tr>
               ))}
-              {group.members && group.members.length === 0 && (
-                <tr>
-                    <td colSpan="3">No members in this group yet.</td>
-                </tr>
+              {groupAdmins.length === 0 && (
+                <tr><td colSpan="3">No group-specific admins.</td></tr>
               )}
             </tbody>
           </table>
         </div>
+      )}
+
+      <div className={styles.formSection}>
+        <h3>Add New Member</h3>
+        <form onSubmit={handleAddMember} className={styles.inlineForm}>
+          <select value={userToAdd} onChange={(e) => setUserToAdd(e.target.value)} required>
+            <option value="">Select a user to add</option>
+            {usersNotInGroup.map(user => (
+              <option key={user.uid} value={user.uid}>{user.name} ({user.email})</option>
+            ))}
+          </select>
+          <button type="submit" className={styles.button}>Add Member</button>
+        </form>
       </div>
-      <BottomNav />
-    </div>
+
+      <div className={styles.tableContainer}>
+        <h3>Current Members</h3>
+        <table className={styles.userTable}>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {group.members && group.members.map((member) => (
+              <tr key={member.uid}>
+                <td>{member.name}</td>
+                <td>{member.email}</td>
+                <td className={styles.actionsCell}>
+                  <button onClick={() => handleRemoveMember(member.uid)} className={styles.deleteBtn}>Remove</button>
+                </td>
+              </tr>
+            ))}
+            {group.members && group.members.length === 0 && (
+              <tr>
+                  <td colSpan="3">No members in this group yet.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </AdminLayout>
   );
 }

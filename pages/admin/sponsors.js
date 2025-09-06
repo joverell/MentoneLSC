@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import styles from '../../styles/Admin.module.css';
 import formStyles from '../../styles/Form.module.css';
-import BottomNav from '../../components/BottomNav';
+import AdminLayout from '../../components/admin/AdminLayout';
 import Link from 'next/link';
 
 export default function SponsorsAdminPage() {
@@ -88,72 +88,58 @@ export default function SponsorsAdminPage() {
     }
 
     return (
-        <div className={styles.container}>
-            <header className={styles.header}>
-                <h1>Manage Sponsors</h1>
-            </header>
-            <div className={styles.container}>
-                <div className={styles.adminNav}>
-                    <Link href="/admin/users" className={styles.adminNavLink}>Manage Users</Link>
-                    <span style={{ margin: '0 1rem' }}>|</span>
-                    <Link href="/admin/groups" className={styles.adminNavLink}>Manage Groups</Link>
-                    <span style={{ margin: '0 1rem' }}>|</span>
-                    <Link href="/admin/settings" className={styles.adminNavLink}>Settings</Link>
-                </div>
-
-                <div className={formStyles.form} style={{ marginBottom: '2rem' }}>
-                    <h3>Add New Sponsor</h3>
-                    <form onSubmit={handleAddSponsor}>
-                        {uploadError && <p className={formStyles.error}>{uploadError}</p>}
-                        <div className={formStyles.formGroup}>
-                            <label htmlFor="name">Sponsor Name</label>
-                            <input type="text" id="name" value={name} onChange={e => setName(e.target.value)} required />
-                        </div>
-                        <div className={formStyles.formGroup}>
-                            <label htmlFor="websiteUrl">Website URL</label>
-                            <input type="url" id="websiteUrl" value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} placeholder="https://example.com" required />
-                        </div>
-                        <div className={formStyles.formGroup}>
-                            <label htmlFor="logo">Logo Image</label>
-                            <input type="file" id="logo" accept="image/*" onChange={e => setLogo(e.target.files[0])} required />
-                        </div>
-                        <button type="submit" className={formStyles.button} disabled={uploading}>
-                            {uploading ? 'Uploading...' : 'Add Sponsor'}
-                        </button>
-                    </form>
-                </div>
-
-                {loading && <p>Loading sponsors...</p>}
-                {error && <p className={styles.error}>{error}</p>}
-
-                <div className={styles.tableContainer}>
-                    <h3>Current Sponsors</h3>
-                    <table className={styles.userTable}>
-                        <thead>
-                            <tr>
-                                <th>Logo</th>
-                                <th>Name</th>
-                                <th>Website</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {sponsors.map(sponsor => (
-                                <tr key={sponsor.id}>
-                                    <td><img src={sponsor.logoUrl} alt={sponsor.name} width="100" /></td>
-                                    <td>{sponsor.name}</td>
-                                    <td><a href={sponsor.websiteUrl} target="_blank" rel="noopener noreferrer">{sponsor.websiteUrl}</a></td>
-                                    <td>
-                                        <button onClick={() => handleDelete(sponsor.id)} className={formStyles.deleteButton}>Delete</button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-
+        <AdminLayout>
+            <h1 className={styles.pageTitle}>Manage Sponsors</h1>
+            <div className={formStyles.form} style={{ marginBottom: '2rem' }}>
+                <h3>Add New Sponsor</h3>
+                <form onSubmit={handleAddSponsor}>
+                    {uploadError && <p className={formStyles.error}>{uploadError}</p>}
+                    <div className={formStyles.formGroup}>
+                        <label htmlFor="name">Sponsor Name</label>
+                        <input type="text" id="name" value={name} onChange={e => setName(e.target.value)} required />
+                    </div>
+                    <div className={formStyles.formGroup}>
+                        <label htmlFor="websiteUrl">Website URL</label>
+                        <input type="url" id="websiteUrl" value={websiteUrl} onChange={e => setWebsiteUrl(e.target.value)} placeholder="https://example.com" required />
+                    </div>
+                    <div className={formStyles.formGroup}>
+                        <label htmlFor="logo">Logo Image</label>
+                        <input type="file" id="logo" accept="image/*" onChange={e => setLogo(e.target.files[0])} required />
+                    </div>
+                    <button type="submit" className={formStyles.button} disabled={uploading}>
+                        {uploading ? 'Uploading...' : 'Add Sponsor'}
+                    </button>
+                </form>
             </div>
-            <BottomNav />
-        </div>
+
+            {loading && <p>Loading sponsors...</p>}
+            {error && <p className={styles.error}>{error}</p>}
+
+            <div className={styles.tableContainer}>
+                <h3>Current Sponsors</h3>
+                <table className={styles.userTable}>
+                    <thead>
+                        <tr>
+                            <th>Logo</th>
+                            <th>Name</th>
+                            <th>Website</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {sponsors.map(sponsor => (
+                            <tr key={sponsor.id}>
+                                <td><img src={sponsor.logoUrl} alt={sponsor.name} width="100" /></td>
+                                <td>{sponsor.name}</td>
+                                <td><a href={sponsor.websiteUrl} target="_blank" rel="noopener noreferrer">{sponsor.websiteUrl}</a></td>
+                                <td>
+                                    <button onClick={() => handleDelete(sponsor.id)} className={formStyles.deleteButton}>Delete</button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </AdminLayout>
     );
 }
