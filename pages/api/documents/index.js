@@ -25,13 +25,53 @@ export default async function handler(req, res) {
 }
 
 async function getDocuments(req, res) {
+    const cookies = parseCookie(req.headers.cookie || '');
+    const token = cookies.auth_token;
+
+    // Default to a non-authenticated, non-admin user
+    let user = { userId: null, roles: [] };
+
+    if (token) {
+        try {
+            const decoded = jwt.verify(token, JWT_SECRET);
+            user = { userId: decoded.uid, roles: decoded.roles || [] };
+        } catch (error) {
+            // Invalid token, treat as a guest
+            console.error('JWT verification error in getDocuments:', error.message);
+        }
+    }
+
     try {
-        const docsSnapshot = await adminDb.collection('documents').orderBy('createdAt', 'desc').get();
-        const documents = docsSnapshot.docs.map(doc => ({
+        const docsRef = adminDb.collection('documents');
+        let query = docsRef.orderBy('createdAt', 'desc');
+
+        const docsSnapshot = await query.get();
+
+        let documents = docsSnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data(),
             createdAt: doc.data().createdAt.toDate().toISOString(),
         }));
+
+        // If user is not an admin, filter documents based on access groups
+        if (!user.roles.includes('Admin')) {
+            let userGroupIds = [];
+            if (user.userId) {
+                const memberSnapshot = await adminDb.collectionGroup('members')
+                    .where('userId', '==', user.userId).get();
+                userGroupIds = memberSnapshot.docs.map(doc => doc.ref.parent.parent.id);
+            }
+
+            documents = documents.filter(doc => {
+                // Document is public if it has no access groups
+                if (!doc.accessGroupIds || doc.accessGroupIds.length === 0) {
+                    return true;
+                }
+                // Document is accessible if the user is in at least one of the required groups
+                return doc.accessGroupIds.some(groupId => userGroupIds.includes(groupId));
+            });
+        }
+
         return res.status(200).json(documents);
     } catch (error) {
         console.error('Get Documents Error:', error);
@@ -56,7 +96,12 @@ async function uploadDocument(req, res) {
 
         const title = fields.title?.[0];
         const category = fields.category?.[0];
+        let accessGroupIds = fields['accessGroupIds[]'] || [];
         const file = files.file?.[0];
+
+        if (accessGroupIds && !Array.isArray(accessGroupIds)) {
+            accessGroupIds = [accessGroupIds];
+        }
 
         if (!title || !category || !file) {
             return res.status(400).json({ message: 'Title, category, and file are required.' });
@@ -81,6 +126,7 @@ async function uploadDocument(req, res) {
         await adminDb.collection('documents').add({
             title,
             category,
+            accessGroupIds,
             fileName,
             storagePath: destination,
             downloadURL,

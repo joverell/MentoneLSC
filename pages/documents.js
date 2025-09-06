@@ -16,6 +16,8 @@ export default function DocumentsPage() {
     const [file, setFile] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [uploadError, setUploadError] = useState(null);
+    const [accessGroups, setAccessGroups] = useState([]);
+    const [selectedGroups, setSelectedGroups] = useState([]);
 
     const fetchDocuments = async () => {
         try {
@@ -31,9 +33,23 @@ export default function DocumentsPage() {
         }
     };
 
+    const fetchAccessGroups = async () => {
+        try {
+            const res = await fetch('/api/access_groups');
+            if (!res.ok) throw new Error('Failed to fetch access groups');
+            const data = await res.json();
+            setAccessGroups(data);
+        } catch (err) {
+            console.error(err); // Log error but don't block UI
+        }
+    };
+
     useEffect(() => {
         fetchDocuments();
-    }, []);
+        if (user && user.roles.includes('Admin')) {
+            fetchAccessGroups();
+        }
+    }, [user]);
 
     const handleUpload = async (e) => {
         e.preventDefault();
@@ -48,6 +64,9 @@ export default function DocumentsPage() {
         formData.append('title', title);
         formData.append('category', category);
         formData.append('file', file);
+        selectedGroups.forEach(groupId => {
+            formData.append('accessGroupIds[]', groupId);
+        });
 
         try {
             const res = await fetch('/api/documents', {
@@ -62,6 +81,7 @@ export default function DocumentsPage() {
             setTitle('');
             setCategory('');
             setFile(null);
+            setSelectedGroups([]);
             e.target.reset(); // Reset file input
             fetchDocuments();
         } catch (err) {
@@ -83,6 +103,11 @@ export default function DocumentsPage() {
         } catch (err) {
             setError(err.message); // Show delete error in the main error display
         }
+    };
+
+    const handleGroupSelection = (e) => {
+        const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+        setSelectedGroups(selectedOptions);
     };
 
     // Group documents by category
@@ -113,6 +138,21 @@ export default function DocumentsPage() {
                             <div className={formStyles.formGroup}>
                                 <label htmlFor="file">File</label>
                                 <input type="file" id="file" onChange={e => setFile(e.target.files[0])} required />
+                            </div>
+                            <div className={formStyles.formGroup}>
+                                <label htmlFor="accessGroups">Restrict to Groups (optional)</label>
+                                <select
+                                    id="accessGroups"
+                                    multiple
+                                    value={selectedGroups}
+                                    onChange={handleGroupSelection}
+                                    className={formStyles.multiselect}
+                                >
+                                    {accessGroups.map(group => (
+                                        <option key={group.id} value={group.id}>{group.name}</option>
+                                    ))}
+                                </select>
+                                <small>Hold Ctrl (or Cmd on Mac) to select multiple groups. If no groups are selected, the document will be public.</small>
                             </div>
                             <button type="submit" className={formStyles.button} disabled={uploading}>
                                 {uploading ? 'Uploading...' : 'Upload Document'}
