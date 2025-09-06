@@ -48,8 +48,15 @@ export default function AlbumPage() {
     const handleDeletePhoto = async (photoId) => {
         if (!window.confirm('Are you sure you want to delete this photo?')) return;
         try {
-            await fetch(`/api/gallery/albums/${albumId}/photos/${photoId}`, { method: 'DELETE' });
-            fetchAlbumDetails(); // Refresh album to show photo has been removed
+            const res = await fetch(`/api/gallery/albums/${albumId}/photos/${photoId}`, { method: 'DELETE' });
+
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({})); // try to get error message from body
+                throw new Error(errorData.message || `Failed to delete photo. Server responded with ${res.status}`);
+            }
+
+            // Deletion was successful, now refresh the album details
+            fetchAlbumDetails();
         } catch (err) {
             setError(err.message);
         }
