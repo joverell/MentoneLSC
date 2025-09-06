@@ -40,10 +40,19 @@ export default async function handler(req, res) {
             return res.status(400).json({ message: 'Guest counts must be non-negative numbers.' });
         }
 
+        // Fetch user data to include in the RSVP
+        const userDocRef = adminDb.collection('users').doc(userId);
+        const userDoc = await userDocRef.get();
+        if (!userDoc.exists) {
+            // This case is unlikely if the user is authenticated, but good practice to handle
+            return res.status(404).json({ message: 'User profile not found.' });
+        }
+        const userData = userDoc.data();
+
         // Check if the event exists before trying to RSVP
         const eventDocRef = adminDb.collection('events').doc(eventId);
         const eventDoc = await eventDocRef.get();
-        if (!eventDoc.exists()) {
+        if (!eventDoc.exists) {
             return res.status(404).json({ message: 'Event not found.' });
         }
 
@@ -55,6 +64,8 @@ export default async function handler(req, res) {
             comment: comment || null,
             adultGuests: adults,
             kidGuests: kids,
+            userName: userData.name, // Add user's name for easy display
+            userEmail: userData.email, // Add user's email for reference
             updatedAt: FieldValue.serverTimestamp()
         }, { merge: true }); // It's good practice to use merge: true for updates
 

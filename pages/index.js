@@ -79,6 +79,7 @@ export default function Home() {
   const [rsvpGuests, setRsvpGuests] = useState({}); // Will store { [eventId]: { adults: 0, kids: 0 } }
   const [expandedRsvps, setExpandedRsvps] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeRsvpForm, setActiveRsvpForm] = useState(null);
 
   const activeTab = router.query.tab || 'events';
 
@@ -130,9 +131,13 @@ export default function Home() {
     const kidGuests = rsvpGuests[eventId]?.kids || 0;
 
     try {
+      const token = await getIdToken();
       const res = await fetch(`/api/events/${internalId}/rsvp`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ status, comment, adultGuests, kidGuests }),
       });
       if (!res.ok) {
@@ -557,23 +562,36 @@ const CalendarSubscriptionModal = ({ isOpen, onClose }) => {
                       )}
 
                       {event.source === 'internal' && user && (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setActiveRsvpForm(activeRsvpForm === event.id ? null : event.id);
+                          }}
+                          className={styles.rsvpToggleBtn}
+                        >
+                          {activeRsvpForm === event.id ? 'Close RSVP' : 'RSVP Now'}
+                        </button>
+                      )}
+
+                      {activeRsvpForm === event.id && (
                         <div className={styles.rsvpContainer}>
                           <h4>Your RSVP:</h4>
                           <div className={styles.rsvpButtons}>
                             <button
-                              onClick={() => handleRsvpSubmit(event.id, 'Yes')}
+                              onClick={(e) => {e.preventDefault(); e.stopPropagation(); handleRsvpSubmit(event.id, 'Yes')}}
                               className={event.currentUserRsvpStatus === 'Yes' ? styles.rsvpActive : ''}
                             >
                               Yes
                             </button>
                             <button
-                              onClick={() => handleRsvpSubmit(event.id, 'No')}
+                              onClick={(e) => {e.preventDefault(); e.stopPropagation(); handleRsvpSubmit(event.id, 'No')}}
                               className={event.currentUserRsvpStatus === 'No' ? styles.rsvpActive : ''}
                             >
                               No
                             </button>
                             <button
-                              onClick={() => handleRsvpSubmit(event.id, 'Maybe')}
+                              onClick={(e) => {e.preventDefault(); e.stopPropagation(); handleRsvpSubmit(event.id, 'Maybe')}}
                               className={event.currentUserRsvpStatus === 'Maybe' ? styles.rsvpActive : ''}
                             >
                               Maybe
@@ -584,6 +602,7 @@ const CalendarSubscriptionModal = ({ isOpen, onClose }) => {
                               type="text"
                               placeholder="Add a comment (e.g., running late)"
                               value={rsvpComments[event.id] || ''}
+                              onClick={(e) => {e.preventDefault(); e.stopPropagation();}}
                               onChange={(e) => setRsvpComments(prev => ({ ...prev, [event.id]: e.target.value }))}
                               className={styles.rsvpCommentInput}
                             />
@@ -592,6 +611,7 @@ const CalendarSubscriptionModal = ({ isOpen, onClose }) => {
                               min="0"
                               placeholder="Adults"
                               value={rsvpGuests[event.id]?.adults || ''}
+                              onClick={(e) => {e.preventDefault(); e.stopPropagation();}}
                               onChange={(e) => setRsvpGuests(prev => ({ ...prev, [event.id]: { ...prev[event.id], adults: e.target.value } }))}
                               className={styles.rsvpGuestInput}
                             />
@@ -600,6 +620,7 @@ const CalendarSubscriptionModal = ({ isOpen, onClose }) => {
                               min="0"
                               placeholder="Kids"
                               value={rsvpGuests[event.id]?.kids || ''}
+                              onClick={(e) => {e.preventDefault(); e.stopPropagation();}}
                               onChange={(e) => setRsvpGuests(prev => ({ ...prev, [event.id]: { ...prev[event.id], kids: e.target.value } }))}
                               className={styles.rsvpGuestInput}
                             />

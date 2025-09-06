@@ -1,4 +1,4 @@
-import { adminDb } from '../../../src/firebase-admin';
+import admin, { adminDb, adminAuth } from '../../../src/firebase-admin';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
@@ -146,7 +146,7 @@ async function deleteEvent(req, res, eventId) {
   try {
     const eventRef = adminDb.collection('events').doc(eventId);
     const eventDoc = await eventRef.get();
-    if (!eventDoc.exists) {
+        if (!eventDoc.exists) {
         return res.status(404).json({ message: 'Event not found' });
     }
     const eventData = eventDoc.data();
