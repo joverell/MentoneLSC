@@ -84,6 +84,11 @@ export default function AlbumPage() {
                     {album.photos.map(photo => (
                         <div key={photo.id} className={galleryStyles.photoCard}>
                             <img src={photo.downloadURL} alt={photo.caption || 'Gallery image'} />
+                            {photo.caption && (
+                                <div className={galleryStyles.captionContainer}>
+                                    <p className={galleryStyles.caption}>{photo.caption}</p>
+                                </div>
+                            )}
                             {user && user.roles.includes('Admin') && (
                                 <button onClick={() => handleDeletePhoto(photo.id)} className={galleryStyles.deletePhotoBtn} title="Delete Photo">
                                     &times;

@@ -95,3 +95,16 @@
     align-items: center;
     justify-content: center;
 }
+
+.captionContainer {
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 0.5rem;
+    text-align: center;
+}
+
+.caption {
+    margin: 0;
+    font-size: 0.9rem;
+    text-align: center;
+}
