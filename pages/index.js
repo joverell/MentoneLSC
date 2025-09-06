@@ -265,17 +265,17 @@ export default function Home() {
             body: JSON.stringify({ content: newComment }),
         });
 
+        const data = await res.json();
+
         if (!res.ok) {
             // Revert on failure
             setNewsArticles(originalArticles);
-            const data = await res.json();
             alert(data.message || 'Failed to post comment.');
             return;
         }
 
-        const savedComment = await res.json();
         // Replace temporary comment with the real one from the server
-        setNewsArticles(prev => prev.map(a => a.id === articleId ? { ...a, comments: a.comments.map(c => c.id === tempComment.id ? savedComment : c) } : a));
+        setNewsArticles(prev => prev.map(a => a.id === articleId ? { ...a, comments: a.comments.map(c => c.id === tempComment.id ? data : c) } : a));
 
     } catch (error) {
         console.error("Error submitting comment:", error);
