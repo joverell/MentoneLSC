@@ -81,17 +81,28 @@ export default function Account() {
       return;
     }
 
-    let photoURL = userData.photoURL;
-
-    if (photoFile) {
-      const photoRef = ref(storage, `profile-photos/${user.uid}/${photoFile.name}`);
-      await uploadBytes(photoRef, photoFile);
-      photoURL = await getDownloadURL(photoRef);
-    }
-
-    const updatedUserData = { ...userData, photoURL };
-
     try {
+      let photoURL = userData.photoURL;
+      if (photoFile) {
+        const formData = new FormData();
+        formData.append('photo', photoFile);
+
+        const photoRes = await fetch(`/api/users/${user.uid}/profile-image`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!photoRes.ok) {
+          const errorData = await photoRes.json();
+          throw new Error(errorData.message || 'Failed to upload profile photo.');
+        }
+
+        const photoData = await photoRes.json();
+        photoURL = photoData.photoURL;
+      }
+
+      const updatedUserData = { ...userData, photoURL };
+
       const res = await fetch(`/api/users/${user.uid}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },

@@ -111,7 +111,6 @@ async function handlePutRequest(req, res, authResult) {
         const updateData = {};
 
         // Fields updatable by the user themselves or any admin level
-        if (photoURL !== undefined) updateData.photoURL = photoURL;
         if (notificationSettings !== undefined) updateData.notificationSettings = notificationSettings;
         if (patrolQualifications !== undefined) updateData.patrolQualifications = patrolQualifications;
         if (emergencyContact !== undefined) updateData.emergencyContact = emergencyContact;
