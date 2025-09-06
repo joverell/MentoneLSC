@@ -92,7 +92,7 @@ describe('RSVP API', () => {
     adminAuth.verifyIdToken.mockRejectedValue(error);
     await rsvpHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith({ message: 'Invalid or expired token' });
+    expect(res.json).toHaveBeenCalledWith({ message: 'Authentication error: ' + error.message });
   });
 
   test('should return 405 if method is not POST', async () => {
