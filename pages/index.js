@@ -411,7 +411,7 @@ const CalendarSubscriptionModal = ({ isOpen, onClose }) => {
                             <span role="img" aria-label="like">👍</span> {article.likeCount}
                         </button>
                         <button onClick={() => toggleComments(article.id)} className={styles.commentButton}>
-                            <span role="img" aria-label="comment">💬</span> Comment
+                            <span role="img" aria-label="comment">💬</span> {article.commentCount}
                         </button>
                     </div>
 
