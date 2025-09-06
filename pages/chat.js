@@ -58,6 +58,16 @@ export default function ChatLobby() {
         {error && <p className={adminStyles.error}>{error}</p>}
         <div className={adminStyles.tableContainer}>
           <ul className={adminStyles.userTable}>
+            {/* Static link to the General chat */}
+            <li className={adminStyles.groupRow}>
+              <Link href="/chat/general">
+                <a className={adminStyles.manageLink}>General</a>
+              </Link>
+            </li>
+
+            {/* Divider */}
+            {groups.length > 0 && <hr className={adminStyles.divider} />}
+
             {groups.length > 0 ? (
               groups.map((group) => (
                 <li key={group.id} className={adminStyles.groupRow}>
@@ -67,7 +77,7 @@ export default function ChatLobby() {
                 </li>
               ))
             ) : (
-              <p>You are not a member of any chat groups.</p>
+              <p>You are not a member of any other chat groups.</p>
             )}
           </ul>
         </div>

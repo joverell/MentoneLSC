@@ -73,11 +73,10 @@ service cloud.firestore {
 
     // Helper function to check if a user is a member of a group by checking their user document
     function isGroupMember(groupId) {
+      // Use .get() with a default empty list to prevent errors if 'groupIds' is missing
       let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
-      // Check if user document exists, has a 'groupIds' list, and if the groupId is in that list.
       return userDoc != null &&
-             'groupIds' in userDoc.data &&
-             groupId in userDoc.data.groupIds;
+             groupId in userDoc.data.get('groupIds', []);
     }
 
     // Chat Messages:

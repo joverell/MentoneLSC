@@ -1,4 +1,5 @@
 import Head from 'next/head';
+import { useEffect } from 'react';
 import '../styles/globals.css';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import BottomNav from '../components/BottomNav';
@@ -18,6 +19,24 @@ const Layout = ({ children }) => {
 };
 
 function MyApp({ Component, pageProps }) {
+  // Effect to set up the general chat group on initial load
+  useEffect(() => {
+    const setupGeneralChat = async () => {
+      try {
+        const res = await fetch('/api/chat/setup', { method: 'POST' });
+        const data = await res.json();
+        if (res.ok) {
+          console.log(data.message);
+        } else {
+          console.warn('Could not set up general chat:', data.message);
+        }
+      } catch (error) {
+        console.error('Failed to trigger general chat setup:', error);
+      }
+    };
+    setupGeneralChat();
+  }, []); // Empty dependency array ensures this runs only once on mount
+
   return (
     <>
       <Head>
