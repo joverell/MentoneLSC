@@ -58,6 +58,7 @@ const normalizeInternalEvent = (event) => ({
 export default function EventsTab({ user, getIdToken }) {
     const router = useRouter();
     const [allEvents, setAllEvents] = useState([]);
+    const [settings, setSettings] = useState({ wordpress: { enabled: true } });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [selectedDate, setSelectedDate] = useState(null);
@@ -66,24 +67,48 @@ export default function EventsTab({ user, getIdToken }) {
     const [rsvpGuests, setRsvpGuests] = useState({});
     const [expandedRsvps, setExpandedRsvps] = useState(null);
 
+    useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const res = await fetch('/api/settings');
+                const data = await res.json();
+                if (res.ok) {
+                    setSettings(data);
+                }
+            } catch (e) {
+                console.error("Could not fetch settings", e);
+            }
+        };
+        fetchSettings();
+    }, []);
+
     const fetchEvents = useCallback(async () => {
         setLoading(true);
         try {
-            const [wpRes, internalRes] = await Promise.all([
-                fetch('https://mentonelsc.com/wp-json/tribe/events/v1/events').catch(e => { console.error("WP fetch error:", e); return { ok: false }; }),
+            const fetchPromises = [
                 fetch('/api/events').catch(e => { console.error("Internal fetch error:", e); return { ok: false }; })
-            ]);
+            ];
 
-            let wordpressEvents = [];
-            if (wpRes.ok) {
-                const data = await wpRes.json();
-                wordpressEvents = (data.events || []).map(normalizeWordPressEvent);
-            } else {
-                console.warn("Could not fetch WordPress events.");
+            if (settings.wordpress?.enabled) {
+                fetchPromises.unshift(fetch('https://mentonelsc.com/wp-json/tribe/events/v1/events').catch(e => { console.error("WP fetch error:", e); return { ok: false }; }));
             }
 
+            const responses = await Promise.all(fetchPromises);
+
+            let wordpressEvents = [];
+            if (settings.wordpress?.enabled) {
+                const wpRes = responses.find(res => res.url && res.url.includes('mentonelsc.com'));
+                if (wpRes && wpRes.ok) {
+                    const data = await wpRes.json();
+                    wordpressEvents = (data.events || []).map(normalizeWordPressEvent);
+                } else {
+                    console.warn("Could not fetch WordPress events.");
+                }
+            }
+
+            const internalRes = responses.find(res => res.url && res.url.includes('/api/events'));
             let internalEvents = [];
-            if (internalRes.ok) {
+            if (internalRes && internalRes.ok) {
                 const data = await internalRes.json();
                 internalEvents = data.map(normalizeInternalEvent);
             } else {
@@ -101,11 +126,11 @@ export default function EventsTab({ user, getIdToken }) {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [settings]);
 
     useEffect(() => {
         fetchEvents();
-    }, [fetchEvents]);
+    }, [fetchEvents, settings]);
 
     const handleRsvpSubmit = async (eventId, status) => {
         const internalId = eventId.replace('internal-', '');

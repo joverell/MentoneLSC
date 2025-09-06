@@ -7,7 +7,10 @@ import Link from 'next/link';
 
 export default function SettingsAdminPage() {
     const { user } = useAuth();
-    const [settings, setSettings] = useState({ instagram: { enabled: false } });
+    const [settings, setSettings] = useState({
+        instagram: { enabled: false },
+        wordpress: { enabled: true }
+    });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [saving, setSaving] = useState(false);
@@ -32,8 +35,7 @@ export default function SettingsAdminPage() {
         }
     }, [user]);
 
-    const handleInstagramToggle = async (e) => {
-        const newEnabledState = e.target.checked;
+    const handleToggle = async (settingName, newEnabledState) => {
         setSaving(true);
         setError(null);
 
@@ -42,7 +44,7 @@ export default function SettingsAdminPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    instagram: { enabled: newEnabledState }
+                    [settingName]: { enabled: newEnabledState }
                 }),
             });
             const data = await res.json();
@@ -51,13 +53,12 @@ export default function SettingsAdminPage() {
             // Update local state after successful save
             setSettings(prevSettings => ({
                 ...prevSettings,
-                instagram: { ...prevSettings.instagram, enabled: newEnabledState }
+                [settingName]: { ...prevSettings[settingName], enabled: newEnabledState }
             }));
 
         } catch (err) {
             setError(err.message);
             // Optionally, revert the toggle on error
-            // For simplicity, we'll just show the error message
         } finally {
             setSaving(false);
         }
@@ -77,6 +78,21 @@ export default function SettingsAdminPage() {
                 <div className={formStyles.form}>
                     <h3>Integrations</h3>
                     <div className={formStyles.formGroup}>
+                        <label htmlFor="wordpress-toggle">
+                            Show WordPress Events
+                        </label>
+                        <label className={formStyles.switch}>
+                            <input
+                                id="wordpress-toggle"
+                                type="checkbox"
+                                checked={settings.wordpress?.enabled || false}
+                                onChange={(e) => handleToggle('wordpress', e.target.checked)}
+                                disabled={saving}
+                            />
+                            <span className={`${formStyles.slider} ${formStyles.round}`}></span>
+                        </label>
+                    </div>
+                    <div className={formStyles.formGroup}>
                         <label htmlFor="instagram-toggle">
                             Show Instagram Feed in Gallery
                         </label>
@@ -85,13 +101,13 @@ export default function SettingsAdminPage() {
                                 id="instagram-toggle"
                                 type="checkbox"
                                 checked={settings.instagram?.enabled || false}
-                                onChange={handleInstagramToggle}
+                                onChange={(e) => handleToggle('instagram', e.target.checked)}
                                 disabled={saving}
                             />
                             <span className={`${formStyles.slider} ${formStyles.round}`}></span>
                         </label>
-                        {saving && <small>Saving...</small>}
                     </div>
+                    {saving && <small>Saving...</small>}
                 </div>
             )}
         </AdminLayout>
