@@ -1,259 +1,145 @@
-.pageContainer {
+/* Admin Layout */
+.adminContainer {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: 250px;
+    background-color: #f8f9fa;
+    border-right: 1px solid #e0e0e0;
+    padding: 1.5rem;
+}
+
+.adminNav {
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
-    background-color: #f4f7f6;
+    gap: 0.5rem;
 }
 
-.header {
-    background: #4a5568;
+.adminNav a {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    color: #333;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.adminNav a:hover {
+    background-color: #e9ecef;
+}
+
+.adminNav .activeLink {
+    background-color: #007bff;
     color: white;
+}
+
+.mainContent {
+    flex-grow: 1;
+    padding: 2rem;
+}
+
+.pageTitle {
+    margin-top: 0;
+    margin-bottom: 2rem;
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+/* Dashboard */
+.dashboardGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.dashboardCard {
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
     padding: 1.5rem;
     text-align: center;
+    text-decoration: none;
+    color: #333;
+    transition: box-shadow 0.2s, transform 0.2s;
 }
 
-.container {
-    padding: 2rem;
-    width: 100%;
-    max-width: 1200px;
-    margin: 0 auto;
-    flex-grow: 1;
+.dashboardCard:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-@media (max-width: 768px) {
-  .container {
-    padding: 1rem;
-  }
-}
-
-.error {
-    color: #e53e3e;
-    background-color: #fed7d7;
-    padding: 1rem;
-    border-radius: 0.25rem;
+.cardIcon {
+    font-size: 2.5rem;
+    color: #007bff;
     margin-bottom: 1rem;
 }
 
+.cardTitle {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+/* User Table */
 .tableContainer {
     overflow-x: auto;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .userTable {
     width: 100%;
     border-collapse: collapse;
+    margin-top: 1rem;
 }
 
 .userTable th,
 .userTable td {
     padding: 1rem;
     text-align: left;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e0e0e0;
 }
 
 .userTable th {
-    background-color: #f7fafc;
-    font-weight: bold;
-    color: #4a5568;
-    text-transform: uppercase;
-    font-size: 0.8rem;
+    background-color: #f8f9fa;
+    font-weight: 600;
 }
 
-.userTable tbody tr:hover {
-    background-color: #edf2f7;
-}
-
-.userTable td {
-    color: #2d3748;
+.actionsCell {
+    text-align: right;
 }
 
 .manageLink {
-    color: #3182ce;
+    color: #007bff;
     text-decoration: none;
-    font-weight: bold;
-    margin-right: 1rem;
+    font-weight: 500;
 }
 
 .manageLink:hover {
     text-decoration: underline;
 }
 
-/* User Management Form Styles */
-.success {
-    color: #2f855a;
-    background-color: #c6f6d5;
-    padding: 1rem;
-    border-radius: 0.25rem;
-    margin-bottom: 1rem;
-}
-
-.formSection {
-    background: white;
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    margin-bottom: 2rem;
-}
-
-.formSection h3 {
-    margin-top: 0;
-    border-bottom: 1px solid #e2e8f0;
-    padding-bottom: 0.5rem;
-    margin-bottom: 1.5rem;
-}
-
-.checkboxWrapper {
-    display: flex;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-
-.checkboxWrapper input {
-    margin-right: 0.5rem;
-}
-
-.checkboxWrapper label {
-    font-size: 1rem;
-}
-
-.button {
-    background-color: #3182ce;
-    color: white;
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 5px;
-    font-size: 1rem;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background-color 0.2s ease-in-out;
-}
-
-.button:hover {
-    background-color: #2b6cb0;
-}
-
-.rsvpSection {
-  margin-top: 2rem;
-  padding-top: 2rem;
-  border-top: 1px solid #ccc;
-}
-
-.adminNav {
-    margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.adminNavLink {
-    color: #2b6cb0;
-    text-decoration: none;
-    font-weight: bold;
-    font-size: 1.1rem;
-}
-
-.adminNavLink:hover {
-    text-decoration: underline;
-}
-
-.inlineForm {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-}
-
-.inlineForm input {
-    flex-grow: 1;
-    padding: 0.5rem;
-    border: 1px solid #cbd5e0;
-    border-radius: 5px;
-}
-
-.actionsCell {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.editBtn, .saveBtn, .cancelBtn, .deleteBtn {
-    padding: 0.4rem 0.8rem;
-    border: none;
-    border-radius: 5px;
-    color: white;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-.editBtn { background-color: #3182ce; }
-.editBtn:hover { background-color: #2b6cb0; }
-
-.saveBtn { background-color: #38a169; }
-.saveBtn:hover { background-color: #2f855a; }
-
-.cancelBtn { background-color: #a0aec0; }
-.cancelBtn:hover { background-color: #718096; }
-
-.deleteBtn { background-color: #e53e3e; }
-.deleteBtn:hover { background-color: #c53030; }
-
-.manageBtn {
-  background-color: #3498db;
-  color: white !important;
-  padding: 8px 12px;
-  border-radius: 4px;
-  text-decoration: none;
-  font-size: 14px;
-  display: inline-block;
-  margin: 0 5px;
-  font-weight: bold;
-  border: none;
-}
-
-.manageBtn:hover {
-  background-color: #2980b9;
-  text-decoration: none;
-}
-
-/* Add this entire media query block to the end of the file */
 @media (max-width: 768px) {
-  .userTable thead {
-    /* Hide the table headers */
-    display: none;
-  }
+    .adminContainer {
+        flex-direction: column;
+    }
 
-  .userTable, .userTable tbody, .userTable tr, .userTable td {
-    display: block;
-    width: 100%;
-  }
+    .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid #e0e0e0;
+    }
 
-  .userTable tr {
-    margin-bottom: 1rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-  }
+    .adminNav {
+        flex-direction: row;
+        overflow-x: auto;
+        padding-bottom: 1rem;
+    }
 
-  .userTable td {
-    text-align: right; /* Align content to the right */
-    padding-left: 50%; /* Create space for the label */
-    position: relative;
-    border-bottom: 1px solid #e2e8f0;
-  }
-
-  .userTable td:before {
-    /* Use data-label attribute to create a "header" for each cell */
-    content: attr(data-label);
-    position: absolute;
-    left: 1rem;
-    width: 45%;
-    padding-right: 10px;
-    white-space: nowrap;
-    text-align: left;
-    font-weight: bold;
-  }
-
-  .actionsCell {
-     /* Adjust the actions cell to be more mobile friendly */
-    display: flex;
-    justify-content: flex-end;
-  }
+    .mainContent {
+        padding: 1.5rem;
+    }
 }
