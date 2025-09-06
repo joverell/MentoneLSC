@@ -24,9 +24,10 @@ const GalleryUploadForm = ({ albumId, onUploadSuccess }) => {
         const formData = new FormData();
         formData.append('photo', photoFile);
         formData.append('caption', caption);
+        formData.append('albumId', albumId);
 
         try {
-            const res = await fetch(`/api/gallery/albums/${albumId}/photos`, {
+            const res = await fetch(`/api/upload`, {
                 method: 'POST',
                 body: formData,
             });

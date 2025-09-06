@@ -30,12 +30,21 @@ async function getAlbumDetails(req, res, albumId) {
             return res.status(404).json({ message: 'Album not found.' });
         }
 
-        const photosSnap = await albumRef.collection('photos').orderBy('createdAt', 'asc').get();
+        const photosSnap = await albumRef.collection('photos').orderBy('uploadedAt', 'desc').get();
         const photos = photosSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // Make sure to update the coverImageUrl if it's not set
+        let coverImageUrl = albumSnap.data().coverImageUrl;
+        if (!coverImageUrl && photos.length > 0) {
+            coverImageUrl = photos[0].downloadURL;
+            // Optionally, update the album document in Firestore
+            // await albumRef.update({ coverImageUrl });
+        }
 
         res.status(200).json({
             id: albumSnap.id,
             ...albumSnap.data(),
+            coverImageUrl, // Use the updated cover image URL
             photos: photos,
         });
     } catch (error) {
