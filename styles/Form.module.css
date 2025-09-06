@@ -22,6 +22,8 @@
 .formGroup > ul {
     grid-column: 1 / -1;
     text-align: left;
+    list-style-type: none;
+    padding-left: 0;
 }
 
 .formGroup input {
