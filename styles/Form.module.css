@@ -8,16 +8,14 @@
 }
 
 .formGroup {
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  align-items: center;
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .formGroup label {
   font-weight: bold;
   color: #333;
-  text-align: right;
 }
 
 .formGroup > h3,
