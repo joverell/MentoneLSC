@@ -23,6 +23,7 @@ if (!admin.apps.length) {
   };
 
   try {
+    console.log(`Initializing Firebase Admin with bucket: ${process.env.FIREBASE_STORAGE_BUCKET}`);
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
       storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
