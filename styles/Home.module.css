@@ -41,6 +41,18 @@
   margin: 0 auto;
 }
 
+.wordpressEvent {
+    background-color: #0070f3; /* A different color for WordPress events */
+}
+
+.wpLink {
+    position: absolute;
+    top: 0;
+    right: 0;
+    font-size: 0.7em;
+    padding: 2px;
+}
+
 .section {
   padding: 1.5rem;
 }

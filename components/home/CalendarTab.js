@@ -20,6 +20,8 @@ export default function CalendarTab() {
                     const data = await wpRes.json();
                     wordpressEvents = (data.events || []).map(event => ({
                         startTime: new Date(event.start_date.replace(' ', 'T')),
+                        source: 'wordpress',
+                        url: event.url,
                     }));
                 }
 
@@ -28,6 +30,7 @@ export default function CalendarTab() {
                     const data = await internalRes.json();
                     internalEvents = data.map(event => ({
                         startTime: new Date(event.start_time),
+                        source: 'internal',
                     }));
                 }
 
@@ -42,15 +45,40 @@ export default function CalendarTab() {
 
     const tileClassName = ({ date, view }) => {
         if (view === 'month') {
-            const hasEvent = allEvents.some(event => {
+            const dayEvents = allEvents.filter(event => {
                 const eventDate = event.startTime;
-                return (
-                    date.getFullYear() === eventDate.getFullYear() &&
-                    date.getMonth() === eventDate.getMonth() &&
-                    date.getDate() === eventDate.getDate()
-                );
+                return date.getFullYear() === eventDate.getFullYear() &&
+                       date.getMonth() === eventDate.getMonth() &&
+                       date.getDate() === eventDate.getDate();
             });
-            return hasEvent ? styles.eventMarker : null;
+
+            if (dayEvents.length > 0) {
+                const classNames = [styles.eventMarker];
+                if (dayEvents.some(event => event.source === 'wordpress')) {
+                    classNames.push(styles.wordpressEvent);
+                }
+                return classNames.join(' ');
+            }
+        }
+        return null;
+    };
+
+    const tileContent = ({ date, view }) => {
+        if (view === 'month') {
+            const wpEvent = allEvents.find(event =>
+                event.source === 'wordpress' &&
+                date.getFullYear() === event.startTime.getFullYear() &&
+                date.getMonth() === event.startTime.getMonth() &&
+                date.getDate() === event.startTime.getDate()
+            );
+
+            if (wpEvent) {
+                return (
+                    <a href={wpEvent.url} target="_blank" rel="noopener noreferrer" className={styles.wpLink}>
+                       <i className="fas fa-link"></i>
+                    </a>
+                );
+            }
         }
         return null;
     };
@@ -95,6 +123,7 @@ export default function CalendarTab() {
             </div>
             <Calendar
                 tileClassName={tileClassName}
+                tileContent={tileContent}
             />
         </div>
     );
