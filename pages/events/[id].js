@@ -3,6 +3,9 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import BottomNav from '../../components/BottomNav';
 import styles from '../../styles/Home.module.css';
+import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
+
+const libraries = ['places'];
 
 export default function EventDetails() {
   const router = useRouter();
@@ -17,6 +20,13 @@ export default function EventDetails() {
   const [comment, setComment] = useState('');
   const [adultGuests, setAdultGuests] = useState(0);
   const [kidGuests, setKidGuests] = useState(0);
+
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
+    libraries,
+  });
+
+  const [markerPosition, setMarkerPosition] = useState(null);
 
   useEffect(() => {
     if (!id) return;
@@ -44,6 +54,22 @@ export default function EventDetails() {
 
     fetchEvent();
   }, [id]);
+
+  useEffect(() => {
+    if (event && event.location) {
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ address: event.location }, (results, status) => {
+        if (status === 'OK') {
+          setMarkerPosition({
+            lat: results[0].geometry.location.lat(),
+            lng: results[0].geometry.location.lng(),
+          });
+        } else {
+          console.error('Geocode was not successful for the following reason: ' + status);
+        }
+      });
+    }
+  }, [event]);
 
   const handleRsvp = async (e) => {
     e.preventDefault();
@@ -83,6 +109,11 @@ export default function EventDetails() {
   if (error) return <div>Error: {error}</div>;
   if (!event) return <div>Event not found.</div>;
 
+  const mapContainerStyle = {
+    width: '100%',
+    height: '400px',
+  };
+
   return (
     <div className={styles.container}>
       <header className={styles.header}>
@@ -92,6 +123,19 @@ export default function EventDetails() {
         <p>{event.description}</p>
         <p><strong>When:</strong> {new Date(event.start_time).toLocaleString()} - {new Date(event.end_time).toLocaleString()}</p>
         {event.location && <p><strong>Where:</strong> {event.location}</p>}
+
+        {isLoaded && event.location && (
+          <div style={{ marginTop: '20px' }}>
+            <GoogleMap
+              mapContainerStyle={mapContainerStyle}
+              zoom={15}
+              center={markerPosition}
+            >
+              {markerPosition && <Marker position={markerPosition} />}
+            </GoogleMap>
+          </div>
+        )}
+        {loadError && <p>Error loading map.</p>}
 
         {user && (
           <form onSubmit={handleRsvp} className={styles.rsvpForm}>

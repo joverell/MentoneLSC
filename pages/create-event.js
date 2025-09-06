@@ -138,7 +138,7 @@ export default function CreateEvent() {
       <header className={styles.header}>
         <h1>Create New Event</h1>
       </header>
-      <div className={styles.container}>
+      <div className={`${styles.container} ${styles.formContainerFullWidth}`}>
         <form onSubmit={handleSubmit} className={styles.form}>
           {error && <p className={styles.error}>{error}</p>}
           {success && <p className={styles.success}>{success}</p>}
@@ -227,6 +227,42 @@ export default function CreateEvent() {
           </div>
 
           <div className={styles.formGroup}>
+            <label>Event Image (Optional)</label>
+            <FileUploadInput
+              onUploadSuccess={(url) => setImageUrl(url)}
+              folder="events"
+            />
+            {imageUrl && (
+                <div className={styles.imagePreview}>
+                    <p>Current image:</p>
+                    <img src={imageUrl} alt="Event" style={{ maxWidth: '200px', marginTop: '10px' }} />
+                </div>
+            )}
+          </div>
+
+          <div className={styles.formGroup}>
+            <label>Visible To (optional)</label>
+            <p className={styles.fieldDescription}>If no groups are selected, the event will be visible to everyone.</p>
+            <div className={styles.checkboxGrid}>
+                {allGroups.map(group => (
+                    <div key={group.id} className={styles.checkboxWrapper}>
+                        <input
+                            type="checkbox"
+                            id={`group-${group.id}`}
+                            checked={selectedGroups.has(group.id)}
+                            onChange={() => handleGroupChange(group.id)}
+                        />
+                        <label htmlFor={`group-${group.id}`}>{group.name}</label>
+                    </div>
+                ))}
+            </div>
+          </div>
+
+          <button type="submit" className={styles.button}>Create Event</button>
+        </form>
+
+        <div className={styles.mapContainerFullWidth}>
+          <div className={styles.formGroup}>
             <label>Location</label>
             {isLoaded && (
               <StandaloneSearchBox
@@ -281,41 +317,7 @@ export default function CreateEvent() {
             )}
             {loadError && <p>Error loading maps</p>}
           </div>
-
-          <div className={styles.formGroup}>
-            <label>Event Image (Optional)</label>
-            <FileUploadInput
-              onUploadSuccess={(url) => setImageUrl(url)}
-              folder="events"
-            />
-            {imageUrl && (
-                <div className={styles.imagePreview}>
-                    <p>Current image:</p>
-                    <img src={imageUrl} alt="Event" style={{ maxWidth: '200px', marginTop: '10px' }} />
-                </div>
-            )}
-          </div>
-
-          <div className={styles.formGroup}>
-            <label>Visible To (optional)</label>
-            <p className={styles.fieldDescription}>If no groups are selected, the event will be visible to everyone.</p>
-            <div className={styles.checkboxGrid}>
-                {allGroups.map(group => (
-                    <div key={group.id} className={styles.checkboxWrapper}>
-                        <input
-                            type="checkbox"
-                            id={`group-${group.id}`}
-                            checked={selectedGroups.has(group.id)}
-                            onChange={() => handleGroupChange(group.id)}
-                        />
-                        <label htmlFor={`group-${group.id}`}>{group.name}</label>
-                    </div>
-                ))}
-            </div>
-          </div>
-
-          <button type="submit" className={styles.button}>Create Event</button>
-        </form>
+        </div>
       </div>
       <BottomNav />
     </div>
