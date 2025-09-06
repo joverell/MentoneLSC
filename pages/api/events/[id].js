@@ -1,6 +1,7 @@
 import { adminDb } from '../../../src/firebase-admin';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
+import { rsvpOnEvent } from '../../../src/services/events/rsvpService';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -58,6 +59,10 @@ export default async function handler(req, res) {
     return getEvent(req, res, id);
   }
 
+  if (req.method === 'POST') {
+    return rsvpOnEvent(req, res, id);
+  }
+
   const authResult = await authorize(req, id);
 
   if (!authResult || !authResult.authorized) {
@@ -70,7 +75,7 @@ export default async function handler(req, res) {
     case 'DELETE':
       return deleteEvent(req, res, id);
     default:
-      res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
+      res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
       return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }

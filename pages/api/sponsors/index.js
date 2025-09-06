@@ -38,7 +38,7 @@ async function getSponsors(req, res) {
     }
 }
 
-function createSponsor(req, res) {
+async function createSponsor(req, res) {
     const cookies = parseCookie(req.headers.cookie || '');
     const token = cookies.auth_token;
     if (!token) return res.status(401).json({ message: 'Not authenticated' });
@@ -51,11 +51,8 @@ function createSponsor(req, res) {
 
         const form = formidable({});
 
-        form.parse(req, async (err, fields, files) => {
-            if (err) {
-                console.error('Form Parse Error:', err);
-                return res.status(500).json({ message: 'Error parsing form data.' });
-            }
+        try {
+            const [fields, files] = await form.parse(req);
 
             const name = fields.name?.[0];
             const websiteUrl = fields.websiteUrl?.[0];
@@ -68,36 +65,41 @@ function createSponsor(req, res) {
             const bucket = adminStorage.bucket();
             const destination = `sponsors/${Date.now()}-${logoFile.originalFilename}`;
 
-            try {
-                await bucket.upload(logoFile.filepath, {
-                    destination: destination,
-                    metadata: { contentType: logoFile.mimetype },
-                });
+            await bucket.upload(logoFile.filepath, {
+                destination: destination,
+                metadata: { contentType: logoFile.mimetype },
+            });
 
-                fs.unlinkSync(logoFile.filepath);
+            fs.unlinkSync(logoFile.filepath);
 
-                const fileRef = bucket.file(destination);
-                await fileRef.makePublic();
-                const logoUrl = fileRef.publicUrl();
+            const fileRef = bucket.file(destination);
+            const [logoUrl] = await fileRef.getSignedUrl({
+                action: 'read',
+                expires: '03-09-2491',
+            });
 
-                await adminDb.collection('sponsors').add({
-                    name,
-                    websiteUrl,
-                    logoUrl,
-                    storagePath: destination,
-                    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-                });
+            await adminDb.collection('sponsors').add({
+                name,
+                websiteUrl,
+                logoUrl,
+                storagePath: destination,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
 
-                return res.status(201).json({ message: 'Sponsor created successfully.' });
+            return res.status(201).json({ message: 'Sponsor created successfully.' });
 
-            } catch (uploadError) {
-                console.error('Upload Process Error:', uploadError);
-                return res.status(500).json({ message: 'An error occurred during the file upload process.' });
+        } catch (uploadError) {
+            console.error('Upload Process Error:', uploadError);
+            if (uploadError.name === 'FormidableError') {
+                return res.status(500).json({ message: 'Error parsing form data.' });
             }
-        });
-
+            return res.status(500).json({ message: 'An error occurred during the file upload process.' });
+        }
     } catch (error) {
         console.error('Create Sponsor Error:', error);
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({ message: 'Invalid token' });
+        }
         return res.status(500).json({ message: 'An error occurred during sponsor creation.' });
     }
 }

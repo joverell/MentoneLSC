@@ -7,7 +7,7 @@ import styles from '../../styles/Home.module.css';
 export default function EventDetails() {
   const router = useRouter();
   const { id } = router.query;
-  const { user } = useAuth();
+  const { user, getIdToken } = useAuth();
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -55,8 +55,11 @@ export default function EventDetails() {
     setSuccessMessage('');
     setError('');
     try {
-      const token = await user.getIdToken();
-      const response = await fetch(`/api/events/${id}/rsvp`, {
+      const token = await getIdToken();
+      if (!token) {
+        throw new Error('You must be logged in to RSVP.');
+      }
+      const response = await fetch(`/api/events/${id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

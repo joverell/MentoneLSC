@@ -2,6 +2,7 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
+import { getStorage } from "firebase/storage";
 
 // Your web app's Firebase configuration is stored in an environment variable
 const firebaseConfigString = process.env.NEXT_PUBLIC_FIREBASE_CONFIG;
@@ -19,4 +20,6 @@ export const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 // Initialize Firebase Authentication and get a reference to the service
 export const auth = getAuth(app);
+// Initialize Firebase Storage and get a reference to the service
+export const storage = getStorage(app);
 export { GoogleAuthProvider } from "firebase/auth";

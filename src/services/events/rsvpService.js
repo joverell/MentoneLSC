@@ -1,12 +1,8 @@
-import { adminDb, adminAuth } from '../../../../src/firebase-admin';
+import { adminDb, adminAuth } from '../../firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 
-export default async function handler(req, res) {
-    if (req.method !== 'POST') {
-        res.setHeader('Allow', ['POST']);
-        return res.status(405).end(`Method ${req.method} Not Allowed`);
-    }
-
+// A user must be authenticated to RSVP
+async function rsvpOnEvent(req, res, eventId) {
     const { authorization } = req.headers;
     if (!authorization || !authorization.startsWith('Bearer ')) {
         return res.status(401).json({ message: 'Missing or invalid authorization token' });
@@ -17,12 +13,6 @@ export default async function handler(req, res) {
     try {
         const decodedToken = await adminAuth.verifyIdToken(token);
         const userId = decodedToken.uid;
-
-        const { id: eventId } = req.query;
-
-        if (!eventId) {
-            return res.status(400).json({ message: 'Invalid event ID' });
-        }
 
         const { status, comment, adultGuests, kidGuests } = req.body;
 
@@ -56,7 +46,7 @@ export default async function handler(req, res) {
             adultGuests: adults,
             kidGuests: kids,
             updatedAt: FieldValue.serverTimestamp()
-        }, { merge: true }); // It's good practice to use merge: true for updates
+        }, { merge: true });
 
         return res.status(200).json({ message: 'RSVP submitted successfully.' });
 
@@ -64,7 +54,9 @@ export default async function handler(req, res) {
         if (error.code === 'auth/id-token-expired' || error.code === 'auth/argument-error' || error.code === 'auth/id-token-revoked') {
             return res.status(401).json({ message: 'Invalid or expired token' });
         }
-        console.error('RSVP API Error:', error);
-        res.status(500).json({ message: 'An error occurred while submitting RSVP.' });
+        console.error('RSVP Service Error:', error);
+        return res.status(500).json({ message: 'An error occurred while submitting RSVP.' });
     }
 }
+
+export { rsvpOnEvent };
