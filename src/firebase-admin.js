@@ -5,11 +5,19 @@ if (
   !process.env.FIREBASE_PROJECT_ID ||
   !process.env.FIREBASE_CLIENT_EMAIL ||
   !process.env.FIREBASE_PRIVATE_KEY ||
-  !process.env.FIREBASE_STORAGE_BUCKET
+  !process.env.NEXT_PUBLIC_FIREBASE_CONFIG
 ) {
   throw new Error(
     'CRITICAL: One or more Firebase Admin environment variables are not set. The application cannot start.'
   );
+}
+
+// Parse the client-side config to get the storage bucket
+const firebaseConfig = JSON.parse(process.env.NEXT_PUBLIC_FIREBASE_CONFIG);
+const storageBucket = firebaseConfig.storageBucket;
+
+if (!storageBucket) {
+    throw new Error('CRITICAL: storageBucket is not defined in NEXT_PUBLIC_FIREBASE_CONFIG.');
 }
 
 
@@ -25,7 +33,7 @@ if (!admin.apps.length) {
   try {
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
-      storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+      storageBucket: storageBucket,
     });
   } catch (error) {
     console.error('Firebase Admin Initialization Error:', error);
