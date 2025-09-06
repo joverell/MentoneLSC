@@ -30,7 +30,7 @@ export default function InstagramGalleryPage() {
     }, []);
 
     return (
-        <div className={styles.pageContainer}>
+        <div className={styles.container}>
             <header className={styles.header}>
                 <h1>From Our Instagram</h1>
                 <p>Latest posts from our Instagram feed. <a href="https://www.instagram.com/mentonelifesavingclub" target="_blank" rel="noopener noreferrer">Follow us!</a></p>

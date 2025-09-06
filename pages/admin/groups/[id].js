@@ -154,7 +154,7 @@ export default function ManageGroupMembers() {
   const usersNotAdmin = allUsers.filter(user => !group.admins.includes(user.uid));
 
   return (
-    <div className={styles.pageContainer}>
+    <div className={styles.container}>
       <header className={styles.header}>
         <h1>Manage Members for "{group.name}"</h1>
       </header>

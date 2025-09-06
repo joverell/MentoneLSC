@@ -154,7 +154,7 @@ export default function CreateNews() {
   }
 
   return (
-    <div className={styles.pageContainer}>
+    <div className={styles.container}>
       <header className={styles.header}>
         <h1>Create News Article</h1>
       </header>

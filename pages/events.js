@@ -62,7 +62,7 @@ export default function EventsCalendar() {
   if (error) return <div>Error: {error}</div>;
 
   return (
-    <div className={styles.pageContainer}>
+    <div className={styles.container}>
       <header className={styles.header}>
         <h1>Club Events Calendar</h1>
       </header>

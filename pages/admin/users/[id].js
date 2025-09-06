@@ -121,7 +121,7 @@ export default function EditUser() {
   if (!userData) return <p>User not found.</p>;
 
   return (
-    <div className={styles.pageContainer}>
+    <div className={styles.container}>
       <header className={styles.header}>
         <h1>Edit User: {userData.name}</h1>
       </header>

@@ -60,7 +60,7 @@ export default function AlbumPage() {
     if (!album) return <p>Album not found.</p>;
 
     return (
-        <div className={styles.pageContainer}>
+        <div className={styles.container}>
             <header className={styles.header}>
                 <h1>{album.title}</h1>
                 <p>{album.description}</p>

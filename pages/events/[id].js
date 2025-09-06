@@ -84,7 +84,7 @@ export default function EventDetails() {
   if (!event) return <div>Event not found.</div>;
 
   return (
-    <div className={styles.pageContainer}>
+    <div className={styles.container}>
       <header className={styles.header}>
         <h1>{event.title}</h1>
       </header>
