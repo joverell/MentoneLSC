@@ -10,7 +10,7 @@ import InfoTab from '../components/home/InfoTab';
 import { useAuth } from '../context/AuthContext';
 
 export default function Home() {
-  const { user } = useAuth();
+  const { user, getIdToken } = useAuth();
   const router = useRouter();
   const activeTab = router.query.tab || 'events';
 
@@ -30,7 +30,7 @@ export default function Home() {
       </header>
 
       <div className={styles.container}>
-        {activeTab === 'events' && <EventsTab user={user} />}
+        {activeTab === 'events' && <EventsTab user={user} getIdToken={getIdToken} />}
         {activeTab === 'news' && <NewsTab user={user} />}
         {activeTab === 'calendar' && <CalendarTab />}
         {activeTab === 'info' && <InfoTab />}
