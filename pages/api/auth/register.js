@@ -43,6 +43,7 @@ export default async function handler(req, res) {
           name: name,
           email: email,
           roles: userRoles, // Store roles in the user document as well
+          groupIds: ['general'], // Add user to the general chat group by default
           createdAt: FieldValue.serverTimestamp(),
         });
 
