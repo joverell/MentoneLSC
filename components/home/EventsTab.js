@@ -55,7 +55,7 @@ const normalizeInternalEvent = (event) => ({
 });
 
 
-export default function EventsTab({ user }) {
+export default function EventsTab({ user, getIdToken }) {
     const router = useRouter();
     const [allEvents, setAllEvents] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -113,10 +113,19 @@ export default function EventsTab({ user }) {
         const adultGuests = rsvpGuests[eventId]?.adults || 0;
         const kidGuests = rsvpGuests[eventId]?.kids || 0;
 
+        if (!user || !getIdToken) {
+            alert('You must be logged in to RSVP.');
+            return;
+        }
+
         try {
+            const token = await getIdToken();
             const res = await fetch(`/api/events/${internalId}/rsvp`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
                 body: JSON.stringify({ status, comment, adultGuests, kidGuests }),
             });
             if (!res.ok) {
