@@ -32,8 +32,9 @@ export default async function handler(req, res) {
         }
 
         const { albumId } = req.query;
-        const { files } = await parseForm(req);
+        const { fields, files } = await parseForm(req);
         const photoFile = files.photo?.[0];
+        const caption = fields.caption?.[0] || '';
 
         if (!photoFile) {
             return res.status(400).json({ message: 'No photo uploaded.' });
@@ -61,11 +62,12 @@ export default async function handler(req, res) {
             albumId,
             fileName,
             downloadURL: url,
+            caption: caption,
             uploadedAt: new Date().toISOString(),
             createdBy: decoded.userId,
         };
 
-        const albumRef = adminDb.collection('gallery_albums').doc(albumId);
+        const albumRef = adminDb.collection('photo_albums').doc(albumId);
         const albumDoc = await albumRef.get();
 
         if (!albumDoc.exists) {
