@@ -79,13 +79,15 @@ async function createComment(req, res, articleId) {
       createdAt: FieldValue.serverTimestamp(),
     });
 
-    // We can return the new comment data if needed, including the generated ID
+    const newCommentSnapshot = await newCommentRef.get();
+    const newCommentData = newCommentSnapshot.data();
+
     const newComment = {
-        id: newCommentRef.id,
-        content: content.trim(),
-        authorId: userId,
-        authorName: authorName,
-        createdAt: new Date().toISOString(), // Approximate timestamp for immediate feedback
+        id: newCommentSnapshot.id,
+        content: newCommentData.content,
+        authorId: newCommentData.authorId,
+        authorName: newCommentData.authorName,
+        createdAt: newCommentData.createdAt.toDate().toISOString(),
     };
 
     return res.status(201).json(newComment);
