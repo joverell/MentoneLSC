@@ -35,41 +35,52 @@ async function getNews(req, res) {
     const newsCollection = adminDb.collection('news').orderBy('createdAt', 'desc');
     const newsSnapshot = await newsCollection.get();
 
-    const articles = newsSnapshot.docs.map(doc => {
-        const data = doc.data();
+    const articlesPromises = newsSnapshot.docs.map(async (doc) => {
+      const data = doc.data();
 
-        const isPublic = !data.visibleToGroups || data.visibleToGroups.length === 0;
-        const isAdmin = user && user.roles && user.roles.includes('Admin');
+      const isPublic =
+        !data.visibleToGroups || data.visibleToGroups.length === 0;
+      const isAdmin = user && user.roles && user.roles.includes("Admin");
 
-        let canView = isPublic || isAdmin;
+      let canView = isPublic || isAdmin;
 
-        if (!canView && user && user.groupIds) {
-            const userGroups = new Set(user.groupIds);
-            const articleGroups = new Set(data.visibleToGroups);
-            for (const group of articleGroups) {
-                if (userGroups.has(group)) {
-                    canView = true;
-                    break;
-                }
-            }
+      if (!canView && user && user.groupIds) {
+        const userGroups = new Set(user.groupIds);
+        const articleGroups = new Set(data.visibleToGroups);
+        for (const group of articleGroups) {
+          if (userGroups.has(group)) {
+            canView = true;
+            break;
+          }
         }
+      }
 
-        if (!canView) return null;
+      if (!canView) return null;
 
-        const likes = data.likes || [];
-        const currentUserHasLiked = user ? likes.includes(user.userId) : false;
+      const commentsSnapshot = await adminDb
+        .collection("news")
+        .doc(doc.id)
+        .collection("comments")
+        .get();
+      const commentCount = commentsSnapshot.size;
 
-        return {
-            id: doc.id,
-            title: data.title,
-            content: data.content,
-            imageUrl: data.imageUrl || null,
-            authorName: data.authorName,
-            createdAt: data.createdAt.toDate().toISOString(),
-            likeCount: data.likeCount || 0,
-            currentUserHasLiked: currentUserHasLiked,
-        };
-    }).filter(Boolean); // Filter out null values
+      const likes = data.likes || [];
+      const currentUserHasLiked = user ? likes.includes(user.userId) : false;
+
+      return {
+        id: doc.id,
+        title: data.title,
+        content: data.content,
+        imageUrl: data.imageUrl || null,
+        authorName: data.authorName,
+        createdAt: data.createdAt.toDate().toISOString(),
+        likeCount: data.likeCount || 0,
+        currentUserHasLiked: currentUserHasLiked,
+        commentCount: commentCount,
+      };
+    });
+
+    const articles = (await Promise.all(articlesPromises)).filter(Boolean); // Filter out null values
 
     return res.status(200).json(articles);
   } catch (error) {
