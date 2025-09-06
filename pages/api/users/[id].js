@@ -1,8 +1,17 @@
-import { adminDb, adminAuth } from '../../../src/firebase-admin';
+import { adminDb, adminAuth, adminStorage } from '../../../src/firebase-admin';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
+import { parseForm } from '@/utils/fileUploadParser.js';
+import fs from 'fs';
+import { v4 as uuidv4 } from 'uuid';
 
 const JWT_SECRET = process.env.JWT_SECRET;
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
 // Helper to authorize viewing or managing a user
 async function authorizeUserAccess(req, targetUserId) {
@@ -104,11 +113,46 @@ async function getUser(req, res, userId) {
 async function handlePutRequest(req, res, authResult) {
     const { id: targetUserId } = req.query;
     const { level, adminGroups } = authResult;
-    const { name, email, patrolQualifications, emergencyContact, uniformSize, roles, groupIds, notificationSettings, photoURL } = req.body;
 
+    let tempFilePath;
     try {
+        const { fields, files } = await parseForm(req);
+
+        const photoFile = files.photo?.[0];
+        let photoURL = fields.photoURL?.[0]; // Existing photo URL
+
+        // If a new photo is uploaded, process it
+        if (photoFile) {
+            tempFilePath = photoFile.filepath;
+            const bucket = adminStorage.bucket();
+            const fileExt = photoFile.originalFilename.split('.').pop();
+            const fileName = `${uuidv4()}.${fileExt}`;
+            const destination = `profile-photos/${targetUserId}/${fileName}`;
+
+            await bucket.upload(tempFilePath, {
+                destination: destination,
+                metadata: { contentType: photoFile.mimetype },
+            });
+
+            const fileRef = bucket.file(destination);
+            const [url] = await fileRef.getSignedUrl({ action: 'read', expires: '03-09-2491' });
+            photoURL = url; // Set the new photo URL
+        }
+
         const userDocRef = adminDb.collection('users').doc(targetUserId);
-        const updateData = {};
+        const updateData = { photoURL }; // Start with the photoURL
+
+        // Extract text fields from the parsed form
+        const name = fields.name?.[0];
+        const email = fields.email?.[0];
+        const patrolQualifications = fields.patrolQualifications?.[0];
+        const emergencyContact = fields.emergencyContact?.[0];
+        const uniformSize = fields.uniformSize?.[0];
+        // Roles and groupIds might be arrays, handle them carefully
+        const roles = fields.roles ? (Array.isArray(fields.roles) ? fields.roles : [fields.roles]) : undefined;
+        const groupIds = fields.groupIds ? (Array.isArray(fields.groupIds) ? fields.groupIds : [fields.groupIds]) : undefined;
+        // Notification settings is an object
+        const notificationSettings = fields.notificationSettings ? JSON.parse(fields.notificationSettings[0]) : undefined;
 
         // Fields updatable by the user themselves or any admin level
         if (notificationSettings !== undefined) updateData.notificationSettings = notificationSettings;
@@ -117,7 +161,7 @@ async function handlePutRequest(req, res, authResult) {
         if (uniformSize !== undefined) updateData.uniformSize = uniformSize;
         if (name !== undefined) updateData.name = name;
 
-        // Email update requires special handling and should be allowed for self and admins
+        // Email update
         if (email !== undefined) {
             const currentUser = await adminAuth.getUser(targetUserId);
             if (currentUser.email !== email) {
@@ -126,27 +170,22 @@ async function handlePutRequest(req, res, authResult) {
             }
         }
 
-        // Role and Group updates are restricted
+        // Role and Group updates (with the same permission logic as before)
         if (level === 'admin') {
-            // Full admins can update roles and any group memberships
             if (roles !== undefined) updateData.roles = roles;
             if (groupIds !== undefined) updateData.groupIds = groupIds;
         } else if (level === 'groupAdmin') {
-            // Group admins can only update groupIds, and only for the groups they manage.
             if (groupIds !== undefined) {
                 const targetUserDoc = await userDocRef.get();
                 const currentGroupIds = targetUserDoc.data().groupIds || [];
-                // Filter out groups the admin doesn't manage
                 const otherGroups = currentGroupIds.filter(gId => !adminGroups.includes(gId));
-                // Filer the incoming groupIds to only those the admin manages
                 const managedGroups = groupIds.filter(gId => adminGroups.includes(gId));
-                // Combine the two sets
                 updateData.groupIds = [...new Set([...otherGroups, ...managedGroups])];
             }
-             if (roles !== undefined) {
+            if (roles !== undefined) {
                 return res.status(403).json({ message: 'Forbidden: You do not have permission to change user roles.' });
             }
-        } else { // level === 'self'
+        } else { // 'self'
             if (roles !== undefined || groupIds !== undefined) {
                 return res.status(403).json({ message: 'Forbidden: You cannot change your own roles or group memberships.' });
             }
@@ -156,7 +195,7 @@ async function handlePutRequest(req, res, authResult) {
             await userDocRef.update(updateData);
         }
 
-        res.status(200).json({ message: 'User profile updated successfully.' });
+        res.status(200).json({ message: 'User profile updated successfully.', photoURL });
 
     } catch (error) {
         console.error('Update User API Error:', error);
@@ -164,6 +203,14 @@ async function handlePutRequest(req, res, authResult) {
             return res.status(409).json({ message: 'The email address is already in use by another account.' });
         }
         res.status(500).json({ message: 'An error occurred while updating user data' });
+    } finally {
+        if (tempFilePath) {
+            try {
+                fs.unlinkSync(tempFilePath);
+            } catch (unlinkError) {
+                console.error('Error deleting temporary file:', unlinkError);
+            }
+        }
     }
 }
 
