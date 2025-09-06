@@ -52,6 +52,7 @@ export const AuthProvider = ({ children }) => {
       handleFcmToken(res.data); // Handle FCM token on login
       router.push('/account');
     } catch (error) {
+      console.error("Login error details:", error);
       throw new Error(error.response?.data?.message || 'Login failed');
     }
   };
