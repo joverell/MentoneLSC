@@ -35,6 +35,10 @@ h2 {
 
 /* Responsive Calendar */
 @media (max-width: 768px) {
+  body {
+    padding-left: 0;
+    padding-right: 0;
+  }
   .react-calendar {
     width: 100% !important;
     max-width: 100%;
