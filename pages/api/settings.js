@@ -27,7 +27,10 @@ export default async function handler(req, res) {
             const doc = await settingsRef.get();
             if (!doc.exists) {
                 // Default settings if the document doesn't exist
-                return res.status(200).json({ instagram: { enabled: false } });
+                return res.status(200).json({
+                    instagram: { enabled: false },
+                    wordpress: { enabled: true }
+                });
             }
             return res.status(200).json(doc.data());
         } catch (error) {
@@ -43,9 +46,13 @@ export default async function handler(req, res) {
         // --- End Authorization Check ---
 
         try {
-            const { instagram } = req.body;
+            const { instagram, wordpress } = req.body;
+            const newSettings = {};
+            if (instagram !== undefined) newSettings.instagram = instagram;
+            if (wordpress !== undefined) newSettings.wordpress = wordpress;
+
             // Using set with merge: true to create or update the document
-            await settingsRef.set({ instagram }, { merge: true });
+            await settingsRef.set(newSettings, { merge: true });
             return res.status(200).json({ message: 'Settings updated successfully.' });
         } catch (error) {
             console.error('Failed to update settings:', error);
