@@ -9,7 +9,8 @@ export default function SettingsAdminPage() {
     const { user } = useAuth();
     const [settings, setSettings] = useState({
         instagram: { enabled: false },
-        wordpress: { enabled: true }
+        wordpress: { enabled: true },
+        mergeCalendarAndEvents: { enabled: false }
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -102,6 +103,22 @@ export default function SettingsAdminPage() {
                                 type="checkbox"
                                 checked={settings.instagram?.enabled || false}
                                 onChange={(e) => handleToggle('instagram', e.target.checked)}
+                                disabled={saving}
+                            />
+                            <span className={`${formStyles.slider} ${formStyles.round}`}></span>
+                        </label>
+                    </div>
+                    <h3>Events</h3>
+                    <div className={formStyles.formGroup}>
+                        <label htmlFor="merge-calendar-toggle">
+                            Merge Calendar and Events Page
+                        </label>
+                        <label className={formStyles.switch}>
+                            <input
+                                id="merge-calendar-toggle"
+                                type="checkbox"
+                                checked={settings.mergeCalendarAndEvents?.enabled || false}
+                                onChange={(e) => handleToggle('mergeCalendarAndEvents', e.target.checked)}
                                 disabled={saving}
                             />
                             <span className={`${formStyles.slider} ${formStyles.round}`}></span>
