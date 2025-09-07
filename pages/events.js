@@ -7,6 +7,7 @@ import BottomNav from '../components/BottomNav';
 import styles from '../styles/Home.module.css';
 import { useAuth } from '../context/AuthContext';
 import EventsTab from '../components/home/EventsTab';
+import { fetchWithAuth } from '../utils/auth-fetch';
 
 export default function EventsCalendar() {
     const { user, getIdToken } = useAuth();
@@ -21,7 +22,7 @@ export default function EventsCalendar() {
             setLoading(true);
             try {
                 // Fetch settings first
-                const settingsRes = await fetch('/api/settings');
+                const settingsRes = await fetchWithAuth('/api/settings');
                 const settingsData = await settingsRes.json();
                 if (settingsRes.ok) {
                     setSettings(settingsData);
@@ -30,7 +31,7 @@ export default function EventsCalendar() {
                 }
 
                 // Then fetch events
-                const eventsRes = await fetch('/api/events');
+                const eventsRes = await fetchWithAuth('/api/events');
                 if (!eventsRes.ok) {
                     throw new Error('Failed to fetch events');
                 }
