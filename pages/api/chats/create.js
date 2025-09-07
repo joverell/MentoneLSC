@@ -2,6 +2,7 @@ import { adminDb } from '../../../src/firebase-admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
+import logger from '../../../utils/logger';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -24,7 +25,10 @@ export default async function handler(req, res) {
 
     const { name, type, members, groups } = req.body;
 
+    logger.info('Create chat request received', { userId, body: req.body });
+
     if (!name || !type) {
+      logger.warn('Create chat request missing name or type', { userId, body: req.body });
       return res.status(400).json({ message: 'Name and type are required' });
     }
 
@@ -38,16 +42,19 @@ export default async function handler(req, res) {
 
     if (type === 'private') {
       if (!members || !Array.isArray(members) || members.length === 0) {
+        logger.warn('Create private chat request missing members', { userId, body: req.body });
         return res.status(400).json({ message: 'Members are required for private chats' });
       }
       chatData.members = [...new Set([userId, ...members])]; // Ensure creator is a member
     } else if (type === 'restricted') {
       if (!groups || !Array.isArray(groups) || groups.length === 0) {
+        logger.warn('Create restricted chat request missing groups', { userId, body: req.body });
         return res.status(400).json({ message: 'Groups are required for restricted chats' });
       }
       chatData.groups = groups;
     }
 
+    logger.info('Saving new chat document', { chatId: chatRef.id, chatData });
     await chatRef.set(chatData);
 
     // For private chats, update each member's user document to include the new group ID
@@ -58,14 +65,16 @@ export default async function handler(req, res) {
         batch.update(userRef, { groupIds: FieldValue.arrayUnion(chatRef.id) });
       });
       await batch.commit();
+      logger.info('Updated user groupIds for private chat members', { chatId: chatRef.id, members: chatData.members });
     }
 
     res.status(201).json({ message: 'Chat created successfully', chatId: chatRef.id });
   } catch (error) {
     if (error.name === 'JsonWebTokenError') {
+      logger.warn('JWT error in create chat', { error: error.message });
       return res.status(401).json({ message: 'Invalid token' });
     }
-    console.error('Error creating chat:', error);
+    logger.error('Error creating chat', { errorMessage: error.message, errorStack: error.stack });
     res.status(500).json({ message: 'An internal server error occurred.' });
   }
 }

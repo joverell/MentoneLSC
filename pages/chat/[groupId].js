@@ -6,6 +6,7 @@ import { db } from '../../src/firebase';
 import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 import styles from '../../styles/Chat.module.css';
 import { IoArrowBack, IoSend } from 'react-icons/io5';
+import logger from '../../utils/logger';
 
 export default function ChatRoom() {
   const router = useRouter();
@@ -68,7 +69,13 @@ export default function ChatRoom() {
       setMessages(msgs);
       setLoading(false);
     }, (err) => {
-      console.error('Firestore listener error:', err);
+      logger.error('Firestore listener error in chat room', {
+        groupId,
+        userId: user ? user.uid : 'unknown',
+        errorMessage: err.message,
+        errorCode: err.code,
+        errorStack: err.stack,
+      });
       setError('Could not load messages. You may not have permission to view this chat.');
       setLoading(false);
     });
