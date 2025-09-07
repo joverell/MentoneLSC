@@ -1,5 +1,5 @@
 import { adminDb } from '../../../src/firebase-admin';
-import { getAuth } from 'firebase-admin/auth';
+import { getMessaging } from 'firebase-admin/messaging';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
@@ -20,33 +20,72 @@ export default async function handler(req, res) {
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
+        const senderId = decoded.userId;
         const { groupId, message } = req.body;
 
         if (!groupId || !message) {
             return res.status(400).json({ message: 'Missing groupId or message' });
         }
 
-        const groupRef = adminDb.collection('access_groups').doc(groupId);
+        const groupRef = adminDb.collection('chats').doc(groupId);
         const groupDoc = await groupRef.get();
         if (!groupDoc.exists) {
             return res.status(404).json({ message: 'Group not found' });
         }
         const groupName = groupDoc.data().name;
 
-        const usersSnapshot = await adminDb.collection('users').where('groupIds', 'array-contains', groupId).get();
-        if (usersSnapshot.empty) {
-            return res.status(200).json({ message: 'No users in this group to notify.' });
+        const notifiedUserIds = new Set();
+
+        // Handle @mentions
+        const mentionRegex = /@(\w+)/g;
+        const mentions = message.message.match(mentionRegex);
+        if (mentions) {
+            const mentionedUsernames = mentions.map(m => m.substring(1));
+            const usersSnapshot = await adminDb.collection('users').where('name', 'in', mentionedUsernames).get();
+            usersSnapshot.forEach(doc => {
+                if (doc.id !== senderId) {
+                    notifiedUserIds.add(doc.id);
+                }
+            });
         }
 
+        // Handle replies
+        if (message.replyTo) {
+            const originalMessageRef = adminDb.collection('chats').doc(groupId).collection('messages').doc(message.replyTo);
+            const originalMessageDoc = await originalMessageRef.get();
+            if (originalMessageDoc.exists) {
+                const originalMessageData = originalMessageDoc.data();
+                if (originalMessageData.userId !== senderId) {
+                    notifiedUserIds.add(originalMessageData.userId);
+                }
+            }
+        }
+
+        // Send notifications to mentioned/replied users
+        notifiedUserIds.forEach(async (userId) => {
+            const userDoc = await adminDb.collection('users').doc(userId).get();
+            const userData = userDoc.data();
+            if (userData.fcmTokens && userData.fcmTokens.length > 0) {
+                const payload = {
+                    notification: {
+                        title: `New reply or mention in ${groupName}`,
+                        body: `${message.userName}: ${message.message}`,
+                        click_action: `${process.env.NEXT_PUBLIC_BASE_URL}/chat/${groupId}`,
+                        icon: '/icon-192x192.png'
+                    }
+                };
+                await getMessaging().sendToDevice(userData.fcmTokens, payload);
+            }
+        });
+
+        // Send general notification to other group members
+        const groupMembersSnapshot = await adminDb.collection('users').where('groupIds', 'array-contains', groupId).get();
         const tokens = [];
-        usersSnapshot.forEach(doc => {
+        groupMembersSnapshot.forEach(doc => {
             const userData = doc.data();
             const wantsChatNotifs = (userData.notificationSettings && userData.notificationSettings.chat !== undefined) ? userData.notificationSettings.chat : true;
-
-            // Do not send notification to the sender, and check their preference
-            if (wantsChatNotifs && userData.fcmTokens && doc.id !== decoded.userId) {
-                // fcmTokens is an array of tokens
-                if(Array.isArray(userData.fcmTokens)) {
+            if (wantsChatNotifs && userData.fcmTokens && doc.id !== senderId && !notifiedUserIds.has(doc.id)) {
+                if (Array.isArray(userData.fcmTokens)) {
                     tokens.push(...userData.fcmTokens);
                 }
             }
@@ -61,8 +100,6 @@ export default async function handler(req, res) {
                     icon: '/icon-192x192.png'
                 }
             };
-            // Use getMessaging() for FCM
-            const { getMessaging } = require('firebase-admin/messaging');
             await getMessaging().sendToDevice(tokens, payload);
         }
 

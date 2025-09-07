@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../../context/AuthContext';
 import styles from '../../../styles/Admin.module.css';
-import BottomNav from '../../../components/BottomNav';
+import AdminLayout from '../../../components/admin/AdminLayout';
 
 export default function EditUser() {
   const { user: adminUser, loading: authLoading } = useAuth();
@@ -121,115 +121,110 @@ export default function EditUser() {
   if (!userData) return <p>User not found.</p>;
 
   return (
-    <div className={styles.container}>
-      <header className={styles.header}>
-        <h1>Edit User: {userData.name}</h1>
-      </header>
-      <div className={styles.container}>
-        <form onSubmit={handleSubmit} className={styles.form}>
-          <div className={styles.formGroup}>
-            <label htmlFor="name">Name</label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              value={userData.name}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-          <div className={styles.formGroup}>
-            <label htmlFor="email">Email</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={userData.email}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-          <div className={styles.formGroup}>
-            <label htmlFor="patrolQualifications">Patrol Qualifications</label>
-            <input type="text" id="patrolQualifications" name="patrolQualifications" placeholder="e.g., Bronze Medallion, IRB Driver" value={userData.patrolQualifications || ''} onChange={handleInputChange} />
-          </div>
+    <AdminLayout>
+      <h1 className={styles.pageTitle}>Edit User: {userData.name}</h1>
+      <form onSubmit={handleSubmit} className={styles.form}>
+        <div className={styles.formGroup}>
+          <label htmlFor="name">Name</label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            value={userData.name}
+            onChange={handleInputChange}
+            required
+          />
+        </div>
+        <div className={styles.formGroup}>
+          <label htmlFor="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            value={userData.email}
+            onChange={handleInputChange}
+            required
+          />
+        </div>
+        <div className={styles.formGroup}>
+          <label htmlFor="patrolQualifications">Patrol Qualifications</label>
+          <input type="text" id="patrolQualifications" name="patrolQualifications" placeholder="e.g., Bronze Medallion, IRB Driver" value={userData.patrolQualifications || ''} onChange={handleInputChange} />
+        </div>
 
-          <div className={styles.formGroup}>
-            <label htmlFor="emergencyContact">Emergency Contact</label>
-            <input type="text" id="emergencyContact" name="emergencyContact" placeholder="e.g., Jane Doe - 0400 123 456" value={userData.emergencyContact || ''} onChange={handleInputChange} />
-          </div>
+        <div className={styles.formGroup}>
+          <label htmlFor="emergencyContact">Emergency Contact</label>
+          <input type="text" id="emergencyContact" name="emergencyContact" placeholder="e.g., Jane Doe - 0400 123 456" value={userData.emergencyContact || ''} onChange={handleInputChange} />
+        </div>
 
-          <div className={styles.formGroup}>
-            <label htmlFor="uniformSize">Uniform Size</label>
-            <input type="text" id="uniformSize" name="uniformSize" placeholder="e.g., Mens L, Womens 12" value={userData.uniformSize || ''} onChange={handleInputChange} />
+        <div className={styles.formGroup}>
+          <label htmlFor="uniformSize">Uniform Size</label>
+          <input type="text" id="uniformSize" name="uniformSize" placeholder="e.g., Mens L, Womens 12" value={userData.uniformSize || ''} onChange={handleInputChange} />
+        </div>
+        <div className={styles.formGroup}>
+          <label>Roles</label>
+          <div className={styles.checkboxGroup}>
+            <label>
+              <input
+                type="checkbox"
+                name="roles"
+                value="Admin"
+                checked={userData.roles.includes('Admin')}
+                onChange={handleCheckboxChange}
+              />
+              Admin (Super Admin)
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                name="roles"
+                value="Group Admin"
+                checked={userData.roles.includes('Group Admin')}
+                onChange={handleCheckboxChange}
+              />
+              Group Admin
+            </label>
           </div>
-          <div className={styles.formGroup}>
-            <label>Roles</label>
-            <div className={styles.checkboxGroup}>
-              <label>
+        </div>
+        <div className={styles.formGroup}>
+          <label>Member Of Groups</label>
+          <div className={styles.checkboxGroup}>
+            {allGroups.map(group => (
+              <label key={group.id}>
                 <input
                   type="checkbox"
-                  name="roles"
-                  value="Admin"
-                  checked={userData.roles.includes('Admin')}
+                  name="groupIds"
+                  value={group.id}
+                  checked={userData.groupIds.includes(group.id)}
                   onChange={handleCheckboxChange}
                 />
-                Admin (Super Admin)
+                {group.name}
               </label>
-              <label>
+            ))}
+          </div>
+        </div>
+        <div className={styles.formGroup}>
+          <label>Admin For Groups</label>
+          <p className={styles.fieldDescription}>Select which groups this user can manage events and news for (if they have the 'Group Admin' role).</p>
+          <div className={styles.checkboxGroup}>
+            {allGroups.map(group => (
+              <label key={group.id}>
                 <input
                   type="checkbox"
-                  name="roles"
-                  value="Group Admin"
-                  checked={userData.roles.includes('Group Admin')}
+                  name="adminForGroups"
+                  value={group.id}
+                  checked={userData.adminForGroups && userData.adminForGroups.includes(group.id)}
                   onChange={handleCheckboxChange}
                 />
-                Group Admin
+                {group.name}
               </label>
-            </div>
+            ))}
           </div>
-          <div className={styles.formGroup}>
-            <label>Member Of Groups</label>
-            <div className={styles.checkboxGroup}>
-              {allGroups.map(group => (
-                <label key={group.id}>
-                  <input
-                    type="checkbox"
-                    name="groupIds"
-                    value={group.id}
-                    checked={userData.groupIds.includes(group.id)}
-                    onChange={handleCheckboxChange}
-                  />
-                  {group.name}
-                </label>
-              ))}
-            </div>
-          </div>
-          <div className={styles.formGroup}>
-            <label>Admin For Groups</label>
-            <p className={styles.fieldDescription}>Select which groups this user can manage events and news for (if they have the 'Group Admin' role).</p>
-            <div className={styles.checkboxGroup}>
-              {allGroups.map(group => (
-                <label key={group.id}>
-                  <input
-                    type="checkbox"
-                    name="adminForGroups"
-                    value={group.id}
-                    checked={userData.adminForGroups && userData.adminForGroups.includes(group.id)}
-                    onChange={handleCheckboxChange}
-                  />
-                  {group.name}
-                </label>
-              ))}
-            </div>
-          </div>
-          {error && <p className={styles.error}>{error}</p>}
-          {success && <p className={styles.success}>{success}</p>}
-          <button type="submit" className={styles.button}>Save Changes</button>
-          <button type="button" onClick={handleDelete} className={`${styles.button} ${styles.deleteBtn}`}>Delete User</button>
-        </form>
-      </div>
-      <BottomNav />
-    </div>
+        </div>
+        {error && <p className={styles.error}>{error}</p>}
+        {success && <p className={styles.success}>{success}</p>}
+        <button type="submit" className={styles.button}>Save Changes</button>
+        <button type="button" onClick={handleDelete} className={`${styles.button} ${styles.deleteBtn}`}>Delete User</button>
+      </form>
+    </AdminLayout>
   );
 }

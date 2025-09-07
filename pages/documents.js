@@ -1,32 +1,38 @@
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import logger from '../utils/logger';
+import { fetchWithAuth } from '../utils/auth-fetch';
 import styles from '../styles/Home.module.css';
-import formStyles from '../styles/Form.module.css';
+import docStyles from '../styles/Documents.module.css';
 import BottomNav from '../components/BottomNav';
+import DocumentList from '../components/document/DocumentList';
+import UploadForm from '../components/document/UploadForm';
+import EmptyState from '../components/document/EmptyState';
 
 export default function DocumentsPage() {
     const { user } = useAuth();
     const [documents, setDocuments] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-
-    // State for the upload form
-    const [title, setTitle] = useState('');
-    const [category, setCategory] = useState('');
-    const [file, setFile] = useState(null);
-    const [uploading, setUploading] = useState(false);
-    const [uploadError, setUploadError] = useState(null);
     const [accessGroups, setAccessGroups] = useState([]);
-    const [selectedGroups, setSelectedGroups] = useState([]);
 
     const fetchDocuments = async () => {
+        const context = { component: 'DocumentsPage', function: 'fetchDocuments' };
+        logger.info('Attempting to fetch documents', context);
         try {
             setLoading(true);
-            const res = await fetch('/api/documents');
-            if (!res.ok) throw new Error('Failed to fetch documents');
+            const res = await fetchWithAuth('/api/documents');
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({ message: 'No error body' }));
+                throw new Error(errorData.message || `Failed to fetch documents with status: ${res.status}`);
+            }
             const data = await res.json();
             setDocuments(data);
+            logger.info('Successfully fetched documents', context, { count: data.length });
         } catch (err) {
+            logger.error('Failed to fetch documents', context, err);
             setError(err.message);
         } finally {
             setLoading(false);
@@ -34,159 +40,116 @@ export default function DocumentsPage() {
     };
 
     const fetchAccessGroups = async () => {
+        const context = { component: 'DocumentsPage', function: 'fetchAccessGroups' };
+        logger.info('Attempting to fetch access groups', context);
         try {
-            const res = await fetch('/api/access_groups');
-            if (!res.ok) throw new Error('Failed to fetch access groups');
+            const res = await fetchWithAuth('/api/access_groups');
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({ message: 'No error body' }));
+                throw new Error(errorData.message || `Failed to fetch access groups with status: ${res.status}`);
+            }
             const data = await res.json();
             setAccessGroups(data);
+            logger.info('Successfully fetched access groups', context, { count: data.length });
         } catch (err) {
-            console.error(err); // Log error but don't block UI
+            logger.error('Failed to fetch access groups', context, err);
+            // Do not set main error state, as this is not a critical failure
+        }
+    };
+
+    const fetchCategories = async () => {
+        const context = { component: 'DocumentsPage', function: 'fetchCategories' };
+        logger.info('Attempting to fetch document categories', context);
+        try {
+            // Categories are public, so no need for auth
+            const res = await axios.get('/api/document-categories');
+            setCategories(res.data);
+            logger.info('Successfully fetched document categories', { ...context, count: res.data.length });
+        } catch (err) {
+            const errorMessage = err.response?.data?.message || err.message || 'An unknown error occurred';
+            logger.error('Failed to fetch document categories', { ...context, error: errorMessage });
+            // Avoid overwriting a more critical error message
+            if (!error) {
+                setError('Could not load document categories.');
+            }
         }
     };
 
     useEffect(() => {
         fetchDocuments();
-        if (user && user.roles.includes('Admin')) {
+        fetchCategories();
+        if (user && user.roles && user.roles.includes('Admin')) {
             fetchAccessGroups();
         }
     }, [user]);
 
-    const handleUpload = async (e) => {
-        e.preventDefault();
-        if (!file || !title || !category) {
-            setUploadError('Please fill in all fields and select a file.');
+    const handleDelete = async (docId) => {
+        const context = { component: 'DocumentsPage', function: 'handleDelete', docId };
+        logger.info('Delete button clicked', context);
+
+        if (!window.confirm('Are you sure you want to delete this document?')) {
+            logger.info('Document deletion cancelled by user', context);
             return;
         }
-        setUploading(true);
-        setUploadError(null);
 
-        const formData = new FormData();
-        formData.append('title', title);
-        formData.append('category', category);
-        formData.append('file', file);
-        selectedGroups.forEach(groupId => {
-            formData.append('accessGroupIds[]', groupId);
-        });
-
+        logger.info('Attempting to delete document', context);
         try {
-            const res = await fetch('/api/documents', {
-                method: 'POST',
-                body: formData,
-            });
-            const data = await res.json();
+            const res = await fetchWithAuth(`/api/documents/${docId}`, { method: 'DELETE' });
             if (!res.ok) {
-                throw new Error(data.message || 'Upload failed');
+                const errorData = await res.json().catch(() => ({ message: 'No error body' }));
+                throw new Error(errorData.message || `Failed to delete document with status: ${res.status}`);
             }
-            // Reset form and refresh list
-            setTitle('');
-            setCategory('');
-            setFile(null);
-            setSelectedGroups([]);
-            e.target.reset(); // Reset file input
-            fetchDocuments();
-        } catch (err) {
-            setUploadError(err.message);
-        } finally {
-            setUploading(false);
-        }
-    };
-
-    const handleDelete = async (docId) => {
-        if (!window.confirm('Are you sure you want to delete this document?')) return;
-        try {
-            const res = await fetch(`/api/documents/${docId}`, { method: 'DELETE' });
-            if (!res.ok) {
-                const data = await res.json();
-                throw new Error(data.message || 'Failed to delete');
-            }
+            logger.info('Successfully deleted document', context);
             fetchDocuments(); // Refresh list
         } catch (err) {
-            setError(err.message); // Show delete error in the main error display
+            logger.error('Failed to delete document', context, err);
+            setError(err.message);
         }
     };
 
-    const handleGroupSelection = (e) => {
-        const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-        setSelectedGroups(selectedOptions);
-    };
+    const onUploadSuccess = () => {
+        const context = { component: 'DocumentsPage', function: 'onUploadSuccess' };
+        logger.info('Document upload successful, refreshing document list', context);
+        fetchDocuments();
+    }
 
-    // Group documents by category
-    const groupedDocuments = documents.reduce((acc, doc) => {
-        (acc[doc.category] = acc[doc.category] || []).push(doc);
-        return acc;
-    }, {});
+    useEffect(() => {
+        const context = { component: 'DocumentsPage', function: 'useEffect[]' };
+        logger.info('DocumentsPage component mounted', context);
+    }, []);
+
+    const isAdmin = user && user.roles && user.roles.includes('Admin');
 
     return (
         <div className={styles.container}>
             <header className={styles.header}>
                 <h1>Club Documents</h1>
             </header>
-            <div className={styles.container}>
-                {user && user.roles.includes('Admin') && (
-                    <div className={formStyles.form} style={{ marginBottom: '2rem' }}>
-                        <h3>Upload New Document</h3>
-                        <form onSubmit={handleUpload}>
-                            {uploadError && <p className={formStyles.error}>{uploadError}</p>}
-                            <div className={formStyles.formGroup}>
-                                <label htmlFor="title">Document Title</label>
-                                <input type="text" id="title" value={title} onChange={e => setTitle(e.target.value)} required />
-                            </div>
-                            <div className={formStyles.formGroup}>
-                                <label htmlFor="category">Category</label>
-                                <input type="text" id="category" value={category} onChange={e => setCategory(e.target.value)} placeholder="e.g., Policies, Forms" required />
-                            </div>
-                            <div className={formStyles.formGroup}>
-                                <label htmlFor="file">File</label>
-                                <input type="file" id="file" onChange={e => setFile(e.target.files[0])} required />
-                            </div>
-                            <div className={formStyles.formGroup}>
-                                <label htmlFor="accessGroups">Restrict to Groups (optional)</label>
-                                <select
-                                    id="accessGroups"
-                                    multiple
-                                    value={selectedGroups}
-                                    onChange={handleGroupSelection}
-                                    className={formStyles.multiselect}
-                                >
-                                    {accessGroups.map(group => (
-                                        <option key={group.id} value={group.id}>{group.name}</option>
-                                    ))}
-                                </select>
-                                <small>Hold Ctrl (or Cmd on Mac) to select multiple groups. If no groups are selected, the document will be public.</small>
-                            </div>
-                            <button type="submit" className={formStyles.button} disabled={uploading}>
-                                {uploading ? 'Uploading...' : 'Upload Document'}
-                            </button>
-                        </form>
-                    </div>
+            <main>
+                {isAdmin && (
+                    <UploadForm
+                        accessGroups={accessGroups}
+                        onUploadSuccess={onUploadSuccess}
+                    />
                 )}
-
                 {loading && <p>Loading documents...</p>}
                 {error && <p className={styles.error}>{error}</p>}
 
-                {Object.entries(groupedDocuments).map(([category, docs]) => (
-                    <div key={category} className={styles.section}>
-                        <h2>{category}</h2>
-                        <ul className={styles.documentList}>
-                            {docs.map(doc => (
-                                <li key={doc.id}>
-                                    <a href={doc.downloadURL} target="_blank" rel="noopener noreferrer">
-                                        {doc.title}
-                                    </a>
-                                    {user && user.roles.includes('Admin') && (
-                                        <button onClick={() => handleDelete(doc.id)} className={formStyles.deleteButton}>
-                                            Delete
-                                        </button>
-                                    )}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                ))}
-                {!loading && Object.keys(groupedDocuments).length === 0 && (
-                    <p>No documents found.</p>
+                {!loading && documents.length > 0 && (
+                    <DocumentList
+                        documents={documents}
+                        categories={categories}
+                        isAdmin={isAdmin}
+                        onDelete={handleDelete}
+                    />
                 )}
-            </div>
+
+                {!loading && documents.length === 0 && (
+                    <EmptyState
+                        isAdmin={isAdmin}
+                    />
+                )}
+            </main>
             <BottomNav />
         </div>
     );

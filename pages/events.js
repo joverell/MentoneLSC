@@ -1,34 +1,52 @@
 import { useState, useEffect } from 'react';
 import Calendar from 'react-calendar';
-import 'react-calendar/dist/Calendar.css'; // Default styling for react-calendar
+import 'react-calendar/dist/Calendar.css';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import BottomNav from '../components/BottomNav';
-import styles from '../styles/Home.module.css'; // Using home styles for consistency
+import styles from '../styles/Home.module.css';
+import { useAuth } from '../context/AuthContext';
+import EventsTab from '../components/home/EventsTab';
+import { fetchWithAuth } from '../utils/auth-fetch';
 
 export default function EventsCalendar() {
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const router = useRouter();
+    const { user, getIdToken } = useAuth();
+    const [events, setEvents] = useState([]);
+    const [settings, setSettings] = useState({ mergeCalendarAndEvents: { enabled: false } });
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const router = useRouter();
 
-  useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        const response = await fetch('/api/events');
-        if (!response.ok) {
-          throw new Error('Failed to fetch events');
-        }
-        const data = await response.json();
-        setEvents(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchEvents();
-  }, []);
+    useEffect(() => {
+        const fetchSettingsAndEvents = async () => {
+            setLoading(true);
+            try {
+                // Fetch settings first
+                const settingsRes = await fetchWithAuth('/api/settings');
+                const settingsData = await settingsRes.json();
+                if (settingsRes.ok) {
+                    setSettings(settingsData);
+                } else {
+                    throw new Error('Failed to fetch settings');
+                }
+
+                // Then fetch events
+                const eventsRes = await fetchWithAuth('/api/events');
+                if (!eventsRes.ok) {
+                    throw new Error('Failed to fetch events');
+                }
+                const eventsData = await eventsRes.json();
+                setEvents(eventsData);
+
+            } catch (err) {
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchSettingsAndEvents();
+    }, []);
 
   const handleDateClick = (date) => {
     // Find events on the clicked date
@@ -61,27 +79,30 @@ export default function EventsCalendar() {
   if (loading) return <div>Loading events...</div>;
   if (error) return <div>Error: {error}</div>;
 
-  return (
-    <div className={styles.container}>
-      <header className={styles.header}>
-        <h1>Club Events Calendar</h1>
-      </header>
-      <div className={styles.container}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Link href="/?tab=events" className={styles.button}>
-            Switch to List View
-          </Link>
-          <button onClick={handleSubscribe} className={styles.subscribeBtn}>
-            Subscribe to Calendar
-          </button>
+    return (
+        <div className={styles.container}>
+            <header className={styles.header}>
+                <h1>Club Events</h1>
+            </header>
+            <main>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '1rem' }}>
+                    <button onClick={handleSubscribe} className={styles.subscribeBtn}>
+                        Subscribe to Calendar
+                    </button>
+                </div>
+                <Calendar
+                    onClickDay={handleDateClick}
+                    tileContent={tileContent}
+                    className={styles.calendar}
+                />
+
+                {settings.mergeCalendarAndEvents?.enabled && (
+                    <div style={{ marginTop: '2rem' }}>
+                        <EventsTab user={user} getIdToken={getIdToken} />
+                    </div>
+                )}
+            </main>
+            <BottomNav />
         </div>
-        <Calendar
-          onClickDay={handleDateClick}
-          tileContent={tileContent}
-          className={styles.calendar}
-        />
-      </div>
-      <BottomNav />
-    </div>
-  );
+    );
 }

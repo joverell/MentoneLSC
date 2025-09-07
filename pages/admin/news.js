@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import styles from '../../styles/Admin.module.css';
-import BottomNav from '../../components/BottomNav';
+import AdminLayout from '../../components/admin/AdminLayout';
 
 export default function NewsManagement() {
   const { user, loading: authLoading } = useAuth();
@@ -59,52 +59,43 @@ export default function NewsManagement() {
   if (!user || !user.roles.includes('Admin')) return <p>Redirecting...</p>;
 
   return (
-    <div className={styles.container}>
-      <header className={styles.header}>
-        <h1>News Article Management</h1>
-      </header>
-      <div className={styles.container}>
-        <div className={styles.adminNav}>
-            <Link href="/admin/users" className={styles.adminNavLink}>Manage Users</Link>
-            <span style={{ margin: '0 1rem' }}>|</span>
-            <Link href="/admin/groups" className={styles.adminNavLink}>Manage Groups</Link>
-        </div>
-
-        {error && <p className={styles.error}>{error}</p>}
-
-        <div className={styles.tableContainer}>
-          <table className={styles.userTable}>
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Author</th>
-                <th>Created At</th>
-                <th>Actions</th>
+    <AdminLayout>
+      <h1 className={styles.pageTitle}>News Article Management</h1>
+      {error && <p className={styles.error}>{error}</p>}
+      <div className={styles.tableContainer}>
+        <table className={styles.userTable}>
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Author</th>
+              <th>Created At</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {articles.map((article) => (
+              <tr key={article.id}>
+                <td>{article.title}</td>
+                <td>{article.authorName}</td>
+                <td>{new Date(article.createdAt).toLocaleDateString()}</td>
+                <td>
+                  <Link href={`/admin/news/${article.id}`}>
+                    <a className={styles.editBtn}>Edit</a>
+                  </Link>
+                  <button onClick={() => handleDelete(article.id)} className={styles.deleteBtn}>
+                    Delete
+                  </button>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {articles.map((article) => (
-                <tr key={article.id}>
-                  <td>{article.title}</td>
-                  <td>{article.authorName}</td>
-                  <td>{new Date(article.createdAt).toLocaleDateString()}</td>
-                  <td>
-                    <button onClick={() => handleDelete(article.id)} className={styles.deleteBtn}>
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {articles.length === 0 && (
-                <tr>
-                  <td colSpan="4">No news articles found.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+            ))}
+            {articles.length === 0 && (
+              <tr>
+                <td colSpan="4">No news articles found.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
-      <BottomNav />
-    </div>
+    </AdminLayout>
   );
 }

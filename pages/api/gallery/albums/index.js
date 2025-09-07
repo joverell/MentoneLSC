@@ -17,13 +17,50 @@ export default async function handler(req, res) {
 }
 
 async function getAlbums(req, res) {
+    let user = null;
+    try {
+        const cookies = parse(req.headers.cookie || '');
+        const token = cookies.auth_token;
+        if (token) {
+            user = jwt.verify(token, JWT_SECRET);
+        }
+    } catch (err) {
+        // User not logged in or token invalid
+    }
+
     try {
         const albumsSnapshot = await adminDb.collection('photo_albums').orderBy('createdAt', 'desc').get();
-        const albums = albumsSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            createdAt: doc.data().createdAt.toDate().toISOString(),
-        }));
+
+        const albums = albumsSnapshot.docs
+            .map(doc => {
+                const albumData = doc.data();
+                const isPublic = !albumData.visibleToGroups || albumData.visibleToGroups.length === 0;
+                const isAdmin = user && user.roles && user.roles.includes('Admin');
+
+                let canView = isPublic || isAdmin;
+
+                if (!canView && user && user.groupIds) {
+                    const userGroups = new Set(user.groupIds);
+                    const albumGroups = new Set(albumData.visibleToGroups || []);
+                    for (const group of albumGroups) {
+                        if (userGroups.has(group)) {
+                            canView = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (canView) {
+                    return {
+                        id: doc.id,
+                        ...albumData,
+                        createdAt: albumData.createdAt.toDate().toISOString(),
+                    };
+                }
+                return null;
+            })
+            .filter(Boolean); // Filter out nulls
+
         return res.status(200).json(albums);
     } catch (error) {
         console.error('Get Albums Error:', error);
@@ -32,28 +69,52 @@ async function getAlbums(req, res) {
 }
 
 async function createAlbum(req, res) {
-    // Authenticate and Authorize Admin
     const cookies = parse(req.headers.cookie || '');
     const token = cookies.auth_token;
     if (!token) return res.status(401).json({ message: 'Not authenticated' });
 
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
-        if (!decoded.roles || !decoded.roles.includes('Admin')) {
-            return res.status(403).json({ message: 'Forbidden: You do not have permission.' });
+        const { roles, userId } = decoded;
+
+        // Authorization: Allow Super Admins and Group Admins
+        const isSuperAdmin = roles && roles.includes('Admin');
+        const isGroupAdmin = roles && roles.includes('Group Admin');
+
+        if (!isSuperAdmin && !isGroupAdmin) {
+            return res.status(403).json({ message: 'Forbidden: You do not have permission to create albums.' });
         }
 
-        const { title, description } = req.body;
+        const { title, description, visibleToGroups } = req.body;
         if (!title) {
             return res.status(400).json({ message: 'Album title is required.' });
+        }
+
+        // If user is a Group Admin but not a Super Admin, they cannot create public albums
+        if (!isSuperAdmin && (!visibleToGroups || visibleToGroups.length === 0)) {
+            return res.status(403).json({ message: 'Forbidden: Only Super Admins can create public albums.' });
+        }
+
+        // Further check if Group Admin has rights over the selected groups
+        if (isGroupAdmin && !isSuperAdmin) {
+            const userDoc = await adminDb.collection('users').doc(userId).get();
+            if (!userDoc.exists) {
+                return res.status(404).json({ message: 'User not found.' });
+            }
+            const adminForGroups = userDoc.data().adminForGroups || [];
+            const canAdminAllSelectedGroups = visibleToGroups.every(groupId => adminForGroups.includes(groupId));
+            if (!canAdminAllSelectedGroups) {
+                return res.status(403).json({ message: 'Forbidden: You do not have admin rights for all selected groups.' });
+            }
         }
 
         const newAlbumRef = await adminDb.collection('photo_albums').add({
             title,
             description: description || '',
-            coverImageUrl: null, // Will be set when the first photo is uploaded
+            visibleToGroups: visibleToGroups || [],
+            coverImageUrl: null,
             createdAt: FieldValue.serverTimestamp(),
-            createdBy: decoded.userId,
+            createdBy: userId,
         });
 
         return res.status(201).json({ message: 'Album created successfully.', albumId: newAlbumRef.id });

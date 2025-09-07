@@ -81,26 +81,35 @@ export default function Account() {
       return;
     }
 
-    let photoURL = userData.photoURL;
-
-    if (photoFile) {
-      const photoRef = ref(storage, `profile-photos/${user.uid}/${photoFile.name}`);
-      await uploadBytes(photoRef, photoFile);
-      photoURL = await getDownloadURL(photoRef);
-    }
-
-    const updatedUserData = { ...userData, photoURL };
-
     try {
+      const formData = new FormData();
+
+      // Append all user data to the form
+      formData.append('name', userData.name);
+      formData.append('email', userData.email);
+      formData.append('patrolQualifications', userData.patrolQualifications);
+      formData.append('emergencyContact', userData.emergencyContact);
+      formData.append('uniformSize', userData.uniformSize);
+      formData.append('notificationSettings', JSON.stringify(userData.notificationSettings));
+      formData.append('photoURL', userData.photoURL); // Send existing URL
+
+      // Append the new photo file if one was selected
+      if (photoFile) {
+        formData.append('photo', photoFile);
+      }
+
       const res = await fetch(`/api/users/${user.uid}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedUserData),
+        body: formData, // No 'Content-Type' header needed, browser sets it for FormData
       });
+
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to update profile.');
+
       setSuccess('Profile updated successfully!');
+      // Refresh user data from context to get the latest profile, including new photo URL
       if (fetchUser) fetchUser();
+
     } catch (err) {
       setError(err.message);
     }

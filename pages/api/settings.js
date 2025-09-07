@@ -27,9 +27,17 @@ export default async function handler(req, res) {
             const doc = await settingsRef.get();
             if (!doc.exists) {
                 // Default settings if the document doesn't exist
-                return res.status(200).json({ instagram: { enabled: false } });
+                return res.status(200).json({
+                    instagram: { enabled: false },
+                    wordpress: { enabled: true },
+                    mergeCalendarAndEvents: { enabled: false }
+                });
             }
-            return res.status(200).json(doc.data());
+            const data = doc.data();
+            if (typeof data.mergeCalendarAndEvents === 'undefined') {
+                data.mergeCalendarAndEvents = { enabled: false };
+            }
+            return res.status(200).json(data);
         } catch (error) {
             console.error('Failed to fetch settings:', error);
             return res.status(500).json({ message: 'An error occurred while fetching settings.' });
@@ -43,9 +51,14 @@ export default async function handler(req, res) {
         // --- End Authorization Check ---
 
         try {
-            const { instagram } = req.body;
+            const { instagram, wordpress, mergeCalendarAndEvents } = req.body;
+            const newSettings = {};
+            if (instagram !== undefined) newSettings.instagram = instagram;
+            if (wordpress !== undefined) newSettings.wordpress = wordpress;
+            if (mergeCalendarAndEvents !== undefined) newSettings.mergeCalendarAndEvents = mergeCalendarAndEvents;
+
             // Using set with merge: true to create or update the document
-            await settingsRef.set({ instagram }, { merge: true });
+            await settingsRef.set(newSettings, { merge: true });
             return res.status(200).json({ message: 'Settings updated successfully.' });
         } catch (error) {
             console.error('Failed to update settings:', error);

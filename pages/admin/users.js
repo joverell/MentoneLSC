@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
+import AdminLayout from '../../components/admin/AdminLayout';
 import styles from '../../styles/Admin.module.css';
-import BottomNav from '../../components/BottomNav';
 
 export default function UserManagement() {
   const { user, loading: authLoading } = useAuth();
@@ -81,56 +81,37 @@ export default function UserManagement() {
   }
 
   return (
-    <div className={styles.container}>
-      <header className={styles.header}>
-        <h1>User Management</h1>
-      </header>
-      <div className={styles.container}>
-        <div className={styles.adminNav}>
-          <Link href="/admin/groups" className={styles.adminNavLink}>Manage Groups</Link>
-          <span style={{ margin: '0 1rem' }}>|</span>
-          <Link href="/admin/news" className={styles.adminNavLink}>Manage News</Link>
-          <span style={{ margin: '0 1rem' }}>|</span>
-          <Link href="/admin/events" className={styles.adminNavLink}>Manage Events</Link>
-          <span style={{ margin: '0 1rem' }}>|</span>
-          <Link href="/admin/sponsors" className={styles.adminNavLink}>Manage Sponsors</Link>
-          <span style={{ margin: '0 1rem' }}>|</span>
-          <Link href="/admin/settings" className={styles.adminNavLink}>Settings</Link>
-          <span style={{ margin: '0 1rem' }}>|</span>
-          <button onClick={handleSendReminders} className={styles.adminNavLink}>Send Event Reminders</button>
-          {reminderStatus && <p style={{ marginLeft: '1rem', display: 'inline' }}>{reminderStatus}</p>}
-        </div>
-        {error && <p className={styles.error}>{error}</p>}
-        <div className={styles.tableContainer}>
-          <table className={styles.userTable}>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Roles</th>
-                <th>Groups</th>
-                <th>Actions</th>
+    <AdminLayout>
+      <h1 className={styles.pageTitle}>User Management</h1>
+      {error && <p className={styles.error}>{error}</p>}
+      <div className={styles.tableContainer}>
+        <table className={styles.userTable}>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Roles</th>
+              <th>Groups</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((u) => (
+              <tr key={u.id}>
+                <td data-label="Name">{u.name}</td>
+                <td data-label="Email">{u.email}</td>
+                <td data-label="Roles">{u.roles ? u.roles.join(', ') : 'N/A'}</td>
+                <td data-label="Groups">{u.groupIds && u.groupIds.length > 0 ? u.groupIds.map(id => groups[id] || 'Unknown').join(', ') : 'None'}</td>
+                <td data-label="Actions" className={styles.actionsCell}>
+                  <Link href={`/admin/users/${u.id}`} className={styles.manageLink}>
+                    Manage
+                  </Link>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr key={u.id}>
-                  <td data-label="Name">{u.name}</td>
-                  <td data-label="Email">{u.email}</td>
-                  <td data-label="Roles">{u.roles ? u.roles.join(', ') : 'N/A'}</td>
-                  <td data-label="Groups">{u.groupIds && u.groupIds.length > 0 ? u.groupIds.map(id => groups[id] || 'Unknown').join(', ') : 'None'}</td>
-                  <td data-label="Actions" className={styles.actionsCell}>
-                    <Link href={`/admin/users/${u.id}`} className={styles.manageLink}>
-                      Manage
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
-      <BottomNav />
-    </div>
+    </AdminLayout>
   );
 }

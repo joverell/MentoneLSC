@@ -1,22 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import styles from '../../styles/Home.module.css';
 import galleryStyles from '../../styles/Gallery.module.css';
 import BottomNav from '../../components/BottomNav';
 
 export default function GalleryPage() {
     const { user } = useAuth();
+    const router = useRouter();
     const [albums, setAlbums] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [instagramAlbum, setInstagramAlbum] = useState(null);
-
-    // State for creating a new album
-    const [showCreateForm, setShowCreateForm] = useState(false);
-    const [newAlbumTitle, setNewAlbumTitle] = useState('');
-    const [newAlbumDescription, setNewAlbumDescription] = useState('');
-    const [creating, setCreating] = useState(false);
 
     useEffect(() => {
         const fetchAlbumsAndSettings = async () => {
@@ -48,7 +44,6 @@ export default function GalleryPage() {
                     }
                 }
             } catch (err) {
-                // Don't let a failed instagram fetch kill the whole page
                 console.error("Error fetching gallery data:", err);
                 setError(err.message);
             } finally {
@@ -59,41 +54,7 @@ export default function GalleryPage() {
         fetchAlbumsAndSettings();
     }, []);
 
-    const fetchAlbums = async () => {
-        try {
-            const res = await fetch('/api/gallery/albums');
-            if (!res.ok) throw new Error('Failed to fetch albums');
-            const data = await res.json();
-            setAlbums(data);
-        } catch (err) {
-            setError(err.message);
-        }
-    };
-
-    const handleCreateAlbum = async (e) => {
-        e.preventDefault();
-        setCreating(true);
-        setError(null);
-        try {
-            const res = await fetch('/api/gallery/albums', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title: newAlbumTitle, description: newAlbumDescription }),
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'Failed to create album');
-
-            // Reset form and refresh albums
-            setNewAlbumTitle('');
-            setNewAlbumDescription('');
-            setShowCreateForm(false);
-            fetchAlbums(); // Refetch albums after creation
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setCreating(false);
-        }
-    };
+    const canCreateAlbums = user && (user.roles.includes('Admin') || user.roles.includes('Group Admin'));
 
     return (
         <div className={styles.container}>
@@ -101,33 +62,12 @@ export default function GalleryPage() {
                 <h1>Photo Gallery</h1>
             </header>
             <div className={styles.container}>
-                {user && user.roles.includes('Admin') && (
+                {canCreateAlbums && (
                     <div className={galleryStyles.adminControls}>
-                        <button onClick={() => setShowCreateForm(!showCreateForm)} className={styles.button}>
-                            {showCreateForm ? 'Cancel' : '+ Create New Album'}
+                        <button onClick={() => router.push('/admin/gallery/create')} className={styles.button}>
+                            + Create New Album
                         </button>
                     </div>
-                )}
-
-                {showCreateForm && (
-                    <form onSubmit={handleCreateAlbum} className={galleryStyles.createForm}>
-                        <h3>New Album</h3>
-                        <input
-                            type="text"
-                            placeholder="Album Title"
-                            value={newAlbumTitle}
-                            onChange={(e) => setNewAlbumTitle(e.target.value)}
-                            required
-                        />
-                        <textarea
-                            placeholder="Album Description (optional)"
-                            value={newAlbumDescription}
-                            onChange={(e) => setNewAlbumDescription(e.target.value)}
-                        />
-                        <button type="submit" disabled={creating} className={styles.button}>
-                            {creating ? 'Creating...' : 'Create Album'}
-                        </button>
-                    </form>
                 )}
 
                 {loading && <p>Loading albums...</p>}

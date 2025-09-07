@@ -20,7 +20,7 @@ jest.mock('../context/AuthContext', () => ({
   useAuth: jest.fn(),
 }));
 
-// Mock firebase/storage
+// Mock firebase/storage as it's not directly used in the component for upload anymore
 jest.mock('firebase/storage', () => ({
   getStorage: jest.fn(() => 'mock-storage'),
   ref: jest.fn(),
@@ -29,12 +29,7 @@ jest.mock('firebase/storage', () => ({
 }));
 
 // Mock fetch
-global.fetch = jest.fn(() =>
-  Promise.resolve({
-    ok: true,
-    json: () => Promise.resolve({ message: 'Profile updated successfully!' }),
-  })
-);
+global.fetch = jest.fn();
 
 describe('Account Page', () => {
   const mockUser = {
@@ -58,48 +53,29 @@ describe('Account Page', () => {
   });
 
   test('should allow a user to upload a profile photo', async () => {
-    // 1. Render the Account component
+    // Setup fetch mock for profile update
+    global.fetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ message: 'Profile updated successfully!' }),
+    });
+
     render(<Account />);
 
-    // 2. Simulate file selection
     const file = new File(['(⌐□_□)'], 'chucknorris.png', { type: 'image/png' });
     const fileInput = screen.getByLabelText(/Profile Photo/i);
     fireEvent.change(fileInput, { target: { files: [file] } });
 
-    // 3. Mock the storage functions
-    const mockPhotoRef = 'mock-photo-ref';
-    const mockDownloadURL = 'https://fake-url.com/chucknorris.png';
-    ref.mockReturnValue(mockPhotoRef);
-    uploadBytes.mockResolvedValue({});
-    getDownloadURL.mockResolvedValue(mockDownloadURL);
-
-    // 4. Simulate form submission
     const updateButton = screen.getByRole('button', { name: /Update Profile/i });
     fireEvent.click(updateButton);
 
-    // 5. Assert that the upload and update functions were called correctly
     await waitFor(() => {
-      // Check that the file was uploaded to the correct path
-      expect(ref).toHaveBeenCalledWith(expect.anything(), `profile-photos/${mockUser.uid}/${file.name}`);
-      expect(uploadBytes).toHaveBeenCalledWith(mockPhotoRef, file);
-
-      // Check that the user's profile was updated with the new photo URL
+      // Verify the single API call to update the profile
       expect(fetch).toHaveBeenCalledWith(`/api/users/${mockUser.uid}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: mockUser.name,
-          email: mockUser.email,
-          photoURL: mockDownloadURL,
-          patrolQualifications: '',
-          emergencyContact: '',
-          uniformSize: '',
-          notificationSettings: { news: true, events: true, chat: true },
-        }),
+        body: expect.any(FormData),
       });
     });
 
-    // 6. Check for success message
     expect(await screen.findByText('Profile updated successfully!')).toBeInTheDocument();
   });
 });

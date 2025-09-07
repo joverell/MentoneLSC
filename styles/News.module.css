@@ -1,0 +1,19 @@
+/* News Page Specific Styles */
+
+.createNewsContainer {
+    background-color: #f9f9f9;
+    padding: 2rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    border: 1px solid #e0e0e0;
+}
+
+.imagePreview {
+    margin-top: 1rem;
+}
+
+.imagePreview img {
+    max-width: 200px;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}

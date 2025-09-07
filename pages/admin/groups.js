@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/router';
 import styles from '../../styles/Admin.module.css';
-import BottomNav from '../../components/BottomNav';
+import AdminLayout from '../../components/admin/AdminLayout';
 import Link from 'next/link';
 
 export default function GroupManagement() {
@@ -96,78 +96,65 @@ export default function GroupManagement() {
   if (!user || !user.roles.includes('Admin')) return <p>Redirecting...</p>;
 
   return (
-    <div className={styles.container}>
-      <header className={styles.header}>
-        <h1>Access Group Management</h1>
-      </header>
-      <div className={styles.container}>
-        <div className={styles.adminNav}>
-          <Link href="/admin/users" className={styles.adminNavLink}>Manage Users</Link>
-          <span style={{ margin: '0 1rem' }}>|</span>
-          <Link href="/admin/news" className={styles.adminNavLink}>Manage News</Link>
-          <span style={{ margin: '0 1rem' }}>|</span>
-          <Link href="/admin/settings" className={styles.adminNavLink}>Settings</Link>
-        </div>
+    <AdminLayout>
+      <h1 className={styles.pageTitle}>Access Group Management</h1>
+      {error && <p className={styles.error}>{error}</p>}
 
-        {error && <p className={styles.error}>{error}</p>}
-
-        <div className={styles.formSection}>
-          <h3>Create New Group</h3>
-          <form onSubmit={handleCreate} className={styles.inlineForm}>
-            <input
-              type="text"
-              value={newGroupName}
-              onChange={(e) => setNewGroupName(e.target.value)}
-              placeholder="New group name"
-              required
-            />
-            <button type="submit" className={styles.button}>Create</button>
-          </form>
-        </div>
-
-        <div className={styles.tableContainer}>
-          <table className={styles.userTable}>
-            <thead>
-              <tr>
-                <th>Group Name</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {groups.map((group) => (
-                <tr key={group.id}>
-                  <td>
-                    {editState[group.id] !== undefined ? (
-                      <input
-                        type="text"
-                        value={editState[group.id]}
-                        onChange={(e) => setEditState(prev => ({ ...prev, [group.id]: e.target.value }))}
-                      />
-                    ) : (
-                      group.name
-                    )}
-                  </td>
-                  <td className={styles.actionsCell}>
-                    {editState[group.id] !== undefined ? (
-                      <>
-                        <button onClick={() => handleUpdate(group.id)} className={styles.saveBtn}>Save</button>
-                        <button onClick={() => setEditState(prev => ({ ...prev, [group.id]: undefined }))} className={styles.cancelBtn}>Cancel</button>
-                      </>
-                    ) : (
-                      <button onClick={() => setEditState(prev => ({ ...prev, [group.id]: group.name }))} className={styles.editBtn}>Edit</button>
-                    )}
-                    <Link href={`/admin/groups/${group.id}`} className={styles.manageBtn}>
-                      Manage Members
-                    </Link>
-                    <button onClick={() => handleDelete(group.id)} className={styles.deleteBtn}>Delete</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <div className={styles.formSection}>
+        <h3>Create New Group</h3>
+        <form onSubmit={handleCreate} className={styles.inlineForm}>
+          <input
+            type="text"
+            value={newGroupName}
+            onChange={(e) => setNewGroupName(e.target.value)}
+            placeholder="New group name"
+            required
+          />
+          <button type="submit" className={styles.button}>Create</button>
+        </form>
       </div>
-      <BottomNav />
-    </div>
+
+      <div className={styles.tableContainer}>
+        <table className={styles.userTable}>
+          <thead>
+            <tr>
+              <th>Group Name</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {groups.map((group) => (
+              <tr key={group.id}>
+                <td>
+                  {editState[group.id] !== undefined ? (
+                    <input
+                      type="text"
+                      value={editState[group.id]}
+                      onChange={(e) => setEditState(prev => ({ ...prev, [group.id]: e.target.value }))}
+                    />
+                  ) : (
+                    group.name
+                  )}
+                </td>
+                <td className={styles.actionsCell}>
+                  {editState[group.id] !== undefined ? (
+                    <>
+                      <button onClick={() => handleUpdate(group.id)} className={styles.saveBtn}>Save</button>
+                      <button onClick={() => setEditState(prev => ({ ...prev, [group.id]: undefined }))} className={styles.cancelBtn}>Cancel</button>
+                    </>
+                  ) : (
+                    <button onClick={() => setEditState(prev => ({ ...prev, [group.id]: group.name }))} className={styles.editBtn}>Edit</button>
+                  )}
+                  <Link href={`/admin/groups/${group.id}`} className={styles.manageBtn}>
+                    Manage Members
+                  </Link>
+                  <button onClick={() => handleDelete(group.id)} className={styles.deleteBtn}>Delete</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </AdminLayout>
   );
 }
