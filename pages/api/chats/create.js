@@ -1,4 +1,5 @@
 import { adminDb } from '../../../src/firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import jwt from 'jsonwebtoken';
 import { parse } from 'cookie';
 
@@ -48,6 +49,16 @@ export default async function handler(req, res) {
     }
 
     await chatRef.set(chatData);
+
+    // For private chats, update each member's user document to include the new group ID
+    if (type === 'private') {
+      const batch = adminDb.batch();
+      chatData.members.forEach(memberId => {
+        const userRef = adminDb.collection('users').doc(memberId);
+        batch.update(userRef, { groupIds: FieldValue.arrayUnion(chatRef.id) });
+      });
+      await batch.commit();
+    }
 
     res.status(201).json({ message: 'Chat created successfully', chatId: chatRef.id });
   } catch (error) {
