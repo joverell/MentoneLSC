@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import logger from '../utils/logger';
+import { fetchWithAuth } from '../utils/auth-fetch';
 import styles from '../styles/Home.module.css';
 import docStyles from '../styles/Documents.module.css';
 import BottomNav from '../components/BottomNav';
@@ -16,13 +18,20 @@ export default function DocumentsPage() {
     const [accessGroups, setAccessGroups] = useState([]);
 
     const fetchDocuments = async () => {
+        const context = { component: 'DocumentsPage', function: 'fetchDocuments' };
+        logger.info('Attempting to fetch documents', context);
         try {
             setLoading(true);
-            const res = await fetch('/api/documents');
-            if (!res.ok) throw new Error('Failed to fetch documents');
+            const res = await fetchWithAuth('/api/documents');
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({ message: 'No error body' }));
+                throw new Error(errorData.message || `Failed to fetch documents with status: ${res.status}`);
+            }
             const data = await res.json();
             setDocuments(data);
+            logger.info('Successfully fetched documents', context, { count: data.length });
         } catch (err) {
+            logger.error('Failed to fetch documents', context, err);
             setError(err.message);
         } finally {
             setLoading(false);
@@ -30,23 +39,37 @@ export default function DocumentsPage() {
     };
 
     const fetchAccessGroups = async () => {
+        const context = { component: 'DocumentsPage', function: 'fetchAccessGroups' };
+        logger.info('Attempting to fetch access groups', context);
         try {
-            const res = await fetch('/api/access_groups');
-            if (!res.ok) throw new Error('Failed to fetch access groups');
+            const res = await fetchWithAuth('/api/access_groups');
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({ message: 'No error body' }));
+                throw new Error(errorData.message || `Failed to fetch access groups with status: ${res.status}`);
+            }
             const data = await res.json();
             setAccessGroups(data);
+            logger.info('Successfully fetched access groups', context, { count: data.length });
         } catch (err) {
-            console.error(err); // Log error but don't block UI
+            logger.error('Failed to fetch access groups', context, err);
+            // Do not set main error state, as this is not a critical failure
         }
     };
 
     const fetchCategories = async () => {
+        const context = { component: 'DocumentsPage', function: 'fetchCategories' };
+        logger.info('Attempting to fetch document categories', context);
         try {
-            const res = await fetch('/api/document-categories');
-            if (!res.ok) throw new Error('Failed to fetch categories');
+            const res = await fetchWithAuth('/api/document-categories');
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({ message: 'No error body' }));
+                throw new Error(errorData.message || `Failed to fetch categories with status: ${res.status}`);
+            }
             const data = await res.json();
             setCategories(data);
+            logger.info('Successfully fetched document categories', context, { count: data.length });
         } catch (err) {
+            logger.error('Failed to fetch document categories', context, err);
             setError(err.message);
         }
     };
@@ -60,22 +83,39 @@ export default function DocumentsPage() {
     }, [user]);
 
     const handleDelete = async (docId) => {
-        if (!window.confirm('Are you sure you want to delete this document?')) return;
+        const context = { component: 'DocumentsPage', function: 'handleDelete', docId };
+        logger.info('Delete button clicked', context);
+
+        if (!window.confirm('Are you sure you want to delete this document?')) {
+            logger.info('Document deletion cancelled by user', context);
+            return;
+        }
+
+        logger.info('Attempting to delete document', context);
         try {
-            const res = await fetch(`/api/documents/${docId}`, { method: 'DELETE' });
+            const res = await fetchWithAuth(`/api/documents/${docId}`, { method: 'DELETE' });
             if (!res.ok) {
-                const data = await res.json();
-                throw new Error(data.message || 'Failed to delete');
+                const errorData = await res.json().catch(() => ({ message: 'No error body' }));
+                throw new Error(errorData.message || `Failed to delete document with status: ${res.status}`);
             }
+            logger.info('Successfully deleted document', context);
             fetchDocuments(); // Refresh list
         } catch (err) {
+            logger.error('Failed to delete document', context, err);
             setError(err.message);
         }
     };
 
     const onUploadSuccess = () => {
+        const context = { component: 'DocumentsPage', function: 'onUploadSuccess' };
+        logger.info('Document upload successful, refreshing document list', context);
         fetchDocuments();
     }
+
+    useEffect(() => {
+        const context = { component: 'DocumentsPage', function: 'useEffect[]' };
+        logger.info('DocumentsPage component mounted', context);
+    }, []);
 
     const isAdmin = user && user.roles && user.roles.includes('Admin');
 
