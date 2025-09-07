@@ -2,7 +2,7 @@ import { useAuth } from '../context/AuthContext';
 import { useRouter } from 'next/router';
 import newsStyles from '../styles/News.module.css';
 import BottomNav from '../components/BottomNav';
-import CreateNewsForm from '../components/news/CreateNewsForm';
+import NewsForm from '../components/news/NewsForm';
 
 export default function CreateNewsPage() {
   const { user, loading } = useAuth();
@@ -23,7 +23,7 @@ export default function CreateNewsPage() {
       <header className={newsStyles.header}>
         <h1>Create News Article</h1>
       </header>
-      <CreateNewsForm />
+      <NewsForm />
       <BottomNav />
     </div>
   );

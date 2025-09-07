@@ -43,6 +43,28 @@
     padding: 2rem;
 }
 
+.editBtn,
+.deleteBtn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-right: 0.5rem;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.editBtn {
+    background-color: #28a745;
+    color: white;
+}
+
+.deleteBtn {
+    background-color: #dc3545;
+    color: white;
+}
+
 .pageTitle {
     margin-top: 0;
     margin-bottom: 2rem;
