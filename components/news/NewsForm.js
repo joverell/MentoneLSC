@@ -18,7 +18,7 @@ const ReactQuill = dynamic(
   { ssr: false }
 );
 
-export default function CreateNewsForm() {
+export default function NewsForm({ article }) {
   const { user } = useAuth();
   const router = useRouter();
   const quillRef = useRef(null);
@@ -31,6 +31,15 @@ export default function CreateNewsForm() {
   const [allGroups, setAllGroups] = useState([]);
   const [selectedGroups, setSelectedGroups] = useState([]);
   const [loadingGroups, setLoadingGroups] = useState(true);
+
+  useEffect(() => {
+    if (article) {
+      setTitle(article.title);
+      setContent(article.content);
+      setImageUrl(article.imageUrl || '');
+      setSelectedGroups(article.visibleToGroups || []);
+    }
+  }, [article]);
 
   useEffect(() => {
     const fetchGroups = async () => {
@@ -101,15 +110,19 @@ export default function CreateNewsForm() {
     }
 
     const payload = {
-        title,
-        content,
-        imageUrl,
-        visibleToGroups: selectedGroups,
+      title,
+      content,
+      imageUrl,
+      visibleToGroups: selectedGroups,
     };
 
+    const isEditing = !!article;
+    const url = isEditing ? `/api/news/${article.id}` : '/api/news';
+    const method = isEditing ? 'PUT' : 'POST';
+
     try {
-      const res = await fetch('/api/news', {
-        method: 'POST',
+      const res = await fetch(url, {
+        method: method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
@@ -117,12 +130,12 @@ export default function CreateNewsForm() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || 'Failed to create article');
+        throw new Error(data.message || `Failed to ${isEditing ? 'update' : 'create'} article`);
       }
 
-      setSuccess('Article created successfully! Redirecting...');
+      setSuccess(`Article ${isEditing ? 'updated' : 'created'} successfully! Redirecting...`);
       setTimeout(() => {
-        router.push('/?tab=news');
+        router.push(isEditing ? `/admin/news` : '/?tab=news');
       }, 2000);
 
     } catch (err) {
@@ -188,7 +201,7 @@ export default function CreateNewsForm() {
             />
           </div>
 
-          <button type="submit" className={formStyles.button}>Publish Article</button>
+          <button type="submit" className={formStyles.button}>{article ? 'Update Article' : 'Publish Article'}</button>
         </form>
     </div>
   );

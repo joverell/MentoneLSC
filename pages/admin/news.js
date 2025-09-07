@@ -79,6 +79,9 @@ export default function NewsManagement() {
                 <td>{article.authorName}</td>
                 <td>{new Date(article.createdAt).toLocaleDateString()}</td>
                 <td>
+                  <Link href={`/admin/news/${article.id}`}>
+                    <a className={styles.editBtn}>Edit</a>
+                  </Link>
                   <button onClick={() => handleDelete(article.id)} className={styles.deleteBtn}>
                     Delete
                   </button>

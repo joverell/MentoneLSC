@@ -14,7 +14,17 @@ if (!firebaseConfigString) {
 const firebaseConfig = JSON.parse(firebaseConfigString);
 
 // Initialize Firebase
-export const app = initializeApp(firebaseConfig);
+import { getApps } from "firebase/app";
+
+let app;
+if (!getApps().length) {
+  app = initializeApp(firebaseConfig);
+} else {
+  app = getApps()[0];
+}
+
+export { app };
+
 
 // Initialize Cloud Firestore and get a reference to the service
 export const db = getFirestore(app);
