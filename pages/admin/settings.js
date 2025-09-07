@@ -78,7 +78,7 @@ export default function SettingsAdminPage() {
             {!loading && (
                 <div className={formStyles.form}>
                     <h3>Integrations</h3>
-                    <div className={formStyles.formGroup}>
+                    <div className={`${formStyles.formGroup} ${formStyles.formGroupInline}`}>
                         <label htmlFor="wordpress-toggle">
                             Show WordPress Events
                         </label>
@@ -93,7 +93,7 @@ export default function SettingsAdminPage() {
                             <span className={`${formStyles.slider} ${formStyles.round}`}></span>
                         </label>
                     </div>
-                    <div className={formStyles.formGroup}>
+                    <div className={`${formStyles.formGroup} ${formStyles.formGroupInline}`}>
                         <label htmlFor="instagram-toggle">
                             Show Instagram Feed in Gallery
                         </label>
@@ -109,7 +109,7 @@ export default function SettingsAdminPage() {
                         </label>
                     </div>
                     <h3>Events</h3>
-                    <div className={formStyles.formGroup}>
+                    <div className={`${formStyles.formGroup} ${formStyles.formGroupInline}`}>
                         <label htmlFor="merge-calendar-toggle">
                             Merge Calendar and Events Page
                         </label>
