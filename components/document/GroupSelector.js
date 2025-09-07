@@ -2,11 +2,13 @@ import { useState, useMemo } from 'react';
 import docStyles from '../../styles/Documents.module.css';
 import { FaSearch } from 'react-icons/fa';
 
-const GroupSelector = ({ groups, selectedGroups, onSelectionChange }) => {
+const GroupSelector = ({ groups = [], selectedGroups, onSelectionChange }) => {
     const [searchTerm, setSearchTerm] = useState('');
 
     const filteredGroups = useMemo(() => {
-        return groups.filter(group =>
+        // Ensure groups is an array before filtering
+        const validGroups = Array.isArray(groups) ? groups : [];
+        return validGroups.filter(group =>
             group.name.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [groups, searchTerm]);
