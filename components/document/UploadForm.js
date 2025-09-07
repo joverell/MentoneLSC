@@ -4,7 +4,7 @@ import GroupSelector from './GroupSelector';
 import styles from '../../styles/Form.module.css';
 import StyledFileInput from './StyledFileInput';
 
-const UploadForm = ({ onUploadSuccess }) => {
+const UploadForm = ({ onUploadSuccess, accessGroups }) => {
     const [name, setName] = useState('');
     const [categoryId, setCategoryId] = useState('');
     const [categories, setCategories] = useState([]);
@@ -45,11 +45,11 @@ const UploadForm = ({ onUploadSuccess }) => {
         }
 
         const formData = new FormData();
-        formData.append('name', name);
+        formData.append('title', name);
         formData.append('categoryId', categoryId);
         formData.append('file', file);
         selectedGroups.forEach(groupId => {
-            formData.append('group_id', groupId);
+            formData.append('accessGroupIds[]', groupId);
         });
 
 
@@ -66,7 +66,9 @@ const UploadForm = ({ onUploadSuccess }) => {
             setFile(null);
             setSelectedGroups([]);
             // Clear the file input visually
-            document.getElementById('file-input').value = '';
+            if(document.getElementById('file-input')) {
+              document.getElementById('file-input').value = '';
+            }
 
         } catch (err) {
             setError(err.response?.data?.error || 'An error occurred during upload.');
@@ -115,8 +117,9 @@ const UploadForm = ({ onUploadSuccess }) => {
             <div className={styles.formGroup}>
                 <label>Visible to Groups</label>
                 <GroupSelector
+                    groups={accessGroups || []}
                     selectedGroups={selectedGroups}
-                    setSelectedGroups={setSelectedGroups}
+                    onSelectionChange={setSelectedGroups}
                 />
                 <p className={styles.infoText}>If no group is selected, the document will be visible to everyone.</p>
             </div>
