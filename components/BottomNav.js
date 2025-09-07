@@ -3,6 +3,7 @@ import { FaCalendarAlt, FaListAlt, FaInfoCircle, FaUserCircle, FaNewspaper, FaUs
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '../context/AuthContext';
+import { useEffect, useState } from 'react';
 
 const NavLink = ({ href, icon, label, active }) => (
   <Link href={href} className={`${styles.navButton} ${active ? styles.active : ''}`}>
@@ -15,6 +16,23 @@ const BottomNav = () => {
   const router = useRouter();
   const { pathname } = router;
   const { user } = useAuth();
+  const [settings, setSettings] = useState({ mergeCalendarAndEvents: { enabled: false } });
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch('/api/settings');
+        const data = await res.json();
+        if (res.ok) {
+          setSettings(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch settings:", error);
+      }
+    };
+
+    fetchSettings();
+  }, []);
 
   // This component will now manage its own state based on the current route
   return (
@@ -25,12 +43,14 @@ const BottomNav = () => {
         label="News"
         active={pathname === '/' && router.query.tab === 'news'}
       />
-      <NavLink
-        href="/?tab=events"
-        icon={<FaListAlt />}
-        label="Events"
-        active={pathname === '/' && (router.query.tab === 'events' || !router.query.tab)}
-      />
+      {!settings.mergeCalendarAndEvents?.enabled && (
+        <NavLink
+          href="/?tab=events"
+          icon={<FaListAlt />}
+          label="Events"
+          active={pathname === '/' && (router.query.tab === 'events' || !router.query.tab)}
+        />
+      )}
       <NavLink
         href="/events"
         icon={<FaCalendarAlt />}
