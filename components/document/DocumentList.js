@@ -2,6 +2,9 @@ import docStyles from '../../styles/Documents.module.css';
 import { FaFilePdf, FaFileWord, FaFileExcel, FaFilePowerpoint, FaFileAlt, FaTrash } from 'react-icons/fa';
 
 const getFileIcon = (fileName) => {
+    if (typeof fileName !== 'string' || !fileName.includes('.')) {
+        return <FaFileAlt />;
+    }
     const extension = fileName.split('.').pop().toLowerCase();
     if (extension === 'pdf') return <FaFilePdf />;
     if (['doc', 'docx'].includes(extension)) return <FaFileWord />;
@@ -28,21 +31,24 @@ const DocumentList = ({ documents, categories, isAdmin, onDelete }) => {
                 <div key={category} className={docStyles.documentCategory}>
                     <h2 className={docStyles.categoryTitle}>{category}</h2>
                     <ul className={docStyles.documentList}>
-                        {docs.map(doc => (
-                            <li key={doc.id} className={docStyles.documentListItem}>
-                                <a href={doc.downloadURL} target="_blank" rel="noopener noreferrer" className={docStyles.documentLink}>
-                                    <div className={docStyles.fileIconContainer}>
-                                        {getFileIcon(doc.title)}
-                                    </div>
-                                    <span className={docStyles.documentTitle}>{doc.title}</span>
-                                </a>
-                                {isAdmin && (
-                                    <button onClick={() => onDelete(doc.id)} className={docStyles.deleteButton}>
-                                        <FaTrash />
-                                    </button>
-                                )}
-                            </li>
-                        ))}
+                        {docs.map(doc => {
+                            const docTitle = doc.title || 'Untitled';
+                            return (
+                                <li key={doc.id} className={docStyles.documentListItem}>
+                                    <a href={doc.downloadURL} target="_blank" rel="noopener noreferrer" className={docStyles.documentLink}>
+                                        <div className={docStyles.fileIconContainer}>
+                                            {getFileIcon(docTitle)}
+                                        </div>
+                                        <span className={docStyles.documentTitle}>{docTitle}</span>
+                                    </a>
+                                    {isAdmin && (
+                                        <button onClick={() => onDelete(doc.id)} className={docStyles.deleteButton}>
+                                            <FaTrash />
+                                        </button>
+                                    )}
+                                </li>
+                            );
+                        })}
                     </ul>
                 </div>
             ))}
