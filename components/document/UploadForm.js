@@ -5,6 +5,7 @@ import styles from '../../styles/Form.module.css';
 import StyledFileInput from './StyledFileInput';
 
 const UploadForm = ({ accessGroups, onUploadSuccess }) => {
+
     const [name, setName] = useState('');
     const [categoryId, setCategoryId] = useState('');
     const [categories, setCategories] = useState([]);
@@ -26,13 +27,6 @@ const UploadForm = ({ accessGroups, onUploadSuccess }) => {
         fetchCategories();
     }, []);
 
-    const handleFileChange = (e) => {
-        const selectedFile = e.target.files[0];
-        if (selectedFile) {
-            setFile(selectedFile);
-        }
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
@@ -45,11 +39,11 @@ const UploadForm = ({ accessGroups, onUploadSuccess }) => {
         }
 
         const formData = new FormData();
-        formData.append('name', name);
+        formData.append('title', name);
         formData.append('categoryId', categoryId);
         formData.append('file', file);
         selectedGroups.forEach(groupId => {
-            formData.append('group_id', groupId);
+            formData.append('accessGroupIds[]', groupId);
         });
 
 
@@ -66,7 +60,9 @@ const UploadForm = ({ accessGroups, onUploadSuccess }) => {
             setFile(null);
             setSelectedGroups([]);
             // Clear the file input visually
-            document.getElementById('file-input').value = '';
+            if(document.getElementById('file-input')) {
+              document.getElementById('file-input').value = '';
+            }
 
         } catch (err) {
             setError(err.response?.data?.error || 'An error occurred during upload.');
@@ -105,17 +101,13 @@ const UploadForm = ({ accessGroups, onUploadSuccess }) => {
                 </select>
             </div>
             <div className={styles.formGroup}>
-                <label htmlFor="file-input">File</label>
-                <StyledFileInput
-                    id="file-input"
-                    onChange={handleFileChange}
-                    fileName={file ? file.name : "No file selected"}
-                />
+                <label>File</label>
+                <StyledFileInput onFileSelect={setFile} />
             </div>
             <div className={styles.formGroup}>
                 <label>Visible to Groups</label>
                 <GroupSelector
-                    groups={accessGroups}
+                    groups={accessGroups || []}
                     selectedGroups={selectedGroups}
                     onSelectionChange={setSelectedGroups}
                 />
