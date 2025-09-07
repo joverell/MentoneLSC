@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 import AdminLayout from '../../components/admin/AdminLayout';
@@ -13,13 +13,7 @@ const DocumentCategoriesPage = () => {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        if (!authLoading) {
-            fetchCategories();
-        }
-    }, [authLoading, fetchCategories]);
-
-    const fetchCategories = async () => {
+    const fetchCategories = useCallback(async () => {
         try {
             const token = await getIdToken();
             const res = await axios.get('/api/document-categories', {
@@ -31,7 +25,13 @@ const DocumentCategoriesPage = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [getIdToken, setError, setIsLoading]);
+
+    useEffect(() => {
+        if (!authLoading) {
+            fetchCategories();
+        }
+    }, [authLoading, fetchCategories]);
 
     const handleAddCategory = async (e) => {
         e.preventDefault();
