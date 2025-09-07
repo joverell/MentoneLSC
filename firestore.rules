@@ -94,12 +94,33 @@ service cloud.firestore {
     }
 
     function canReadChat(chatId) {
-      let chat = get(/databases/$(database)/documents/chats/$(chatId)).data;
-      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      // Document must exist to be read.
+      if (!exists(/databases/$(database)/documents/chats/$(chatId))) {
+        return false;
+      }
 
-      return chat.type == 'public' ||
-             (chat.type == 'private' && request.auth.uid in chat.members) ||
-             (chat.type == 'restricted' && userDoc.groupIds.hasAny(chat.groups));
+      let chat = get(/databases/$(database)/documents/chats/$(chatId)).data;
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+
+      // Public chats are readable by anyone.
+      if (chat.type == 'public') {
+        return true;
+      }
+
+      // Private chats are readable only by members.
+      if (chat.type == 'private') {
+        return request.auth.uid in chat.get('members', {});
+      }
+
+      // Restricted chats are readable by users in the chat's access groups.
+      if (chat.type == 'restricted') {
+        return userDoc != null &&
+               'groupIds' in userDoc.data &&
+               userDoc.data.groupIds.hasAny(chat.get('groups', []));
+      }
+
+      // Deny by default if chat type is unknown.
+      return false;
     }
 
     // Default deny all other access
