@@ -10,9 +10,15 @@ const getFileIcon = (fileName) => {
     return <FaFileAlt />;
 };
 
-const DocumentList = ({ documents, isAdmin, onDelete }) => {
+const DocumentList = ({ documents, categories, isAdmin, onDelete }) => {
+    const categoryMap = categories.reduce((acc, cat) => {
+        acc[cat.id] = cat.name;
+        return acc;
+    }, {});
+
     const groupedDocuments = documents.reduce((acc, doc) => {
-        (acc[doc.category] = acc[doc.category] || []).push(doc);
+        const categoryName = categoryMap[doc.categoryId] || 'Uncategorized';
+        (acc[categoryName] = acc[categoryName] || []).push(doc);
         return acc;
     }, {});
 

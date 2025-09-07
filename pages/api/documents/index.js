@@ -95,7 +95,7 @@ async function uploadDocument(req, res) {
         const { fields, files } = await parseForm(req);
 
         const title = fields.title?.[0];
-        const category = fields.category?.[0];
+        const categoryId = fields.categoryId?.[0];
         let accessGroupIds = fields['accessGroupIds[]'] || [];
         const file = files.file?.[0];
 
@@ -103,7 +103,7 @@ async function uploadDocument(req, res) {
             accessGroupIds = [accessGroupIds];
         }
 
-        if (!title || !category || !file) {
+        if (!title || !categoryId || !file) {
             return res.status(400).json({ message: 'Title, category, and file are required.' });
         }
 
@@ -125,7 +125,7 @@ async function uploadDocument(req, res) {
 
         await adminDb.collection('documents').add({
             title,
-            category,
+            categoryId,
             accessGroupIds,
             fileName,
             storagePath: destination,
