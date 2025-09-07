@@ -5,6 +5,9 @@ import ErrorBoundary from '../components/ErrorBoundary';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import BottomNav from '../components/BottomNav';
 import { useRouter } from 'next/router';
+import withAuth from '../components/hoc/withAuth';
+
+const publicPaths = ['/account', '/']; // The login page and landing page are public
 
 const Layout = ({ children }) => {
   const { user } = useAuth();
@@ -20,6 +23,8 @@ const Layout = ({ children }) => {
 };
 
 function MyApp({ Component, pageProps }) {
+  const router = useRouter();
+
   // Effect to set up the general chat group on initial load
   useEffect(() => {
     const setupGeneralChat = async () => {
@@ -38,6 +43,9 @@ function MyApp({ Component, pageProps }) {
     setupGeneralChat();
   }, []); // Empty dependency array ensures this runs only once on mount
 
+  const isPublicPage = publicPaths.includes(router.pathname);
+  const AuthedComponent = withAuth(Component);
+
   return (
     <>
       <Head>
@@ -46,7 +54,7 @@ function MyApp({ Component, pageProps }) {
       <ErrorBoundary>
         <AuthProvider>
           <Layout>
-            <Component {...pageProps} />
+            {isPublicPage ? <Component {...pageProps} /> : <AuthedComponent {...pageProps} />}
           </Layout>
         </AuthProvider>
       </ErrorBoundary>
