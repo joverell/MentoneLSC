@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import styles from '../../styles/Admin.module.css';
 import formStyles from '../../styles/Form.module.css';
 import AdminLayout from '../../components/admin/AdminLayout';
+import EditSponsorModal from '../../components/admin/EditSponsorModal';
 import Link from 'next/link';
 
 export default function SponsorsAdminPage() {
@@ -17,6 +18,10 @@ export default function SponsorsAdminPage() {
     const [logo, setLogo] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [uploadError, setUploadError] = useState(null);
+
+    // State for editing
+    const [editingSponsor, setEditingSponsor] = useState(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
     const fetchSponsors = async () => {
         try {
@@ -71,6 +76,21 @@ export default function SponsorsAdminPage() {
         } finally {
             setUploading(false);
         }
+    };
+
+    const handleEditClick = (sponsor) => {
+        setEditingSponsor(sponsor);
+        setIsEditModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsEditModalOpen(false);
+        setEditingSponsor(null);
+    };
+
+    const handleSponsorUpdated = () => {
+        handleCloseModal();
+        fetchSponsors();
     };
 
     const handleDelete = async (sponsorId) => {
@@ -133,12 +153,20 @@ export default function SponsorsAdminPage() {
                                 <td>{sponsor.name}</td>
                                 <td><a href={sponsor.websiteUrl} target="_blank" rel="noopener noreferrer">{sponsor.websiteUrl}</a></td>
                                 <td>
+                                    <button onClick={() => handleEditClick(sponsor)} className={`${formStyles.button} ${styles.editButton}`}>Edit</button>
                                     <button onClick={() => handleDelete(sponsor.id)} className={formStyles.deleteButton}>Delete</button>
                                 </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
+                {isEditModalOpen && (
+                    <EditSponsorModal
+                        sponsor={editingSponsor}
+                        onClose={handleCloseModal}
+                        onUpdate={handleSponsorUpdated}
+                    />
+                )}
             </div>
         </AdminLayout>
     );
