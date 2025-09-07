@@ -4,7 +4,8 @@ import GroupSelector from './GroupSelector';
 import styles from '../../styles/Form.module.css';
 import StyledFileInput from './StyledFileInput';
 
-const UploadForm = ({ onUploadSuccess, accessGroups }) => {
+const UploadForm = ({ accessGroups, onUploadSuccess }) => {
+
     const [name, setName] = useState('');
     const [categoryId, setCategoryId] = useState('');
     const [categories, setCategories] = useState([]);
