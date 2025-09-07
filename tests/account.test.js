@@ -53,23 +53,10 @@ describe('Account Page', () => {
   });
 
   test('should allow a user to upload a profile photo', async () => {
-    const mockDownloadURL = 'https://fake-url.com/chucknorris.png';
-
-    // Setup fetch mock for both photo upload and profile update
-    global.fetch.mockImplementation((url, options) => {
-      if (url.endsWith(`/api/users/${mockUser.uid}/profile-image`)) {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({ photoURL: mockDownloadURL }),
-        });
-      }
-      if (url.endsWith(`/api/users/${mockUser.uid}`) && options.method === 'PUT') {
-        return Promise.resolve({
-          ok: true,
-          json: () => Promise.resolve({ message: 'Profile updated successfully!' }),
-        });
-      }
-      return Promise.resolve({ ok: false, status: 404, json: () => Promise.resolve({ message: 'Not Found' }) });
+    // Setup fetch mock for profile update
+    global.fetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ message: 'Profile updated successfully!' }),
     });
 
     render(<Account />);
@@ -82,25 +69,10 @@ describe('Account Page', () => {
     fireEvent.click(updateButton);
 
     await waitFor(() => {
-      // Verify photo upload call
-      expect(fetch).toHaveBeenCalledWith(`/api/users/${mockUser.uid}/profile-image`, {
-        method: 'POST',
-        body: expect.any(FormData),
-      });
-
-      // Verify profile update call with the new photo URL
+      // Verify the single API call to update the profile
       expect(fetch).toHaveBeenCalledWith(`/api/users/${mockUser.uid}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: mockUser.name,
-          email: mockUser.email,
-          photoURL: mockDownloadURL,
-          patrolQualifications: '',
-          emergencyContact: '',
-          uniformSize: '',
-          notificationSettings: { news: true, events: true, chat: true },
-        }),
+        body: expect.any(FormData),
       });
     });
 

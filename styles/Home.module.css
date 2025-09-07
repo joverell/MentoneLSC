@@ -49,6 +49,18 @@
     .section {
         padding: 2rem;
     }
+
+.searchContainer {
+  margin: 20px 0;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 1rem;
+}
 }
 
 .eventsContainer {

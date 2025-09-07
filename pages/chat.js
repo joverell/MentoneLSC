@@ -12,6 +12,7 @@ export default function ChatLobby() {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (authLoading) return; // Wait for authentication to resolve
@@ -22,12 +23,12 @@ export default function ChatLobby() {
       return;
     }
 
-    const fetchGroups = async () => {
+    const fetchChats = async () => {
       try {
-        const res = await fetch('/api/my-groups');
+        const res = await fetch('/api/chats');
         if (!res.ok) {
           const data = await res.json();
-          throw new Error(data.message || 'Failed to fetch chat groups');
+          throw new Error(data.message || 'Failed to fetch chats');
         }
         const data = await res.json();
         setGroups(data);
@@ -38,8 +39,12 @@ export default function ChatLobby() {
       }
     };
 
-    fetchGroups();
+    fetchChats();
   }, [user, authLoading, router]);
+
+  const filteredGroups = groups.filter((group) =>
+    group.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   if (authLoading || loading) {
     return <p>Loading...</p>;
@@ -53,8 +58,20 @@ export default function ChatLobby() {
     <div className={styles.container}>
       <header className={styles.header}>
         <h1>Chat Groups</h1>
+        <Link href="/chat/create">
+          <a className={adminStyles.button}>Create Chat</a>
+        </Link>
       </header>
       <div className={styles.container}>
+        <div className={styles.searchContainer}>
+          <input
+            type="text"
+            placeholder="Search chats..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className={styles.searchInput}
+          />
+        </div>
         {error && <p className={adminStyles.error}>{error}</p>}
         <div className={adminStyles.tableContainer}>
           <ul className={adminStyles.userTable}>
@@ -66,10 +83,10 @@ export default function ChatLobby() {
             </li>
 
             {/* Divider */}
-            {groups.length > 0 && <hr className={adminStyles.divider} />}
+            {filteredGroups.length > 0 && <hr className={adminStyles.divider} />}
 
-            {groups.length > 0 ? (
-              groups.map((group) => (
+            {filteredGroups.length > 0 ? (
+              filteredGroups.map((group) => (
                 <li key={group.id} className={adminStyles.groupRow}>
                   <Link href={`/chat/${group.id}`}>
                     <a className={adminStyles.manageLink}>{group.name}</a>
@@ -77,7 +94,7 @@ export default function ChatLobby() {
                 </li>
               ))
             ) : (
-              <p>You are not a member of any other chat groups.</p>
+              <p>No chat groups found.</p>
             )}
           </ul>
         </div>
