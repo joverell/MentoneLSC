@@ -16,21 +16,22 @@
   background: none;
   border: none;
   color: #888;
-  padding: 10px 15px;
+  padding: 8px 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   cursor: pointer;
   flex-shrink: 0;
   transition: color 0.2s ease-in-out;
   text-decoration: none;
-  min-width: 80px;
+  min-width: 60px;
+  gap: 2px;
 }
 
 .navButton svg {
-  font-size: 1.5rem;
-  margin-bottom: 4px;
+  font-size: 1.2rem;
+  margin-bottom: 2px;
 }
 
 .navButton.active {
