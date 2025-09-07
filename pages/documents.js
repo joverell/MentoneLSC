@@ -54,7 +54,7 @@ export default function DocumentsPage() {
     useEffect(() => {
         fetchDocuments();
         fetchCategories();
-        if (user && user.roles.includes('Admin')) {
+        if (user && user.roles && user.roles.includes('Admin')) {
             fetchAccessGroups();
         }
     }, [user]);
@@ -77,7 +77,7 @@ export default function DocumentsPage() {
         fetchDocuments();
     }
 
-    const isAdmin = user && user.roles.includes('Admin');
+    const isAdmin = user && user.roles && user.roles.includes('Admin');
 
     return (
         <div className={styles.container}>

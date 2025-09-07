@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 import AdminLayout from '../../components/admin/AdminLayout';
 import styles from '../../styles/Admin.module.css';
 import formStyles from '../../styles/Form.module.css';
 
 const DocumentCategoriesPage = () => {
+    const { getIdToken, loading: authLoading } = useAuth();
     const [categories, setCategories] = useState([]);
     const [newCategoryName, setNewCategoryName] = useState('');
     const [editingCategory, setEditingCategory] = useState(null); // { id, name }
@@ -12,12 +14,17 @@ const DocumentCategoriesPage = () => {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        fetchCategories();
-    }, []);
+        if (!authLoading) {
+            fetchCategories();
+        }
+    }, [authLoading, fetchCategories]);
 
     const fetchCategories = async () => {
         try {
-            const res = await axios.get('/api/document-categories');
+            const token = await getIdToken();
+            const res = await axios.get('/api/document-categories', {
+                headers: { Authorization: `Bearer ${token}` },
+            });
             setCategories(res.data);
         } catch (err) {
             setError('Failed to fetch categories.');
@@ -35,7 +42,10 @@ const DocumentCategoriesPage = () => {
         }
 
         try {
-            await axios.post('/api/document-categories', { name: newCategoryName });
+            const token = await getIdToken();
+            await axios.post('/api/document-categories', { name: newCategoryName }, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
             setNewCategoryName('');
             fetchCategories(); // Refresh list
         } catch (err) {
@@ -51,7 +61,10 @@ const DocumentCategoriesPage = () => {
         }
 
         try {
-            await axios.put(`/api/document-categories/${id}`, { name });
+            const token = await getIdToken();
+            await axios.put(`/api/document-categories/${id}`, { name }, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
             setEditingCategory(null);
             fetchCategories(); // Refresh list
         } catch (err) {
@@ -63,7 +76,10 @@ const DocumentCategoriesPage = () => {
         if (window.confirm('Are you sure you want to delete this category?')) {
             setError('');
             try {
-                await axios.delete(`/api/document-categories/${id}`);
+                const token = await getIdToken();
+                await axios.delete(`/api/document-categories/${id}`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
                 fetchCategories(); // Refresh list
             } catch (err) {
                 setError(err.response?.data?.message || 'Failed to delete category.');
