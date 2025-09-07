@@ -1,86 +1,129 @@
-import { useState } from 'react';
-import formStyles from '../../styles/Form.module.css';
-import docStyles from '../../styles/Documents.module.css';
-import StyledFileInput from './StyledFileInput';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 import GroupSelector from './GroupSelector';
+import styles from '../../styles/Form.module.css';
+import StyledFileInput from './StyledFileInput';
 
-const UploadForm = ({ accessGroups, onUploadSuccess }) => {
-    const [title, setTitle] = useState('');
-    const [category, setCategory] = useState('');
+const UploadForm = ({ onUploadSuccess }) => {
+    const [name, setName] = useState('');
+    const [categoryId, setCategoryId] = useState('');
+    const [categories, setCategories] = useState([]);
     const [file, setFile] = useState(null);
     const [selectedGroups, setSelectedGroups] = useState([]);
-    const [uploading, setUploading] = useState(false);
-    const [uploadError, setUploadError] = useState(null);
+    const [error, setError] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const handleUpload = async (e) => {
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const res = await axios.get('/api/document-categories');
+                setCategories(res.data);
+            } catch (err) {
+                console.error('Failed to fetch categories for upload form', err);
+                setError('Could not load document categories.');
+            }
+        };
+        fetchCategories();
+    }, []);
+
+    const handleFileChange = (e) => {
+        const selectedFile = e.target.files[0];
+        if (selectedFile) {
+            setFile(selectedFile);
+        }
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!file || !title || !category) {
-            setUploadError('Please fill in all fields and select a file.');
+        setError('');
+        setIsSubmitting(true);
+
+        if (!name || !categoryId || !file) {
+            setError('Please fill in all fields and select a file.');
+            setIsSubmitting(false);
             return;
         }
-        setUploading(true);
-        setUploadError(null);
 
         const formData = new FormData();
-        formData.append('title', title);
-        formData.append('category', category);
+        formData.append('name', name);
+        formData.append('categoryId', categoryId);
         formData.append('file', file);
         selectedGroups.forEach(groupId => {
-            formData.append('accessGroupIds[]', groupId);
+            formData.append('group_id', groupId);
         });
 
+
         try {
-            const res = await fetch('/api/documents', {
-                method: 'POST',
-                body: formData,
+            const response = await axios.post('/api/documents', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
             });
-            const data = await res.json();
-            if (!res.ok) {
-                throw new Error(data.message || 'Upload failed');
-            }
-            // Reset form and refresh list
-            setTitle('');
-            setCategory('');
+            onUploadSuccess(response.data);
+            // Reset form
+            setName('');
+            setCategoryId('');
             setFile(null);
             setSelectedGroups([]);
-            onUploadSuccess();
+            // Clear the file input visually
+            document.getElementById('file-input').value = '';
+
         } catch (err) {
-            setUploadError(err.message);
+            setError(err.response?.data?.error || 'An error occurred during upload.');
         } finally {
-            setUploading(false);
+            setIsSubmitting(false);
         }
     };
 
     return (
-        <div className={`${formStyles.form} ${docStyles.uploadFormContainer}`}>
-            <h3>Upload New Document</h3>
-            <form onSubmit={handleUpload}>
-                {uploadError && <p className={formStyles.error}>{uploadError}</p>}
-                <div className={formStyles.formGroup}>
-                    <label htmlFor="title">Document Title</label>
-                    <input type="text" id="title" value={title} onChange={e => setTitle(e.target.value)} required />
-                </div>
-                <div className={formStyles.formGroup}>
-                    <label htmlFor="category">Category</label>
-                    <input type="text" id="category" value={category} onChange={e => setCategory(e.target.value)} placeholder="e.g., Policies, Forms" required />
-                </div>
-                <div className={formStyles.formGroup}>
-                    <label htmlFor="file">File</label>
-                    <StyledFileInput onFileSelect={setFile} />
-                </div>
-                <div className={formStyles.formGroup}>
-                    <label htmlFor="accessGroups">Restrict to Groups</label>
-                    <GroupSelector
-                        groups={accessGroups}
-                        selectedGroups={selectedGroups}
-                        onSelectionChange={setSelectedGroups}
-                    />
-                </div>
-                <button type="submit" className={formStyles.button} disabled={uploading}>
-                    {uploading ? 'Uploading...' : 'Upload Document'}
-                </button>
-            </form>
-        </div>
+        <form onSubmit={handleSubmit} className={styles.form}>
+            {error && <p className={styles.error}>{error}</p>}
+            <div className={styles.formGroup}>
+                <label htmlFor="name">Document Name</label>
+                <input
+                    type="text"
+                    id="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    className={styles.input}
+                />
+            </div>
+            <div className={styles.formGroup}>
+                <label htmlFor="category">Category</label>
+                <select
+                    id="category"
+                    value={categoryId}
+                    onChange={(e) => setCategoryId(e.target.value)}
+                    required
+                    className={styles.input}
+                >
+                    <option value="">Select a category</option>
+                    {categories.map(cat => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                </select>
+            </div>
+            <div className={styles.formGroup}>
+                <label htmlFor="file-input">File</label>
+                <StyledFileInput
+                    id="file-input"
+                    onChange={handleFileChange}
+                    fileName={file ? file.name : "No file selected"}
+                />
+            </div>
+            <div className={styles.formGroup}>
+                <label>Visible to Groups</label>
+                <GroupSelector
+                    selectedGroups={selectedGroups}
+                    setSelectedGroups={setSelectedGroups}
+                />
+                <p className={styles.infoText}>If no group is selected, the document will be visible to everyone.</p>
+            </div>
+            <button type="submit" disabled={isSubmitting} className={styles.button}>
+                {isSubmitting ? 'Uploading...' : 'Upload'}
+            </button>
+        </form>
     );
 };
 

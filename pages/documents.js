@@ -10,6 +10,7 @@ import EmptyState from '../components/document/EmptyState';
 export default function DocumentsPage() {
     const { user } = useAuth();
     const [documents, setDocuments] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [accessGroups, setAccessGroups] = useState([]);
@@ -39,8 +40,20 @@ export default function DocumentsPage() {
         }
     };
 
+    const fetchCategories = async () => {
+        try {
+            const res = await fetch('/api/document-categories');
+            if (!res.ok) throw new Error('Failed to fetch categories');
+            const data = await res.json();
+            setCategories(data);
+        } catch (err) {
+            setError(err.message);
+        }
+    };
+
     useEffect(() => {
         fetchDocuments();
+        fetchCategories();
         if (user && user.roles.includes('Admin')) {
             fetchAccessGroups();
         }
@@ -84,6 +97,7 @@ export default function DocumentsPage() {
                 {!loading && documents.length > 0 && (
                     <DocumentList
                         documents={documents}
+                        categories={categories}
                         isAdmin={isAdmin}
                         onDelete={handleDelete}
                     />

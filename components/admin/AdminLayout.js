@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import styles from '../../styles/Admin.module.css';
 import BottomNav from '../BottomNav';
-import { FaUsers, FaNewspaper, FaCalendarAlt, FaCog, FaDollarSign } from 'react-icons/fa';
+import { FaUsers, FaNewspaper, FaCalendarAlt, FaCog, FaDollarSign, FaFileAlt } from 'react-icons/fa';
 
 const AdminLayout = ({ children }) => {
     const router = useRouter();
@@ -14,6 +14,7 @@ const AdminLayout = ({ children }) => {
         { href: '/admin/news', label: 'News', icon: <FaNewspaper /> },
         { href: '/admin/events', label: 'Events', icon: <FaCalendarAlt /> },
         { href: '/admin/sponsors', label: 'Sponsors', icon: <FaDollarSign /> },
+        { href: '/admin/document-categories', label: 'Doc Categories', icon: <FaFileAlt /> },
         { href: '/admin/settings', label: 'Settings', icon: <FaCog /> },
     ];
 
