@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import logger from '../utils/logger';
 import { fetchWithAuth } from '../utils/auth-fetch';
@@ -60,17 +61,17 @@ export default function DocumentsPage() {
         const context = { component: 'DocumentsPage', function: 'fetchCategories' };
         logger.info('Attempting to fetch document categories', context);
         try {
-            const res = await fetchWithAuth('/api/document-categories');
-            if (!res.ok) {
-                const errorData = await res.json().catch(() => ({ message: 'No error body' }));
-                throw new Error(errorData.message || `Failed to fetch categories with status: ${res.status}`);
-            }
-            const data = await res.json();
-            setCategories(data);
-            logger.info('Successfully fetched document categories', context, { count: data.length });
+            // Categories are public, so no need for auth
+            const res = await axios.get('/api/document-categories');
+            setCategories(res.data);
+            logger.info('Successfully fetched document categories', { ...context, count: res.data.length });
         } catch (err) {
-            logger.error('Failed to fetch document categories', context, err);
-            setError(err.message);
+            const errorMessage = err.response?.data?.message || err.message || 'An unknown error occurred';
+            logger.error('Failed to fetch document categories', { ...context, error: errorMessage });
+            // Avoid overwriting a more critical error message
+            if (!error) {
+                setError('Could not load document categories.');
+            }
         }
     };
 
