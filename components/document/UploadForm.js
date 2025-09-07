@@ -26,13 +26,6 @@ const UploadForm = ({ onUploadSuccess, accessGroups }) => {
         fetchCategories();
     }, []);
 
-    const handleFileChange = (e) => {
-        const selectedFile = e.target.files[0];
-        if (selectedFile) {
-            setFile(selectedFile);
-        }
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
@@ -107,12 +100,8 @@ const UploadForm = ({ onUploadSuccess, accessGroups }) => {
                 </select>
             </div>
             <div className={styles.formGroup}>
-                <label htmlFor="file-input">File</label>
-                <StyledFileInput
-                    id="file-input"
-                    onChange={handleFileChange}
-                    fileName={file ? file.name : "No file selected"}
-                />
+                <label>File</label>
+                <StyledFileInput onFileSelect={setFile} />
             </div>
             <div className={styles.formGroup}>
                 <label>Visible to Groups</label>
