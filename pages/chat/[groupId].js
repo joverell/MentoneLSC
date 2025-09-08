@@ -45,7 +45,7 @@ export default function ChatRoom() {
       try {
         const chatDocRef = doc(db, 'chats', groupId);
         const chatDoc = await getDoc(chatDocRef);
-        if (chatDoc.exists()) {
+        if (chatDoc.exists) {
           setChat(chatDoc.data());
         } else {
           setError('Chat not found.');
