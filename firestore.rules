@@ -76,7 +76,7 @@ service cloud.firestore {
       // Use .get() with a default empty list to prevent errors if 'groupIds' is missing
       let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
       return userDoc != null &&
-             groupId in userDoc.data.get('groupIds', []);
+             userDoc.data.get('groupIds', []).hasAny([groupId]);
     }
 
     // Chat documents
@@ -115,8 +115,7 @@ service cloud.firestore {
       // Restricted chats are readable by users in the chat's access groups.
       if (chat.type == 'restricted') {
         return userDoc != null &&
-               'groupIds' in userDoc.data &&
-               userDoc.data.groupIds.hasAny(chat.get('groups', []));
+               userDoc.data.get('groupIds', []).hasAny(chat.get('groups', []));
       }
 
       // Deny by default if chat type is unknown.
