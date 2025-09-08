@@ -6,9 +6,9 @@ export default async function handler(req, res) {
     const { id: eventId } = req.query;
     logger.info(`RSVP request for event ${eventId}`);
 
-    if (req.method !== 'POST') {
+    if (req.method !== 'PUT') {
         logger.warn(`Method ${req.method} not allowed for RSVP`);
-        res.setHeader('Allow', ['POST']);
+        res.setHeader('Allow', ['PUT']);
         return res.status(405).end(`Method ${req.method} Not Allowed`);
     }
 
@@ -46,6 +46,8 @@ export default async function handler(req, res) {
             logger.warn('Missing request body');
             return res.status(400).json({ message: 'Missing request body' });
         }
+
+        logger.info('Request body', { body });
 
         const { status, comment, adultGuests, kidGuests } = body;
 

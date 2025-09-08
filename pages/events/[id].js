@@ -94,7 +94,7 @@ export default function EventDetails() {
         throw new Error('You must be logged in to RSVP.');
       }
       const response = await fetch(`/api/events/${id}/rsvp`, {
-        method: 'POST',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,

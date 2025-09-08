@@ -23,7 +23,7 @@ describe('RSVP API', () => {
     jest.clearAllMocks();
 
     req = {
-      method: 'POST',
+      method: 'PUT',
       query: { id: eventId },
       headers: {
         authorization: `Bearer ${token}`,
@@ -95,11 +95,11 @@ describe('RSVP API', () => {
     expect(res.json).toHaveBeenCalledWith({ message: 'Authentication error: ' + error.message });
   });
 
-  test('should return 405 if method is not POST', async () => {
-    req.method = 'GET';
+  test('should return 405 if method is not PUT', async () => {
+    req.method = 'POST';
     await rsvpHandler(req, res);
     expect(res.status).toHaveBeenCalledWith(405);
-    expect(res.end).toHaveBeenCalledWith('Method GET Not Allowed');
+    expect(res.end).toHaveBeenCalledWith('Method POST Not Allowed');
   });
 
   test('should return 404 if event does not exist', async () => {
