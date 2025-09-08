@@ -95,7 +95,7 @@ async function uploadDocument(req, res) {
         const { fields, files } = await parseForm(req);
 
         const title = fields.title?.[0];
-        const categoryId = fields.categoryId?.[0];
+        let categoryId = fields.categoryId?.[0];
         let accessGroupIds = fields['accessGroupIds[]'] || [];
         const file = files.file?.[0];
 
@@ -103,9 +103,12 @@ async function uploadDocument(req, res) {
             accessGroupIds = [accessGroupIds];
         }
 
-        if (!title || !categoryId || !file) {
-            return res.status(400).json({ message: 'Title, category, and file are required.' });
+        if (!title || !file) {
+            return res.status(400).json({ message: 'Title and file are required.' });
         }
+
+        const finalCategoryId = categoryId || await getUncategorisedCategoryId();
+
 
         filePath = file.filepath;
         const bucket = adminStorage.bucket();
@@ -125,7 +128,7 @@ async function uploadDocument(req, res) {
 
         await adminDb.collection('documents').add({
             title,
-            categoryId,
+            categoryId: finalCategoryId,
             accessGroupIds,
             fileName,
             storagePath: destination,
@@ -152,5 +155,25 @@ async function uploadDocument(req, res) {
                 console.error('Error deleting temporary file:', unlinkError);
             }
         }
+    }
+}
+
+async function getUncategorisedCategoryId() {
+    const categoriesRef = adminDb.collection('documentCategories');
+    const snapshot = await categoriesRef.where('name_lowercase', '==', 'uncategorised').limit(1).get();
+
+    if (!snapshot.empty) {
+        return snapshot.docs[0].id;
+    } else {
+        const newCategory = {
+            name: 'Uncategorised',
+            name_lowercase: 'uncategorised',
+            createdAt: FieldValue.serverTimestamp(),
+            // Note: createdBy will be null as this is a system action.
+            // Consider adding a system user ID if you have one.
+            createdBy: null,
+        };
+        const docRef = await categoriesRef.add(newCategory);
+        return docRef.id;
     }
 }

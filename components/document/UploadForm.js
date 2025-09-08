@@ -31,8 +31,8 @@ const UploadForm = ({ accessGroups, onUploadSuccess }) => {
         setError('');
         setIsSubmitting(true);
 
-        if (!name || !categoryId || !file) {
-            setError('Please fill in all fields and select a file.');
+        if (!name || !file) {
+            setError('Please fill in document name and select a file.');
             setIsSubmitting(false);
             return;
         }
@@ -90,7 +90,6 @@ const UploadForm = ({ accessGroups, onUploadSuccess }) => {
                     id="category"
                     value={categoryId}
                     onChange={(e) => setCategoryId(e.target.value)}
-                    required
                     className={styles.input}
                 >
                     <option value="">Select a category</option>
