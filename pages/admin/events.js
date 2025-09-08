@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import styles from '../../styles/Admin.module.css';
 import AdminLayout from '../../components/admin/AdminLayout';
+import Button from '../../components/ui/Button';
 
 export default function EventManagement() {
   const { user, loading: authLoading } = useAuth();
@@ -79,12 +80,10 @@ export default function EventManagement() {
                 <td>{new Date(event.start_time).toLocaleString()}</td>
                 <td>{event.location}</td>
                 <td>
-                  <Link href={`/admin/events/${event.id}`}>
-                    <a className={styles.editBtn}>Edit</a>
-                  </Link>
-                  <button onClick={() => handleDelete(event.id)} className={styles.deleteBtn}>
+                  <Button href={`/admin/events/${event.id}`} variant="primary">Edit</Button>
+                  <Button onClick={() => handleDelete(event.id)} variant="danger">
                     Delete
-                  </button>
+                  </Button>
                 </td>
               </tr>
             ))}

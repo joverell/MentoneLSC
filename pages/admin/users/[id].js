@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../../../context/AuthContext';
 import styles from '../../../styles/Admin.module.css';
 import AdminLayout from '../../../components/admin/AdminLayout';
+import Button from '../../../components/ui/Button';
 
 export default function EditUser() {
   const { user: adminUser, loading: authLoading } = useAuth();
@@ -222,8 +223,8 @@ export default function EditUser() {
         </div>
         {error && <p className={styles.error}>{error}</p>}
         {success && <p className={styles.success}>{success}</p>}
-        <button type="submit" className={styles.button}>Save Changes</button>
-        <button type="button" onClick={handleDelete} className={`${styles.button} ${styles.deleteBtn}`}>Delete User</button>
+        <Button type="submit" variant="primary">Save Changes</Button>
+        <Button type="button" onClick={handleDelete} variant="danger">Delete User</Button>
       </form>
     </AdminLayout>
   );

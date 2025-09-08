@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import styles from '../../styles/Admin.module.css';
 import AdminLayout from '../../components/admin/AdminLayout';
 import Link from 'next/link';
+import Button from '../../components/ui/Button';
 
 export default function GroupManagement() {
   const { user, loading: authLoading } = useAuth();
@@ -110,7 +111,7 @@ export default function GroupManagement() {
             placeholder="New group name"
             required
           />
-          <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`}>Create</button>
+          <Button type="submit" variant="primary">Create</Button>
         </form>
       </div>
 
@@ -141,16 +142,14 @@ export default function GroupManagement() {
                 <td className={styles.actionsCell}>
                   {editState[group.id] !== undefined ? (
                     <>
-                      <button onClick={() => handleUpdate(group.id)} className={`${styles.btn} ${styles.btnSuccess}`}>Save</button>
-                      <button onClick={() => setEditState(prev => ({ ...prev, [group.id]: undefined }))} className={`${styles.btn} ${styles.btnSecondary}`}>Cancel</button>
+                      <Button onClick={() => handleUpdate(group.id)} variant="primary">Save</Button>
+                      <Button onClick={() => setEditState(prev => ({ ...prev, [group.id]: undefined }))} variant="secondary">Cancel</Button>
                     </>
                   ) : (
-                    <button onClick={() => setEditState(prev => ({ ...prev, [group.id]: group.name }))} className={`${styles.btn} ${styles.btnPrimary}`}>Edit</button>
+                    <Button onClick={() => setEditState(prev => ({ ...prev, [group.id]: group.name }))} variant="primary">Edit</Button>
                   )}
-                  <Link href={`/admin/groups/${group.id}`} passHref>
-                    <a className={`${styles.btn} ${styles.btnInfo}`}>Manage Members</a>
-                  </Link>
-                  <button onClick={() => handleDelete(group.id)} className={`${styles.btn} ${styles.btnDanger}`}>Delete</button>
+                  <Button href={`/admin/groups/${group.id}`} variant="secondary">Manage Members</Button>
+                  <Button onClick={() => handleDelete(group.id)} variant="danger">Delete</Button>
                 </td>
               </tr>
             ))}

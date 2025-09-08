@@ -4,6 +4,7 @@ import { useAuth } from '../../../context/AuthContext';
 import styles from '../../../styles/Form.module.css';
 import AdminLayout from '../../../components/admin/AdminLayout';
 import GroupSelector from '../../../components/document/GroupSelector';
+import Button from '../../../components/ui/Button';
 
 export default function CreateAlbum() {
   const { user, loading } = useAuth();
@@ -131,7 +132,7 @@ export default function CreateAlbum() {
                     />
                 </fieldset>
 
-                <button type="submit" className={styles.button}>Create Album</button>
+                <Button type="submit" variant="primary">Create Album</Button>
                 </form>
             </div>
         </div>

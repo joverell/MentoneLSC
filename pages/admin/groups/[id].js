@@ -4,6 +4,7 @@ import { useAuth } from '../../../context/AuthContext';
 import styles from '../../../styles/Admin.module.css';
 import AdminLayout from '../../../components/admin/AdminLayout';
 import Link from 'next/link';
+import Button from '../../../components/ui/Button';
 
 export default function ManageGroupMembers() {
   const { user: adminUser, loading: authLoading } = useAuth();
@@ -169,7 +170,7 @@ export default function ManageGroupMembers() {
                 <option key={user.uid} value={user.uid}>{user.name} ({user.email})</option>
               ))}
             </select>
-            <button type="submit" className={styles.button}>Add Admin</button>
+            <Button type="submit" variant="primary">Add Admin</Button>
           </form>
           <table className={styles.userTable} style={{ marginTop: '1rem' }}>
             <thead>
@@ -185,7 +186,7 @@ export default function ManageGroupMembers() {
                   <td>{admin.name}</td>
                   <td>{admin.email}</td>
                   <td className={styles.actionsCell}>
-                    <button onClick={() => handleRemoveAdmin(admin.uid)} className={styles.deleteBtn}>Remove Admin</button>
+                    <Button onClick={() => handleRemoveAdmin(admin.uid)} variant="danger">Remove Admin</Button>
                   </td>
                 </tr>
               ))}
@@ -206,7 +207,7 @@ export default function ManageGroupMembers() {
               <option key={user.uid} value={user.uid}>{user.name} ({user.email})</option>
             ))}
           </select>
-          <button type="submit" className={styles.button}>Add Member</button>
+          <Button type="submit" variant="primary">Add Member</Button>
         </form>
       </div>
 
@@ -226,7 +227,7 @@ export default function ManageGroupMembers() {
                 <td>{member.name}</td>
                 <td>{member.email}</td>
                 <td className={styles.actionsCell}>
-                  <button onClick={() => handleRemoveMember(member.uid)} className={styles.deleteBtn}>Remove</button>
+                  <Button onClick={() => handleRemoveMember(member.uid)} variant="danger">Remove</Button>
                 </td>
               </tr>
             ))}
