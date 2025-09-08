@@ -10,7 +10,9 @@ import UploadForm from '../components/document/UploadForm';
 import EmptyState from '../components/document/EmptyState';
 import EditDocumentModal from '../components/document/EditDocumentModal';
 
-export default function DocumentsPage() {
+import withAuth from '../components/hoc/withAuth';
+
+function DocumentsPage() {
     const { user } = useAuth();
     const [documents, setDocuments] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -187,3 +189,5 @@ export default function DocumentsPage() {
         </div>
     );
 }
+
+export default withAuth(DocumentsPage);

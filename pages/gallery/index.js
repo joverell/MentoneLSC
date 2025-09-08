@@ -6,7 +6,9 @@ import styles from '../../styles/Home.module.css';
 import galleryStyles from '../../styles/Gallery.module.css';
 import BottomNav from '../../components/BottomNav';
 
-export default function GalleryPage() {
+import withAuth from '../../components/hoc/withAuth';
+
+function GalleryPage() {
     const { user } = useAuth();
     const router = useRouter();
     const [albums, setAlbums] = useState([]);
@@ -110,3 +112,5 @@ export default function GalleryPage() {
         </div>
     );
 }
+
+export default withAuth(GalleryPage);
