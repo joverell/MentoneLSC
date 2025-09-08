@@ -45,7 +45,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ message: 'Failed to add user to group.' });
     }
   } else if (req.method === 'DELETE') {
-    const { userId } = req.query;
+    const { userId } = req.body;
     if (!groupId || !userId) {
       return res.status(400).json({ message: 'Group ID and User ID are required.' });
     }
