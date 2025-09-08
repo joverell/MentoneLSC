@@ -40,15 +40,29 @@ async function getAccessGroups(req, res) {
   try {
     const groupsSnapshot = await adminDb.collection('access_groups').orderBy('name', 'asc').get();
     const usersSnapshot = await adminDb.collection('users').get();
-    const users = usersSnapshot.docs.map(doc => doc.data());
+
+    const groupUserCounts = {};
+    groupsSnapshot.docs.forEach(doc => {
+      groupUserCounts[doc.id] = 0;
+    });
+
+    usersSnapshot.docs.forEach(doc => {
+      const user = doc.data();
+      if (user.accessGroups) {
+        user.accessGroups.forEach(groupId => {
+          if (groupUserCounts.hasOwnProperty(groupId)) {
+            groupUserCounts[groupId]++;
+          }
+        });
+      }
+    });
 
     const groups = groupsSnapshot.docs.map(doc => {
       const groupData = doc.data();
-      const userCount = users.filter(user => user.accessGroups && user.accessGroups.includes(doc.id)).length;
       return {
         id: doc.id,
         ...groupData,
-        userCount,
+        userCount: groupUserCounts[doc.id],
       };
     });
 
