@@ -25,37 +25,45 @@ export default function CalendarTab() {
 
     const fetchEvents = useCallback(async () => {
         try {
-            const fetchPromises = [
-                fetch('/api/events').catch(e => { console.error("Internal fetch error:", e); return { ok: false }; })
-            ];
-
-            if (settings.wordpress?.enabled) {
-                fetchPromises.unshift(fetch('https://mentonelsc.com/wp-json/tribe/events/v1/events').catch(e => { console.error("WP fetch error:", e); return { ok: false }; }));
-            }
-
-            const responses = await Promise.all(fetchPromises);
-
-            let wordpressEvents = [];
-            if (settings.wordpress?.enabled) {
-                const wpRes = responses.find(res => res.url && res.url.includes('mentonelsc.com'));
-                if (wpRes && wpRes.ok) {
-                    const data = await wpRes.json();
-                    wordpressEvents = (data.events || []).map(event => ({
-                        startTime: new Date(event.start_date.replace(' ', 'T')),
-                    }));
-                }
-            }
-
-            const internalRes = responses.find(res => res.url && res.url.includes('/api/events'));
-            let internalEvents = [];
-            if (internalRes && internalRes.ok) {
-                const data = await internalRes.json();
-                internalEvents = data.map(event => ({
+            const internalEventsPromise = fetch('/api/events')
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error(`Internal API fetch failed with status: ${res.status}`);
+                    }
+                    return res.json();
+                })
+                .then(data => data.map(event => ({
                     startTime: new Date(event.start_time),
-                }));
+                })))
+                .catch(e => {
+                    console.error("Internal fetch error:", e.message);
+                    return [];
+                });
+
+            const promises = [internalEventsPromise];
+
+            if (settings.wordpress?.enabled) {
+                const wordpressEventsPromise = fetch('https://mentonelsc.com/wp-json/tribe/events/v1/events')
+                    .then(res => {
+                        if (!res.ok) {
+                            throw new Error(`WordPress API fetch failed with status: ${res.status}`);
+                        }
+                        return res.json();
+                    })
+                    .then(data => (data.events || []).map(event => ({
+                        startTime: new Date(event.start_date.replace(' ', 'T')),
+                    })))
+                    .catch(e => {
+                        console.error("WP fetch error:", e.message);
+                        return [];
+                    });
+                promises.push(wordpressEventsPromise);
             }
 
-            setAllEvents([...wordpressEvents, ...internalEvents]);
+            const allEventsArrays = await Promise.all(promises);
+            const combinedEvents = [].concat(...allEventsArrays);
+            setAllEvents(combinedEvents);
+
         } catch (err) {
             console.error('Error fetching events for calendar:', err);
         }
