@@ -21,8 +21,20 @@ const handler = async (req, res) => {
 // Publicly accessible function to get categories
 async function getCategories(req, res) {
     try {
-        const snapshot = await adminDb.collection('documentCategories').orderBy('name').get();
-        const categories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const categoriesSnapshot = await adminDb.collection('documentCategories').orderBy('name').get();
+        const documentsSnapshot = await adminDb.collection('documents').get();
+        const documents = documentsSnapshot.docs.map(doc => doc.data());
+
+        const categories = categoriesSnapshot.docs.map(doc => {
+            const categoryData = doc.data();
+            const docCount = documents.filter(document => document.category === doc.id).length;
+            return {
+                id: doc.id,
+                ...categoryData,
+                docCount,
+            };
+        });
+
         return res.status(200).json(categories);
     } catch (error) {
         console.error('Get Document Categories Error:', error);
