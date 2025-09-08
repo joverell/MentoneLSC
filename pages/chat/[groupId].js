@@ -27,12 +27,16 @@ export default function ChatRoom() {
   };
 
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
     if (!user) {
       router.push('/account');
       return;
     }
     if (!groupId) {
+      setError('No group ID specified.');
       setLoading(false);
       return;
     }
@@ -47,6 +51,7 @@ export default function ChatRoom() {
           setError('Chat not found.');
         }
       } catch (err) {
+        logger.error('Error fetching chat details', { groupId, error: err.message });
         setError('Failed to load chat details.');
       }
     };
@@ -57,15 +62,11 @@ export default function ChatRoom() {
     const q = query(messagesColRef, orderBy('createdAt', 'asc'));
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const msgs = [];
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        msgs.push({
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate(),
-        });
-      });
+      const msgs = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate(),
+      }));
       setMessages(msgs);
       setLoading(false);
     }, (err) => {
@@ -80,8 +81,8 @@ export default function ChatRoom() {
       setLoading(false);
     });
 
-    return () => unsubscribe();
-  }, [authLoading, user, groupId, router]);
+  return () => unsubscribe();
+    }, [authLoading, user, groupId, router]);
 
   useEffect(() => {
     scrollToBottom();
