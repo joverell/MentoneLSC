@@ -65,18 +65,22 @@ const BottomNav = () => {
           active={pathname.startsWith('/chat')}
         />
       )}
-      <NavLink
-        href="/documents"
-        icon={<FaFileAlt />}
-        label="Docs"
-        active={pathname.startsWith('/documents')}
-      />
-      <NavLink
-        href="/gallery"
-        icon={<FaImages />}
-        label="Gallery"
-        active={pathname.startsWith('/gallery')}
-      />
+      {user && (
+        <>
+          <NavLink
+            href="/documents"
+            icon={<FaFileAlt />}
+            label="Docs"
+            active={pathname.startsWith('/documents')}
+          />
+          <NavLink
+            href="/gallery"
+            icon={<FaImages />}
+            label="Gallery"
+            active={pathname.startsWith('/gallery')}
+          />
+        </>
+      )}
       <NavLink
         href="/?tab=info"
         icon={<FaInfoCircle />}

@@ -31,12 +31,14 @@ export default function EventsCalendar() {
                 }
 
                 // Then fetch events
-                const eventsRes = await fetchWithAuth('/api/events');
-                if (!eventsRes.ok) {
-                    throw new Error('Failed to fetch events');
+                const eventPromises = [fetch('/api/events/public').then(res => res.json())];
+                if (user) {
+                    eventPromises.push(fetchWithAuth('/api/events').then(res => res.json()));
                 }
-                const eventsData = await eventsRes.json();
-                setEvents(eventsData);
+
+                const eventsData = await Promise.all(eventPromises);
+                const combinedEvents = eventsData.flat();
+                setEvents(combinedEvents);
 
             } catch (err) {
                 setError(err.message);
@@ -46,7 +48,7 @@ export default function EventsCalendar() {
         };
 
         fetchSettingsAndEvents();
-    }, []);
+    }, [user]);
 
   const handleDateClick = (date) => {
     // Find events on the clicked date
