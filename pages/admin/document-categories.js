@@ -3,7 +3,6 @@ import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 import AdminLayout from '../../components/admin/AdminLayout';
 import styles from '../../styles/Admin.module.css';
-import formStyles from '../../styles/Form.module.css';
 
 const DocumentCategoriesPage = () => {
     const { getIdToken, loading: authLoading } = useAuth();
@@ -97,59 +96,64 @@ const DocumentCategoriesPage = () => {
 
     return (
         <AdminLayout>
-            <div className={styles.container}>
-                <h1>Manage Document Categories</h1>
-                {error && <p className={formStyles.error}>{error}</p>}
+            <h1 className={styles.pageTitle}>Manage Document Categories</h1>
+            {error && <p className={styles.error}>{error}</p>}
 
-                <div className={styles.card}>
-                    <h2>Add New Category</h2>
-                    <form onSubmit={handleAddCategory} className={formStyles.form}>
-                        <div className={formStyles.formGroup}>
-                            <label htmlFor="newCategoryName">Category Name</label>
-                            <input
-                                type="text"
-                                id="newCategoryName"
-                                value={newCategoryName}
-                                onChange={(e) => setNewCategoryName(e.target.value)}
-                                className={formStyles.input}
-                                required
-                            />
-                        </div>
-                        <button type="submit" className={formStyles.button}>Add Category</button>
-                    </form>
-                </div>
+            <div className={styles.formSection}>
+                <h3>Add New Category</h3>
+                <form onSubmit={handleAddCategory}>
+                    <input
+                        type="text"
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        placeholder="New category name"
+                        required
+                    />
+                    <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`}>Add Category</button>
+                </form>
+            </div>
 
-                <div className={styles.card}>
-                    <h2>Existing Categories</h2>
-                    {isLoading ? <p>Loading categories...</p> : (
-                        <ul className={styles.list}>
-                            {categories.map(cat => (
-                                <li key={cat.id} className={styles.listItem}>
+            <div className={styles.tableContainer}>
+                <table className={styles.userTable}>
+                    <thead>
+                        <tr>
+                            <th>Category Name</th>
+                            <th>Document Count</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {categories.map(cat => (
+                            <tr key={cat.id}>
+                                <td>
                                     {editingCategory && editingCategory.id === cat.id ? (
-                                        <div className={styles.editForm}>
-                                            <input
-                                                type="text"
-                                                value={editingCategory.name}
-                                                onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
-                                                className={formStyles.input}
-                                            />
-                                            <button onClick={() => handleUpdateCategory(editingCategory.id, editingCategory.name)} className={styles.button}>Save</button>
-                                            <button onClick={cancelEditing} className={styles.buttonSecondary}>Cancel</button>
-                                        </div>
+                                        <input
+                                            type="text"
+                                            value={editingCategory.name}
+                                            onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
+                                        />
                                     ) : (
-                                        <div className={styles.listItemContent}>
-                                            <span>{cat.name}</span>
-                                            <div className={styles.actions}>
-                                                <button onClick={() => startEditing(cat)} className={styles.button}>Edit</button>
-                                                <button onClick={() => handleDeleteCategory(cat.id)} className={styles.buttonSecondary}>Delete</button>
-                                            </div>
-                                        </div>
+                                        cat.name
                                     )}
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </div>
+                                </td>
+                                <td>{cat.docCount}</td>
+                                <td className={styles.actionsCell}>
+                                    {editingCategory && editingCategory.id === cat.id ? (
+                                        <>
+                                            <button onClick={() => handleUpdateCategory(editingCategory.id, editingCategory.name)} className={`${styles.btn} ${styles.btnSuccess}`}>Save</button>
+                                            <button onClick={cancelEditing} className={`${styles.btn} ${styles.btnSecondary}`}>Cancel</button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <button onClick={() => startEditing(cat)} className={`${styles.btn} ${styles.btnPrimary}`}>Edit</button>
+                                            <button onClick={() => handleDeleteCategory(cat.id)} className={`${styles.btn} ${styles.btnDanger}`}>Delete</button>
+                                        </>
+                                    )}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
         </AdminLayout>
     );

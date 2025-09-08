@@ -110,7 +110,7 @@ export default function GroupManagement() {
             placeholder="New group name"
             required
           />
-          <button type="submit" className={styles.button}>Create</button>
+          <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`}>Create</button>
         </form>
       </div>
 
@@ -119,6 +119,7 @@ export default function GroupManagement() {
           <thead>
             <tr>
               <th>Group Name</th>
+              <th>User Count</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -136,19 +137,20 @@ export default function GroupManagement() {
                     group.name
                   )}
                 </td>
+                <td>{group.userCount}</td>
                 <td className={styles.actionsCell}>
                   {editState[group.id] !== undefined ? (
                     <>
-                      <button onClick={() => handleUpdate(group.id)} className={styles.saveBtn}>Save</button>
-                      <button onClick={() => setEditState(prev => ({ ...prev, [group.id]: undefined }))} className={styles.cancelBtn}>Cancel</button>
+                      <button onClick={() => handleUpdate(group.id)} className={`${styles.btn} ${styles.btnSuccess}`}>Save</button>
+                      <button onClick={() => setEditState(prev => ({ ...prev, [group.id]: undefined }))} className={`${styles.btn} ${styles.btnSecondary}`}>Cancel</button>
                     </>
                   ) : (
-                    <button onClick={() => setEditState(prev => ({ ...prev, [group.id]: group.name }))} className={styles.editBtn}>Edit</button>
+                    <button onClick={() => setEditState(prev => ({ ...prev, [group.id]: group.name }))} className={`${styles.btn} ${styles.btnPrimary}`}>Edit</button>
                   )}
-                  <Link href={`/admin/groups/${group.id}`} className={styles.manageBtn}>
-                    Manage Members
+                  <Link href={`/admin/groups/${group.id}`} passHref>
+                    <a className={`${styles.btn} ${styles.btnInfo}`}>Manage Members</a>
                   </Link>
-                  <button onClick={() => handleDelete(group.id)} className={styles.deleteBtn}>Delete</button>
+                  <button onClick={() => handleDelete(group.id)} className={`${styles.btn} ${styles.btnDanger}`}>Delete</button>
                 </td>
               </tr>
             ))}

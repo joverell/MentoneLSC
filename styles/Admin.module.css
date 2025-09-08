@@ -43,28 +43,6 @@
     padding: 2rem;
 }
 
-.editBtn,
-.deleteBtn {
-    padding: 0.5rem 1rem;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    margin-right: 0.5rem;
-    text-decoration: none;
-    display: inline-block;
-}
-
-.editBtn {
-    background-color: #28a745;
-    color: white;
-}
-
-.deleteBtn {
-    background-color: #dc3545;
-    color: white;
-}
-
 .pageTitle {
     margin-top: 0;
     margin-bottom: 2rem;
@@ -205,6 +183,113 @@
     cursor: pointer;
 }
 
-.editButton {
-    margin-right: 10px;
+/* Button Styles */
+.btn {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+    margin-right: 0.5rem;
+}
+
+.btn:hover {
+    text-decoration: none;
+}
+
+.btnPrimary {
+    background-color: #007bff;
+    color: white;
+}
+
+.btnPrimary:hover {
+    background-color: #0056b3;
+}
+
+.btnSecondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btnSecondary:hover {
+    background-color: #5a6268;
+}
+
+.btnSuccess {
+    background-color: #28a745;
+    color: white;
+}
+
+.btnSuccess:hover {
+    background-color: #218838;
+}
+
+.btnDanger {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btnDanger:hover {
+    background-color: #c82333;
+}
+
+.btnWarning {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.btnWarning:hover {
+    background-color: #e0a800;
+}
+
+.btnInfo {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.btnInfo:hover {
+    background-color: #138496;
+}
+
+.btnLight {
+    background-color: #f8f9fa;
+    color: #212529;
+    border-color: #dae0e5;
+}
+
+.btnLight:hover {
+    background-color: #e2e6ea;
+}
+
+.btnDark {
+    background-color: #343a40;
+    color: white;
+}
+
+.btnDark:hover {
+    background-color: #23272b;
+}
+
+.btnOutlinePrimary {
+    color: #007bff;
+    border-color: #007bff;
+}
+
+.btnOutlinePrimary:hover {
+    background-color: #007bff;
+    color: white;
+}
+
+.btnOutlineSecondary {
+    color: #6c757d;
+    border-color: #6c757d;
+}
+
+.btnOutlineSecondary:hover {
+    background-color: #6c757d;
+    color: white;
 }

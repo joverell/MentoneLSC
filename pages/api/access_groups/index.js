@@ -39,10 +39,19 @@ export default async function handler(req, res) {
 async function getAccessGroups(req, res) {
   try {
     const groupsSnapshot = await adminDb.collection('access_groups').orderBy('name', 'asc').get();
-    const groups = groupsSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const usersSnapshot = await adminDb.collection('users').get();
+    const users = usersSnapshot.docs.map(doc => doc.data());
+
+    const groups = groupsSnapshot.docs.map(doc => {
+      const groupData = doc.data();
+      const userCount = users.filter(user => user.accessGroups && user.accessGroups.includes(doc.id)).length;
+      return {
+        id: doc.id,
+        ...groupData,
+        userCount,
+      };
+    });
+
     return res.status(200).json(groups);
   } catch (error) {
     console.error('Get Access Groups API Error:', error);
