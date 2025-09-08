@@ -76,7 +76,7 @@ async function getEvents(req, res) {
           // Fetch user name for the RSVP
           const userDocRef = adminDb.collection('users').doc(rsvpUserId);
           const userDoc = await userDocRef.get();
-          const userName = userDoc.exists() ? userDoc.data().name : 'Unknown User';
+          const userName = userDoc.exists ? userDoc.data().name : 'Unknown User';
 
           return {
             userId: rsvpUserId,

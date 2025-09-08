@@ -52,7 +52,7 @@ describe('RSVP API', () => {
     const collection = jest.fn(() => ({ doc }));
 
     // Mock for event existence check
-    const eventDocRef = { get: jest.fn().mockResolvedValue({ exists: () => true }) }; // Corrected mock
+    const eventDocRef = { get: jest.fn().mockResolvedValue({ exists: true }) }; // Corrected mock
     adminDb.collection.mockImplementation((name) => {
         if (name === 'events') {
             return { doc: jest.fn().mockReturnValue({ ...eventDocRef, collection }) };
@@ -104,7 +104,7 @@ describe('RSVP API', () => {
 
   test('should return 404 if event does not exist', async () => {
     adminAuth.verifyIdToken.mockResolvedValue({ uid: userId });
-    const eventDocRef = { get: jest.fn().mockResolvedValue({ exists: () => false }) }; // Corrected mock
+    const eventDocRef = { get: jest.fn().mockResolvedValue({ exists: false }) }; // Corrected mock
     adminDb.collection.mockReturnValue({ doc: jest.fn().mockReturnValue(eventDocRef) });
 
     await rsvpHandler(req, res);
