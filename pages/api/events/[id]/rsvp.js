@@ -24,7 +24,22 @@ export default async function handler(req, res) {
             return res.status(400).json({ message: 'Invalid event ID' });
         }
 
-        const { status, comment, adultGuests, kidGuests } = req.body;
+        // Defensively parse the request body
+        let body = req.body;
+        if (typeof body === 'string') {
+            try {
+                body = JSON.parse(body);
+            } catch (e) {
+                return res.status(400).json({ message: 'Invalid JSON in request body' });
+            }
+        }
+
+        // Ensure body exists
+        if (!body) {
+            return res.status(400).json({ message: 'Missing request body' });
+        }
+
+        const { status, comment, adultGuests, kidGuests } = body;
 
         // Validate input
         if (!status) {
