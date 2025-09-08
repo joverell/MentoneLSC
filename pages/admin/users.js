@@ -28,6 +28,26 @@ export default function UserManagement() {
     }
   };
 
+  const handleDelete = async (userId) => {
+    if (!window.confirm('Are you sure you want to delete this user?')) return;
+    setError(null);
+    try {
+      const res = await fetch(`/api/users/${userId}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || 'Failed to delete user');
+      }
+      // Re-fetch users after deletion
+      const usersRes = await fetch('/api/users');
+      const usersData = await usersRes.json();
+      setUsers(usersData);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   useEffect(() => {
     if (authLoading) return; // Wait for authentication to resolve
 
@@ -103,9 +123,12 @@ export default function UserManagement() {
                 <td data-label="Roles">{u.roles ? u.roles.join(', ') : 'N/A'}</td>
                 <td data-label="Groups">{u.groupIds && u.groupIds.length > 0 ? u.groupIds.map(id => groups[id] || 'Unknown').join(', ') : 'None'}</td>
                 <td data-label="Actions" className={styles.actionsCell}>
-                  <Link href={`/admin/users/${u.id}`} className={styles.manageLink}>
-                    Manage
+                  <Link href={`/admin/users/${u.id}`}>
+                    <a className={styles.editBtn}>Edit</a>
                   </Link>
+                  <button onClick={() => handleDelete(u.id)} className={styles.deleteBtn}>
+                    Delete
+                  </button>
                 </td>
               </tr>
             ))}
