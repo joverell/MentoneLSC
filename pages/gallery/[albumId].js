@@ -4,7 +4,6 @@ import { useAuth } from '../../context/AuthContext';
 import Link from 'next/link';
 import styles from '../../styles/Home.module.css';
 import galleryStyles from '../../styles/Gallery.module.css';
-import BottomNav from '../../components/BottomNav';
 import GalleryUploadForm from '../../components/GalleryUploadForm';
 import { FaThumbsUp } from 'react-icons/fa';
 
@@ -109,7 +108,7 @@ export default function AlbumPage() {
     if (!album) return <p>Album not found.</p>;
 
     return (
-        <div className={styles.container}>
+        <>
             <header className={styles.header}>
                 <h1>{album.title}</h1>
                 <p>{album.description}</p>
@@ -155,7 +154,23 @@ export default function AlbumPage() {
                     <p>This album is empty. Admins can upload photos.</p>
                 )}
             </div>
-            <BottomNav />
-        </div>
+        </>
     );
+}
+
+export async function getStaticPaths() {
+    return {
+        paths: [],
+        fallback: 'blocking',
+    };
+}
+
+export async function getStaticProps({ params }) {
+    // Fetch album data based on params.albumId if needed, or just pass title
+    // For now, we just pass a generic title, as the title is fetched client-side
+    return {
+        props: {
+            title: 'Album Details',
+        },
+    };
 }

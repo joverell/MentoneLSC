@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { useRouter } from 'next/router';
-import Link from 'next/link';
-import BottomNav from '../components/BottomNav';
 import styles from '../styles/Home.module.css';
 import { useAuth } from '../context/AuthContext';
 import EventsTab from '../components/home/EventsTab';
@@ -82,7 +80,7 @@ export default function EventsCalendar() {
   if (error) return <div>Error: {error}</div>;
 
     return (
-        <div className={styles.container}>
+        <>
             <header className={styles.header}>
                 <h1>Club Events</h1>
             </header>
@@ -104,7 +102,14 @@ export default function EventsCalendar() {
                     </div>
                 )}
             </main>
-            <BottomNav />
-        </div>
+        </>
     );
+}
+
+export async function getStaticProps() {
+    return {
+        props: {
+            title: 'Events',
+        },
+    };
 }

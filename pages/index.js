@@ -1,8 +1,6 @@
-import Head from 'next/head';
 import { useRouter } from 'next/router';
 import styles from '../styles/Home.module.css';
 import Weather from '../components/Weather';
-import BottomNav from '../components/BottomNav';
 import EventsTab from '../components/home/EventsTab';
 import NewsTab from '../components/home/NewsTab';
 import CalendarTab from '../components/home/CalendarTab';
@@ -15,12 +13,7 @@ export default function Home() {
   const activeTab = router.query.tab || 'events';
 
   return (
-    <div className={styles.container}>
-      <Head>
-        <title>Mentone LSC Hub</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      </Head>
-
+    <>
       <header className={styles.header}>
         <a href="https://mentonelsc.com/" target="_blank" rel="noopener noreferrer">
           <img src="https://lh3.googleusercontent.com/a/ACg8ocJ6ORu45K50sJufG0lJGMZ5n6KvqlEyMHN-7euIGvYw3S-ysmg=s288-c-no" alt="Mentone LSC Logo" />
@@ -35,7 +28,6 @@ export default function Home() {
         {activeTab === 'calendar' && <CalendarTab />}
         {activeTab === 'info' && <InfoTab />}
       </div>
-      <BottomNav />
-    </div>
+    </>
   );
 }

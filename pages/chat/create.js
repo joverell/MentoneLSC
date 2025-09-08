@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/router';
 import styles from '../../styles/Form.module.css';
-import BottomNav from '../../components/BottomNav';
 import axios from 'axios';
 
 export default function CreateChat() {
@@ -67,7 +66,7 @@ export default function CreateChat() {
   }
 
   return (
-    <div className={styles.container}>
+    <>
       <header className={styles.header}>
         <h1>Create Chat</h1>
       </header>
@@ -127,7 +126,14 @@ export default function CreateChat() {
           {submitting ? 'Creating...' : 'Create Chat'}
         </button>
       </form>
-      <BottomNav />
-    </div>
+    </>
   );
+}
+
+export async function getStaticProps() {
+    return {
+        props: {
+            title: 'Create Chat',
+        },
+    };
 }

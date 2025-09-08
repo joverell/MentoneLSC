@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../context/AuthContext';
 import styles from '../styles/Form.module.css';
-import BottomNav from '../components/BottomNav';
 import { GoogleMap, useLoadScript, Marker, StandaloneSearchBox } from '@react-google-maps/api';
 import FileUploadInput from '../components/FileUploadInput';
 
@@ -134,7 +133,7 @@ export default function CreateEvent() {
   };
 
   return (
-    <div className={styles.container}>
+    <>
       <header className={styles.header}>
         <h1>Create New Event</h1>
       </header>
@@ -330,7 +329,14 @@ export default function CreateEvent() {
           </div>
         </fieldset>
       </div>
-      <BottomNav />
-    </div>
+    </>
   );
+}
+
+export async function getStaticProps() {
+    return {
+        props: {
+            title: 'Create Event',
+        },
+    };
 }

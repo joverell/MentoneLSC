@@ -3,24 +3,30 @@ import { useEffect } from 'react';
 import '../styles/globals.css';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { AuthProvider, useAuth } from '../context/AuthContext';
-import BottomNav from '../components/BottomNav';
 import { useRouter } from 'next/router';
 import withAuth from '../components/hoc/withAuth';
+import Layout from '../components/Layout'; // Import the new Layout
 
 const publicPaths = ['/account', '/']; // The login page and landing page are public
 
-const Layout = ({ children }) => {
-  const { user } = useAuth();
+// This is a new wrapper component that decides which layout to use.
+const AppLayout = ({ children, pageProps }) => {
   const router = useRouter();
+  const { user } = useAuth();
+
+  // Conditionally show the BottomNav
   const showBottomNav = user && !router.pathname.startsWith('/admin');
 
+  // The title can be passed from the page via pageProps
+  const pageTitle = pageProps.title;
+
   return (
-    <>
-      <main className="content-wrapper">{children}</main>
-      {showBottomNav && <BottomNav />}
-    </>
+    <Layout title={pageTitle} showHeader={!router.pathname.startsWith('/admin')} showBottomNav={showBottomNav}>
+      {children}
+    </Layout>
   );
 };
+
 
 function MyApp({ Component, pageProps }) {
   const router = useRouter();
@@ -53,9 +59,9 @@ function MyApp({ Component, pageProps }) {
       </Head>
       <ErrorBoundary>
         <AuthProvider>
-          <Layout>
+          <AppLayout pageProps={pageProps}>
             {isPublicPage ? <Component {...pageProps} /> : <AuthedComponent {...pageProps} />}
-          </Layout>
+          </AppLayout>
         </AuthProvider>
       </ErrorBoundary>
     </>

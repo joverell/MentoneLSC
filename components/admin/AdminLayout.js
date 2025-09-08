@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import styles from '../../styles/Admin.module.css';
-import BottomNav from '../BottomNav';
 import { FaUsers, FaNewspaper, FaCalendarAlt, FaCog, FaDollarSign, FaFileAlt } from 'react-icons/fa';
 
 const AdminLayout = ({ children }) => {
@@ -33,7 +32,6 @@ const AdminLayout = ({ children }) => {
             <main className={styles.mainContent}>
                 {children}
             </main>
-            <BottomNav />
         </div>
     );
 };

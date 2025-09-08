@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import styles from '../../styles/Home.module.css';
 import galleryStyles from '../../styles/Gallery.module.css';
-import BottomNav from '../../components/BottomNav';
 
 import withAuth from '../../components/hoc/withAuth';
 
@@ -59,7 +58,7 @@ function GalleryPage() {
     const canCreateAlbums = user && (user.roles.includes('Admin') || user.roles.includes('Group Admin'));
 
     return (
-        <div className={styles.container}>
+        <>
             <header className={styles.header}>
                 <h1>Photo Gallery</h1>
             </header>
@@ -108,9 +107,16 @@ function GalleryPage() {
                     <p>No photo albums have been created yet.</p>
                 )}
             </div>
-            <BottomNav />
-        </div>
+        </>
     );
 }
 
 export default withAuth(GalleryPage);
+
+export async function getStaticProps() {
+    return {
+        props: {
+            title: 'Gallery',
+        },
+    };
+}

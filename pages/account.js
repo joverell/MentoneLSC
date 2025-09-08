@@ -1,12 +1,7 @@
 import { useState, useEffect } from 'react';
-import Head from 'next/head';
-import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
-import { storage } from '../src/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import homeStyles from '../styles/Home.module.css';
 import formStyles from '../styles/Form.module.css';
-import BottomNav from '../components/BottomNav';
+import homeStyles from '../styles/Home.module.css';
 
 export default function Account() {
   const { user, isAuthenticated, loading, logout, login, loginWithGoogle, register, fetchUser } = useAuth();
@@ -263,17 +258,17 @@ export default function Account() {
   };
 
   return (
-    <div className={homeStyles.pageContainer}>
-      <Head>
-        <title>{getPageTitle()} - Mentone LSC Hub</title>
-      </Head>
-      <header className={homeStyles.header}>
-        <h1>{getPageTitle()}</h1>
-      </header>
-      <div className={homeStyles.container}>
+    <>
         {renderContent()}
-      </div>
-      <BottomNav />
-    </div>
+    </>
   );
+}
+
+// Optional: Pass a title to the Layout
+export async function getStaticProps() {
+  return {
+    props: {
+      title: 'My Account',
+    },
+  };
 }

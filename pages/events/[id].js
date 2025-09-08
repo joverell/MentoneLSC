@@ -1,7 +1,6 @@
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import BottomNav from '../../components/BottomNav';
 import styles from '../../styles/Home.module.css';
 import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
 
@@ -123,7 +122,7 @@ export default function EventDetails() {
   };
 
   return (
-    <div className={styles.container}>
+    <>
       <header className={styles.header}>
         <h1>{event.title}</h1>
       </header>
@@ -177,7 +176,23 @@ export default function EventDetails() {
           </form>
         )}
       </div>
-      <BottomNav />
-    </div>
+    </>
   );
+}
+
+export async function getStaticPaths() {
+    return {
+        paths: [],
+        fallback: 'blocking',
+    };
+}
+
+export async function getStaticProps({ params }) {
+    // Fetch event data based on params.id if needed, or just pass title
+    // For now, we just pass a generic title, as the title is fetched client-side
+    return {
+        props: {
+            title: 'Event Details',
+        },
+    };
 }
