@@ -41,8 +41,6 @@ export default function ChatRoom() {
       return;
     }
 
-    setLoading(true);
-
     const fetchChatDetails = async () => {
       try {
         const chatDocRef = doc(db, 'chats', groupId);
@@ -74,7 +72,7 @@ export default function ChatRoom() {
     }, (err) => {
       logger.error('Firestore listener error in chat room', {
         groupId,
-        userId: user.uid, // user is guaranteed to be available here
+        userId: user ? user.uid : 'unknown',
         errorMessage: err.message,
         errorCode: err.code,
         errorStack: err.stack,
@@ -83,10 +81,8 @@ export default function ChatRoom() {
       setLoading(false);
     });
 
-    return () => {
-      unsubscribe();
-    };
-  }, [authLoading, user, groupId, router]);
+  return () => unsubscribe();
+    }, [authLoading, user, groupId, router]);
 
   useEffect(() => {
     scrollToBottom();
