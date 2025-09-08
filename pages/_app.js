@@ -15,7 +15,7 @@ const AppLayout = ({ children, pageProps }) => {
   const { user } = useAuth();
 
   // Conditionally show the BottomNav
-  const showBottomNav = user && !router.pathname.startsWith('/admin');
+  const showBottomNav = !router.pathname.startsWith('/admin');
 
   // The title can be passed from the page via pageProps
   const pageTitle = pageProps.title;
