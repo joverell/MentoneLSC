@@ -4,6 +4,7 @@ import { useAuth } from '../../../context/AuthContext';
 import styles from '../../../styles/Admin.module.css';
 import AdminLayout from '../../../components/admin/AdminLayout';
 import FileUploadInput from '../../../components/FileUploadInput';
+import Button from '../../../components/ui/Button';
 
 // Helper function to format a date for datetime-local input
 const formatDateTimeForInput = (date) => {
@@ -214,14 +215,14 @@ export default function EditEvent() {
         </div>
         {error && <p className={styles.error}>{error}</p>}
         {success && <p className={styles.success}>{success}</p>}
-        <button type="submit" className={styles.button}>Save Changes</button>
-        <button type="button" onClick={handleDelete} className={`${styles.button} ${styles.deleteBtn}`}>Delete Event</button>
+        <Button type="submit" variant="primary">Save Changes</Button>
+        <Button type="button" onClick={handleDelete} variant="danger">Delete Event</Button>
       </form>
 
       <div className={styles.rsvpSection}>
-        <button type="button" onClick={handleToggleRsvps} className={styles.button}>
+        <Button type="button" onClick={handleToggleRsvps} variant="secondary">
           {showRsvps ? 'Hide' : 'Show'} RSVPs ({rsvps.length})
-        </button>
+        </Button>
         {showRsvps && (
           <div className={styles.tableContainer}>
             <h3>RSVP List</h3>

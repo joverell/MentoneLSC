@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import axios from 'axios';
 import AdminLayout from '../../components/admin/AdminLayout';
+import Button from '../../components/ui/Button';
 import styles from '../../styles/Admin.module.css';
 
 const DocumentCategoriesPage = () => {
@@ -109,7 +110,7 @@ const DocumentCategoriesPage = () => {
                         placeholder="New category name"
                         required
                     />
-                    <button type="submit" className={`${styles.btn} ${styles.btnPrimary}`}>Add Category</button>
+                    <Button type="submit" variant="primary">Add Category</Button>
                 </form>
             </div>
 
@@ -140,13 +141,13 @@ const DocumentCategoriesPage = () => {
                                 <td className={styles.actionsCell}>
                                     {editingCategory && editingCategory.id === cat.id ? (
                                         <>
-                                            <button onClick={() => handleUpdateCategory(editingCategory.id, editingCategory.name)} className={`${styles.btn} ${styles.btnSuccess}`}>Save</button>
-                                            <button onClick={cancelEditing} className={`${styles.btn} ${styles.btnSecondary}`}>Cancel</button>
+                                            <Button onClick={() => handleUpdateCategory(editingCategory.id, editingCategory.name)} variant="primary">Save</Button>
+                                            <Button onClick={cancelEditing} variant="secondary">Cancel</Button>
                                         </>
                                     ) : (
                                         <>
-                                            <button onClick={() => startEditing(cat)} className={`${styles.btn} ${styles.btnPrimary}`}>Edit</button>
-                                            <button onClick={() => handleDeleteCategory(cat.id)} className={`${styles.btn} ${styles.btnDanger}`}>Delete</button>
+                                            <Button onClick={() => startEditing(cat)} variant="primary">Edit</Button>
+                                            <Button onClick={() => handleDeleteCategory(cat.id)} variant="danger">Delete</Button>
                                         </>
                                     )}
                                 </td>

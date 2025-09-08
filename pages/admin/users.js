@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import AdminLayout from '../../components/admin/AdminLayout';
 import styles from '../../styles/Admin.module.css';
+import Button from '../../components/ui/Button';
 
 export default function UserManagement() {
   const { user, loading: authLoading } = useAuth();
@@ -123,12 +124,10 @@ export default function UserManagement() {
                 <td data-label="Roles">{u.roles ? u.roles.join(', ') : 'N/A'}</td>
                 <td data-label="Groups">{u.groupIds && u.groupIds.length > 0 ? u.groupIds.map(id => groups[id] || 'Unknown').join(', ') : 'None'}</td>
                 <td data-label="Actions" className={styles.actionsCell}>
-                  <Link href={`/admin/users/${u.id}`}>
-                    <a className={styles.editBtn}>Edit</a>
-                  </Link>
-                  <button onClick={() => handleDelete(u.id)} className={styles.deleteBtn}>
+                  <Button href={`/admin/users/${u.id}`} variant="primary">Edit</Button>
+                  <Button onClick={() => handleDelete(u.id)} variant="danger">
                     Delete
-                  </button>
+                  </Button>
                 </td>
               </tr>
             ))}

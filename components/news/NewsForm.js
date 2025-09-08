@@ -8,6 +8,7 @@ import newsStyles from '../../styles/News.module.css';
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import FileUploadInput from '../FileUploadInput';
 import GroupSelector from '../document/GroupSelector';
+import Button from '../ui/Button';
 
 const ReactQuill = dynamic(
   async () => {
@@ -201,7 +202,7 @@ export default function NewsForm({ article }) {
             />
           </div>
 
-          <button type="submit" className={formStyles.button}>{article ? 'Update Article' : 'Publish Article'}</button>
+          <Button type="submit" variant="primary">{article ? 'Update Article' : 'Publish Article'}</Button>
         </form>
     </div>
   );

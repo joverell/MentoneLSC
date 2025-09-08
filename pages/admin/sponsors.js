@@ -5,6 +5,7 @@ import formStyles from '../../styles/Form.module.css';
 import AdminLayout from '../../components/admin/AdminLayout';
 import EditSponsorModal from '../../components/admin/EditSponsorModal';
 import Link from 'next/link';
+import Button from '../../components/ui/Button';
 
 export default function SponsorsAdminPage() {
     const { user } = useAuth();
@@ -126,9 +127,9 @@ export default function SponsorsAdminPage() {
                         <label htmlFor="logo">Logo Image</label>
                         <input type="file" id="logo" accept="image/*" onChange={e => setLogo(e.target.files[0])} required />
                     </div>
-                    <button type="submit" className={formStyles.button} disabled={uploading}>
+                    <Button type="submit" variant="primary" disabled={uploading}>
                         {uploading ? 'Uploading...' : 'Add Sponsor'}
-                    </button>
+                    </Button>
                 </form>
             </div>
 
@@ -153,8 +154,8 @@ export default function SponsorsAdminPage() {
                                 <td>{sponsor.name}</td>
                                 <td><a href={sponsor.websiteUrl} target="_blank" rel="noopener noreferrer">{sponsor.websiteUrl}</a></td>
                                 <td>
-                                    <button onClick={() => handleEditClick(sponsor)} className={`${formStyles.button} ${styles.editButton}`}>Edit</button>
-                                    <button onClick={() => handleDelete(sponsor.id)} className={formStyles.deleteButton}>Delete</button>
+                                    <Button onClick={() => handleEditClick(sponsor)} variant="primary">Edit</Button>
+                                    <Button onClick={() => handleDelete(sponsor.id)} variant="danger">Delete</Button>
                                 </td>
                             </tr>
                         ))}

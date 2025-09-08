@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import formStyles from '../../styles/Form.module.css';
 import styles from '../../styles/Admin.module.css';
+import Button from '../ui/Button';
 
 export default function EditSponsorModal({ sponsor, onClose, onUpdate }) {
     const [name, setName] = useState(sponsor.name);
@@ -39,7 +40,7 @@ export default function EditSponsorModal({ sponsor, onClose, onUpdate }) {
     return (
         <div className={styles.modalBackdrop}>
             <div className={styles.modalContent}>
-                <button onClick={onClose} className={styles.closeButton}>&times;</button>
+                <Button onClick={onClose} variant="secondary" className={styles.closeButton}>&times;</Button>
                 <h2>Edit Sponsor</h2>
                 <form onSubmit={handleSubmit} className={formStyles.form}>
                     {uploadError && <p className={formStyles.error}>{uploadError}</p>}
@@ -56,10 +57,10 @@ export default function EditSponsorModal({ sponsor, onClose, onUpdate }) {
                         <input type="file" id="edit-logo" accept="image/*" onChange={e => setLogo(e.target.files[0])} />
                     </div>
                     <div className={formStyles.buttonGroup}>
-                        <button type="submit" className={formStyles.button} disabled={uploading}>
+                        <Button type="submit" variant="primary" disabled={uploading}>
                             {uploading ? 'Updating...' : 'Update Sponsor'}
-                        </button>
-                        <button type="button" className={formStyles.buttonSecondary} onClick={onClose}>Cancel</button>
+                        </Button>
+                        <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
                     </div>
                 </form>
             </div>

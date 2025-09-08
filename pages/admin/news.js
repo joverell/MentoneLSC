@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import styles from '../../styles/Admin.module.css';
 import AdminLayout from '../../components/admin/AdminLayout';
+import Button from '../../components/ui/Button';
 
 export default function NewsManagement() {
   const { user, loading: authLoading } = useAuth();
@@ -79,12 +80,10 @@ export default function NewsManagement() {
                 <td>{article.authorName}</td>
                 <td>{new Date(article.createdAt).toLocaleDateString()}</td>
                 <td>
-                  <Link href={`/admin/news/${article.id}`}>
-                    <a className={styles.editBtn}>Edit</a>
-                  </Link>
-                  <button onClick={() => handleDelete(article.id)} className={styles.deleteBtn}>
+                  <Button href={`/admin/news/${article.id}`} variant="primary">Edit</Button>
+                  <Button onClick={() => handleDelete(article.id)} variant="danger">
                     Delete
-                  </button>
+                  </Button>
                 </td>
               </tr>
             ))}
