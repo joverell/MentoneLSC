@@ -46,8 +46,9 @@ export default async function handler(req, res) {
 
         filePath = photoFile.filepath;
         const bucket = adminStorage.bucket();
+        const photoId = uuidv4(); // Generate a single UUID for the photo
         const fileExt = photoFile.originalFilename.split('.').pop();
-        const fileName = `${uuidv4()}.${fileExt}`;
+        const fileName = `${photoId}.${fileExt}`; // Use the UUID for the filename
         const destination = `gallery/${albumId}/${fileName}`;
 
         await bucket.upload(filePath, {
@@ -63,8 +64,9 @@ export default async function handler(req, res) {
             expires: '03-09-2491',
         });
 
+        // The document ID will be our single source of truth for the photo's ID.
+        // We no longer need a separate 'id' field in the data.
         const photoData = {
-            id: uuidv4(),
             albumId,
             fileName,
             downloadURL: url,
@@ -82,8 +84,8 @@ export default async function handler(req, res) {
             return res.status(404).json({ message: 'Album not found' });
         }
 
-        // Add photo data to the 'photos' subcollection
-        await albumRef.collection('photos').add(photoData);
+        // Add photo data to the 'photos' subcollection using the generated photoId as the document ID
+        await albumRef.collection('photos').doc(photoId).set(photoData);
 
         // Update the album's cover image if it doesn't have one
         if (!albumDoc.data().coverImageUrl) {

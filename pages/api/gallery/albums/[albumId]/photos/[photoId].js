@@ -41,8 +41,10 @@ export default async function handler(req, res) {
         const photoSnap = await photoRef.get();
 
         if (!photoSnap.exists) {
-            console.error(`[${new Date().toISOString()}] Photo not found in Firestore: ${photoId}`);
-            return res.status(404).json({ message: 'Photo not found.' });
+            // If the photo document doesn't exist, it may have been already deleted.
+            // In this case, we can consider the operation successful.
+            console.warn(`[${new Date().toISOString()}] Photo not found in Firestore, assuming it was already deleted: ${photoId}`);
+            return res.status(200).json({ message: 'Photo already deleted or not found.' });
         }
 
         const photoData = photoSnap.data();
