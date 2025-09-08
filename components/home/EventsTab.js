@@ -29,7 +29,7 @@ const normalizeWordPressEvent = (event) => {
     description: description, // Use the modified description
     startTime: new Date(event.start_date.replace(' ', 'T')), // More reliable parsing
     endTime: new Date(event.end_date.replace(' ', 'T')),
-    location: location || 'See details',
+    location: location,
     locationLink: location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}` : null,
     imageUrl: event.image?.sizes?.medium?.url || (event.image?.url || null),
     source: 'wordpress',
