@@ -83,8 +83,10 @@ export default function ManageGroupMembers() {
     setError(null);
     setSuccess(null);
     try {
-      const res = await fetch(`/api/access_groups/${groupId}/members?userId=${userId}`, {
+      const res = await fetch(`/api/access_groups/${groupId}/members`, {
         method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: userId }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -128,10 +130,8 @@ export default function ManageGroupMembers() {
     setError(null);
     setSuccess(null);
     try {
-      const res = await fetch(`/api/access_groups/${groupId}/admins`, {
+      const res = await fetch(`/api/access_groups/${groupId}/admins?userId=${userId}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: userId }),
       });
       if (!res.ok) {
         const data = await res.json();

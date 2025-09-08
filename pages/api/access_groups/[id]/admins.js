@@ -30,39 +30,39 @@ export default async function handler(req, res) {
   }
 
   const { id: groupId } = req.query;
-  const { userId } = req.body;
 
-  if (!groupId || !userId) {
-    return res.status(400).json({ message: 'Group ID and User ID are required.' });
-  }
-
-  const groupRef = adminDb.collection('access_groups').doc(groupId);
-
-  switch (req.method) {
-    case 'POST': // Add user to group admins
-      try {
-        await groupRef.update({
-          admins: admin.firestore.FieldValue.arrayUnion(userId)
-        });
-        return res.status(200).json({ message: 'User added to group admins successfully.' });
-      } catch (error) {
-        console.error('Add group admin error:', error);
-        return res.status(500).json({ message: 'Failed to add group admin.' });
-      }
-
-    case 'DELETE': // Remove user from group admins
-      try {
-        await groupRef.update({
-          admins: admin.firestore.FieldValue.arrayRemove(userId)
-        });
-        return res.status(200).json({ message: 'User removed from group admins successfully.' });
-      } catch (error) {
-        console.error('Remove group admin error:', error);
-        return res.status(500).json({ message: 'Failed to remove group admin.' });
-      }
-
-    default:
-      res.setHeader('Allow', ['POST', 'DELETE']);
-      return res.status(405).end(`Method ${req.method} Not Allowed`);
+  if (req.method === 'POST') {
+    const { userId } = req.body;
+    if (!groupId || !userId) {
+      return res.status(400).json({ message: 'Group ID and User ID are required.' });
+    }
+    try {
+      const groupRef = adminDb.collection('access_groups').doc(groupId);
+      await groupRef.update({
+        admins: admin.firestore.FieldValue.arrayUnion(userId)
+      });
+      return res.status(200).json({ message: 'User added to group admins successfully.' });
+    } catch (error) {
+      console.error('Add group admin error:', error);
+      return res.status(500).json({ message: 'Failed to add group admin.' });
+    }
+  } else if (req.method === 'DELETE') {
+    const { userId } = req.query;
+    if (!groupId || !userId) {
+      return res.status(400).json({ message: 'Group ID and User ID are required.' });
+    }
+    try {
+      const groupRef = adminDb.collection('access_groups').doc(groupId);
+      await groupRef.update({
+        admins: admin.firestore.FieldValue.arrayRemove(userId)
+      });
+      return res.status(200).json({ message: 'User removed from group admins successfully.' });
+    } catch (error) {
+      console.error('Remove group admin error:', error);
+      return res.status(500).json({ message: 'Failed to remove group admin.' });
+    }
+  } else {
+    res.setHeader('Allow', ['POST', 'DELETE']);
+    return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }
