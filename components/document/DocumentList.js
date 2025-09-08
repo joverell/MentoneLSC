@@ -1,5 +1,5 @@
 import docStyles from '../../styles/Documents.module.css';
-import { FaFilePdf, FaFileWord, FaFileExcel, FaFilePowerpoint, FaFileAlt, FaTrash } from 'react-icons/fa';
+import { FaFilePdf, FaFileWord, FaFileExcel, FaFilePowerpoint, FaFileAlt, FaTrash, FaPencilAlt } from 'react-icons/fa';
 
 const getFileIcon = (fileName) => {
     if (typeof fileName !== 'string' || !fileName.includes('.')) {
@@ -13,7 +13,7 @@ const getFileIcon = (fileName) => {
     return <FaFileAlt />;
 };
 
-const DocumentList = ({ documents, categories, isAdmin, onDelete }) => {
+const DocumentList = ({ documents, categories, isAdmin, onDelete, onEdit }) => {
     const categoryMap = categories.reduce((acc, cat) => {
         acc[cat.id] = cat.name;
         return acc;
@@ -42,9 +42,14 @@ const DocumentList = ({ documents, categories, isAdmin, onDelete }) => {
                                         <span className={docStyles.documentTitle}>{docTitle}</span>
                                     </a>
                                     {isAdmin && (
-                                        <button onClick={() => onDelete(doc.id)} className={docStyles.deleteButton}>
-                                            <FaTrash />
-                                        </button>
+                                        <div className={docStyles.adminButtons}>
+                                            <button onClick={() => onEdit(doc)} className={docStyles.editButton}>
+                                                <FaPencilAlt />
+                                            </button>
+                                            <button onClick={() => onDelete(doc.id)} className={docStyles.deleteButton}>
+                                                <FaTrash />
+                                            </button>
+                                        </div>
                                     )}
                                 </li>
                             );

@@ -4,11 +4,11 @@ import { useAuth } from '../context/AuthContext';
 import logger from '../utils/logger';
 import { fetchWithAuth } from '../utils/auth-fetch';
 import styles from '../styles/Home.module.css';
-import docStyles from '../styles/Documents.module.css';
 import BottomNav from '../components/BottomNav';
 import DocumentList from '../components/document/DocumentList';
 import UploadForm from '../components/document/UploadForm';
 import EmptyState from '../components/document/EmptyState';
+import EditDocumentModal from '../components/document/EditDocumentModal';
 
 export default function DocumentsPage() {
     const { user } = useAuth();
@@ -17,6 +17,7 @@ export default function DocumentsPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [accessGroups, setAccessGroups] = useState([]);
+    const [editingDoc, setEditingDoc] = useState(null);
 
     const fetchDocuments = async () => {
         const context = { component: 'DocumentsPage', function: 'fetchDocuments' };
@@ -53,7 +54,6 @@ export default function DocumentsPage() {
             logger.info('Successfully fetched access groups', context, { count: data.length });
         } catch (err) {
             logger.error('Failed to fetch access groups', context, err);
-            // Do not set main error state, as this is not a critical failure
         }
     };
 
@@ -61,14 +61,12 @@ export default function DocumentsPage() {
         const context = { component: 'DocumentsPage', function: 'fetchCategories' };
         logger.info('Attempting to fetch document categories', context);
         try {
-            // Categories are public, so no need for auth
             const res = await axios.get('/api/document-categories');
             setCategories(res.data);
             logger.info('Successfully fetched document categories', { ...context, count: res.data.length });
         } catch (err) {
             const errorMessage = err.response?.data?.message || err.message || 'An unknown error occurred';
             logger.error('Failed to fetch document categories', { ...context, error: errorMessage });
-            // Avoid overwriting a more critical error message
             if (!error) {
                 setError('Could not load document categories.');
             }
@@ -82,6 +80,36 @@ export default function DocumentsPage() {
             fetchAccessGroups();
         }
     }, [user]);
+
+    const handleEdit = (doc) => {
+        setEditingDoc(doc);
+    };
+
+    const handleCloseModal = () => {
+        setEditingDoc(null);
+    };
+
+    const handleSave = async (docId, accessGroupIds) => {
+        const context = { component: 'DocumentsPage', function: 'handleSave', docId };
+        logger.info('Attempting to save document', context);
+        try {
+            const res = await fetchWithAuth(`/api/documents/${docId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ accessGroupIds }),
+            });
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({ message: 'No error body' }));
+                throw new Error(errorData.message || `Failed to save document with status: ${res.status}`);
+            }
+            logger.info('Successfully saved document', context);
+            fetchDocuments(); // Refresh list
+        } catch (err) {
+            logger.error('Failed to save document', context, err);
+            setError(err.message);
+            throw err; // Re-throw to be caught in the modal
+        }
+    };
 
     const handleDelete = async (docId) => {
         const context = { component: 'DocumentsPage', function: 'handleDelete', docId };
@@ -113,11 +141,6 @@ export default function DocumentsPage() {
         fetchDocuments();
     }
 
-    useEffect(() => {
-        const context = { component: 'DocumentsPage', function: 'useEffect[]' };
-        logger.info('DocumentsPage component mounted', context);
-    }, []);
-
     const isAdmin = user && user.roles && user.roles.includes('Admin');
 
     return (
@@ -141,12 +164,22 @@ export default function DocumentsPage() {
                         categories={categories}
                         isAdmin={isAdmin}
                         onDelete={handleDelete}
+                        onEdit={handleEdit}
                     />
                 )}
 
                 {!loading && documents.length === 0 && (
                     <EmptyState
                         isAdmin={isAdmin}
+                    />
+                )}
+
+                {editingDoc && (
+                    <EditDocumentModal
+                        doc={editingDoc}
+                        accessGroups={accessGroups}
+                        onSave={handleSave}
+                        onClose={handleCloseModal}
                     />
                 )}
             </main>
