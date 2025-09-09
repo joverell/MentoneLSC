@@ -4,7 +4,6 @@ import { useRouter } from 'next/router';
 import Link from 'next/link';
 import styles from '../styles/Home.module.css'; // Using home styles for consistency
 import adminStyles from '../styles/Admin.module.css'; // Using admin styles for table/list
-import BottomNav from '../components/BottomNav';
 
 export default function ChatLobby() {
   const { user, loading: authLoading } = useAuth();
@@ -55,7 +54,7 @@ export default function ChatLobby() {
   }
 
   return (
-    <div className={styles.container}>
+    <>
       <header className={styles.header}>
         <h1>Chat Groups</h1>
         <Link href="/chat/create">
@@ -99,7 +98,14 @@ export default function ChatLobby() {
           </ul>
         </div>
       </div>
-      <BottomNav />
-    </div>
+    </>
   );
+}
+
+export async function getStaticProps() {
+    return {
+        props: {
+            showHeader: false,
+        },
+    };
 }

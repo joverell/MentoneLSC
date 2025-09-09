@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import logger from '../utils/logger';
 import { fetchWithAuth } from '../utils/auth-fetch';
 import styles from '../styles/Home.module.css';
-import BottomNav from '../components/BottomNav';
 import DocumentList from '../components/document/DocumentList';
 import UploadForm from '../components/document/UploadForm';
 import EmptyState from '../components/document/EmptyState';
@@ -146,48 +145,50 @@ function DocumentsPage() {
     const isAdmin = user && user.roles && user.roles.includes('Admin');
 
     return (
-        <div className={styles.container}>
-            <header className={styles.header}>
-                <h1>Club Documents</h1>
-            </header>
-            <main>
-                {isAdmin && (
-                    <UploadForm
-                        accessGroups={accessGroups}
-                        onUploadSuccess={onUploadSuccess}
-                    />
-                )}
-                {loading && <p>Loading documents...</p>}
-                {error && <p className={styles.error}>{error}</p>}
+        <>
+            {isAdmin && (
+                <UploadForm
+                    accessGroups={accessGroups}
+                    onUploadSuccess={onUploadSuccess}
+                />
+            )}
+            {loading && <p>Loading documents...</p>}
+            {error && <p className={styles.error}>{error}</p>}
 
-                {!loading && documents.length > 0 && (
-                    <DocumentList
-                        documents={documents}
-                        categories={categories}
-                        isAdmin={isAdmin}
-                        onDelete={handleDelete}
-                        onEdit={handleEdit}
-                    />
-                )}
+            {!loading && documents.length > 0 && (
+                <DocumentList
+                    documents={documents}
+                    categories={categories}
+                    isAdmin={isAdmin}
+                    onDelete={handleDelete}
+                    onEdit={handleEdit}
+                />
+            )}
 
-                {!loading && documents.length === 0 && (
-                    <EmptyState
-                        isAdmin={isAdmin}
-                    />
-                )}
+            {!loading && documents.length === 0 && (
+                <EmptyState
+                    isAdmin={isAdmin}
+                />
+            )}
 
-                {editingDoc && (
-                    <EditDocumentModal
-                        doc={editingDoc}
-                        accessGroups={accessGroups}
-                        onSave={handleSave}
-                        onClose={handleCloseModal}
-                    />
-                )}
-            </main>
-            <BottomNav />
-        </div>
+            {editingDoc && (
+                <EditDocumentModal
+                    doc={editingDoc}
+                    accessGroups={accessGroups}
+                    onSave={handleSave}
+                    onClose={handleCloseModal}
+                />
+            )}
+        </>
     );
 }
 
 export default withAuth(DocumentsPage);
+
+export async function getStaticProps() {
+    return {
+        props: {
+            title: 'Club Documents',
+        },
+    };
+}

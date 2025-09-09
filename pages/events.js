@@ -3,7 +3,6 @@ import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
-import BottomNav from '../components/BottomNav';
 import styles from '../styles/Home.module.css';
 import { useAuth } from '../context/AuthContext';
 import EventsTab from '../components/home/EventsTab';
@@ -82,29 +81,31 @@ export default function EventsCalendar() {
   if (error) return <div>Error: {error}</div>;
 
     return (
-        <div className={styles.container}>
-            <header className={styles.header}>
-                <h1>Club Events</h1>
-            </header>
-            <main>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '1rem' }}>
-                    <button onClick={handleSubscribe} className={styles.subscribeBtn}>
-                        Subscribe to Calendar
-                    </button>
-                </div>
-                <Calendar
-                    onClickDay={handleDateClick}
-                    tileContent={tileContent}
-                    className={styles.calendar}
-                />
+        <>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '1rem' }}>
+                <button onClick={handleSubscribe} className={styles.subscribeBtn}>
+                    Subscribe to Calendar
+                </button>
+            </div>
+            <Calendar
+                onClickDay={handleDateClick}
+                tileContent={tileContent}
+                className={styles.calendar}
+            />
 
-                {settings.mergeCalendarAndEvents?.enabled && (
-                    <div style={{ marginTop: '2rem' }}>
-                        <EventsTab user={user} getIdToken={getIdToken} />
-                    </div>
-                )}
-            </main>
-            <BottomNav />
-        </div>
+            {settings.mergeCalendarAndEvents?.enabled && (
+                <div style={{ marginTop: '2rem' }}>
+                    <EventsTab user={user} getIdToken={getIdToken} />
+                </div>
+            )}
+        </>
     );
+}
+
+export async function getStaticProps() {
+    return {
+        props: {
+            title: 'Club Events',
+        },
+    };
 }

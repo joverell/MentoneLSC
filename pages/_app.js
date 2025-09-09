@@ -2,25 +2,12 @@ import Head from 'next/head';
 import { useEffect } from 'react';
 import '../styles/globals.css';
 import ErrorBoundary from '../components/ErrorBoundary';
-import { AuthProvider, useAuth } from '../context/AuthContext';
-import BottomNav from '../components/BottomNav';
+import { AuthProvider } from '../context/AuthContext';
+import Layout from '../components/Layout';
 import { useRouter } from 'next/router';
 import withAuth from '../components/hoc/withAuth';
 
 const publicPaths = ['/account', '/']; // The login page and landing page are public
-
-const Layout = ({ children }) => {
-  const { user } = useAuth();
-  const router = useRouter();
-  const showBottomNav = user && !router.pathname.startsWith('/admin');
-
-  return (
-    <>
-      <main className="content-wrapper">{children}</main>
-      {showBottomNav && <BottomNav />}
-    </>
-  );
-};
 
 function MyApp({ Component, pageProps }) {
   const router = useRouter();
@@ -45,6 +32,7 @@ function MyApp({ Component, pageProps }) {
 
   const isPublicPage = publicPaths.includes(router.pathname);
   const AuthedComponent = withAuth(Component);
+  const { title, showHeader } = pageProps;
 
   return (
     <>
@@ -53,7 +41,7 @@ function MyApp({ Component, pageProps }) {
       </Head>
       <ErrorBoundary>
         <AuthProvider>
-          <Layout>
+          <Layout title={title} showHeader={showHeader}>
             {isPublicPage ? <Component {...pageProps} /> : <AuthedComponent {...pageProps} />}
           </Layout>
         </AuthProvider>

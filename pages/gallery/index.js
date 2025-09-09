@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import styles from '../../styles/Home.module.css';
 import galleryStyles from '../../styles/Gallery.module.css';
-import BottomNav from '../../components/BottomNav';
 
 import withAuth from '../../components/hoc/withAuth';
 
@@ -59,58 +58,60 @@ function GalleryPage() {
     const canCreateAlbums = user && (user.roles.includes('Admin') || user.roles.includes('Group Admin'));
 
     return (
-        <div className={styles.container}>
-            <header className={styles.header}>
-                <h1>Photo Gallery</h1>
-            </header>
-            <div className={styles.container}>
-                {canCreateAlbums && (
-                    <div className={galleryStyles.adminControls}>
-                        <button onClick={() => router.push('/admin/gallery/create')} className={styles.button}>
-                            + Create New Album
-                        </button>
-                    </div>
-                )}
-
-                {loading && <p>Loading albums...</p>}
-                {error && <p className={styles.error}>{error}</p>}
-
-                <div className={galleryStyles.albumGrid}>
-                    {instagramAlbum && (
-                        <Link key={instagramAlbum.id} href="/gallery/instagram" className={galleryStyles.albumCard}>
-                             <div className={galleryStyles.albumImageWrapper}>
-                                <img
-                                    src={instagramAlbum.coverImageUrl || 'https://via.placeholder.com/400x300?text=Instagram'}
-                                    alt={instagramAlbum.title}
-                                />
-                            </div>
-                            <div className={galleryStyles.albumTitle}>
-                                {instagramAlbum.title}
-                            </div>
-                        </Link>
-                    )}
-                    {albums.map(album => (
-                        <Link key={album.id} href={`/gallery/${album.id}`} className={galleryStyles.albumCard}>
-                            <div className={galleryStyles.albumImageWrapper}>
-                                <img
-                                    src={album.coverImageUrl || 'https://via.placeholder.com/400x300?text=No+Photos'}
-                                    alt={album.title}
-                                />
-                            </div>
-                            <div className={galleryStyles.albumTitle}>
-                                {album.title}
-                            </div>
-                        </Link>
-                    ))}
+        <>
+            {canCreateAlbums && (
+                <div className={galleryStyles.adminControls}>
+                    <button onClick={() => router.push('/admin/gallery/create')} className={styles.button}>
+                        + Create New Album
+                    </button>
                 </div>
+            )}
 
-                {!loading && albums.length === 0 && !instagramAlbum && (
-                    <p>No photo albums have been created yet.</p>
+            {loading && <p>Loading albums...</p>}
+            {error && <p className={styles.error}>{error}</p>}
+
+            <div className={galleryStyles.albumGrid}>
+                {instagramAlbum && (
+                    <Link key={instagramAlbum.id} href="/gallery/instagram" className={galleryStyles.albumCard}>
+                         <div className={galleryStyles.albumImageWrapper}>
+                            <img
+                                src={instagramAlbum.coverImageUrl || 'https://via.placeholder.com/400x300?text=Instagram'}
+                                alt={instagramAlbum.title}
+                            />
+                        </div>
+                        <div className={galleryStyles.albumTitle}>
+                            {instagramAlbum.title}
+                        </div>
+                    </Link>
                 )}
+                {albums.map(album => (
+                    <Link key={album.id} href={`/gallery/${album.id}`} className={galleryStyles.albumCard}>
+                        <div className={galleryStyles.albumImageWrapper}>
+                            <img
+                                src={album.coverImageUrl || 'https://via.placeholder.com/400x300?text=No+Photos'}
+                                alt={album.title}
+                            />
+                        </div>
+                        <div className={galleryStyles.albumTitle}>
+                            {album.title}
+                        </div>
+                    </Link>
+                ))}
             </div>
-            <BottomNav />
-        </div>
+
+            {!loading && albums.length === 0 && !instagramAlbum && (
+                <p>No photo albums have been created yet.</p>
+            )}
+        </>
     );
 }
 
 export default withAuth(GalleryPage);
+
+export async function getStaticProps() {
+    return {
+        props: {
+            title: 'Photo Gallery',
+        },
+    };
+}
