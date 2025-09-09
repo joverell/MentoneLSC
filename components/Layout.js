@@ -8,7 +8,7 @@ import { useRouter } from 'next/router';
 export default function Layout({ children, title, showHeader = true }) {
   const { user } = useAuth();
   const router = useRouter();
-  const showBottomNav = !!user;
+  const showBottomNav = router.pathname !== '/account';
 
   return (
     <div className={styles.container}>
