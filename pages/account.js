@@ -275,9 +275,7 @@ export default function Account() {
       <header className={homeStyles.header}>
         <h1>{getPageTitle()}</h1>
       </header>
-      <div className={homeStyles.container}>
-        {renderContent()}
-      </div>
+      {renderContent()}
     </>
   );
 }
