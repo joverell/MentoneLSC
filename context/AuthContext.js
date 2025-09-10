@@ -59,9 +59,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (name, email, password) => {
     try {
-      const res = await axios.post('/api/auth/register', { name, email, password });
-      setUser(res.data);
-      handleFcmToken(res.data);
+      await axios.post('/api/auth/register', { name, email, password });
       router.push('/account');
     } catch (error) {
       if (error.response && error.response.status === 409) {

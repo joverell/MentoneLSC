@@ -136,7 +136,7 @@ export default function ChatRoom() {
   if (error) return <p className={styles.error}>Error: {error}</p>;
 
   return (
-    <>
+    <div className={styles.chatPage}>
       <header className={styles.header}>
         <Link href="/chat">
           <a className={styles.backLink}><IoArrowBack /></a>
@@ -175,14 +175,6 @@ export default function ChatRoom() {
           <IoSend />
         </button>
       </form>
-    </>
+    </div>
   );
-}
-
-export async function getServerSideProps() {
-    return {
-        props: {
-            showHeader: false,
-        },
-    };
 }

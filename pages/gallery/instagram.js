@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import styles from '../../styles/Home.module.css';
 import galleryStyles from '../../styles/Gallery.module.css';
+import BottomNav from '../../components/BottomNav';
 
 export default function InstagramGalleryPage() {
     const [photos, setPhotos] = useState([]);
@@ -29,7 +30,7 @@ export default function InstagramGalleryPage() {
     }, []);
 
     return (
-        <>
+        <div className={styles.container}>
             <header className={styles.header}>
                 <h1>From Our Instagram</h1>
                 <p>Latest posts from our Instagram feed. <a href="https://www.instagram.com/mentonelifesavingclub" target="_blank" rel="noopener noreferrer">Follow us!</a></p>
@@ -58,14 +59,7 @@ export default function InstagramGalleryPage() {
                     <p>No photos to display. The feed might be empty or disabled.</p>
                 )}
             </div>
-        </>
+            <BottomNav />
+        </div>
     );
-}
-
-export async function getStaticProps() {
-    return {
-        props: {
-            showHeader: false,
-        },
-    };
 }

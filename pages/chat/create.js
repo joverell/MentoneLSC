@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useRouter } from 'next/router';
 import styles from '../../styles/Form.module.css';
+import BottomNav from '../../components/BottomNav';
 import axios from 'axios';
 
 export default function CreateChat() {
@@ -66,69 +67,67 @@ export default function CreateChat() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className={styles.form}>
-      {error && <p className={styles.error}>{error}</p>}
-      <div className={styles.formGroup}>
-        <label htmlFor="name">Chat Name</label>
-        <input
-          type="text"
-          id="name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
-      </div>
-      <div className={styles.formGroup}>
-        <label htmlFor="type">Chat Type</label>
-        <select id="type" value={type} onChange={(e) => setType(e.target.value)}>
-          <option value="public">Public</option>
-          <option value="private">Private</option>
-          <option value="restricted">Restricted</option>
-        </select>
-      </div>
-      {type === 'private' && (
+    <div className={styles.container}>
+      <header className={styles.header}>
+        <h1>Create Chat</h1>
+      </header>
+      <form onSubmit={handleSubmit} className={styles.form}>
+        {error && <p className={styles.error}>{error}</p>}
         <div className={styles.formGroup}>
-          <label htmlFor="members">Members</label>
-          <select
-            id="members"
-            multiple
-            value={members}
-            onChange={(e) => setMembers(Array.from(e.target.selectedOptions, (option) => option.value))}>
-            {allUsers.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.name}
-              </option>
-            ))}
+          <label htmlFor="name">Chat Name</label>
+          <input
+            type="text"
+            id="name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
+        </div>
+        <div className={styles.formGroup}>
+          <label htmlFor="type">Chat Type</label>
+          <select id="type" value={type} onChange={(e) => setType(e.target.value)}>
+            <option value="public">Public</option>
+            <option value="private">Private</option>
+            <option value="restricted">Restricted</option>
           </select>
         </div>
-      )}
-      {type === 'restricted' && (
-        <div className={styles.formGroup}>
-          <label htmlFor="groups">Groups</label>
-          <select
-            id="groups"
-            multiple
-            value={groups}
-            onChange={(e) => setGroups(Array.from(e.target.selectedOptions, (option) => option.value))}>
-            {allGroups.map((g) => (
-              <option key={g.id} value={g.id}>
-                {g.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-      <button type="submit" disabled={submitting} className={styles.button}>
-        {submitting ? 'Creating...' : 'Create Chat'}
-      </button>
-    </form>
+        {type === 'private' && (
+          <div className={styles.formGroup}>
+            <label htmlFor="members">Members</label>
+            <select
+              id="members"
+              multiple
+              value={members}
+              onChange={(e) => setMembers(Array.from(e.target.selectedOptions, (option) => option.value))}>
+              {allUsers.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        {type === 'restricted' && (
+          <div className={styles.formGroup}>
+            <label htmlFor="groups">Groups</label>
+            <select
+              id="groups"
+              multiple
+              value={groups}
+              onChange={(e) => setGroups(Array.from(e.target.selectedOptions, (option) => option.value))}>
+              {allGroups.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        <button type="submit" disabled={submitting} className={styles.button}>
+          {submitting ? 'Creating...' : 'Create Chat'}
+        </button>
+      </form>
+      <BottomNav />
+    </div>
   );
-}
-
-export async function getStaticProps() {
-    return {
-        props: {
-            title: 'Create Chat',
-        },
-    };
 }

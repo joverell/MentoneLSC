@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import Link from 'next/link';
 import styles from '../../styles/Home.module.css';
 import galleryStyles from '../../styles/Gallery.module.css';
+import BottomNav from '../../components/BottomNav';
 import GalleryUploadForm from '../../components/GalleryUploadForm';
 import { FaThumbsUp } from 'react-icons/fa';
 
@@ -108,7 +109,7 @@ export default function AlbumPage() {
     if (!album) return <p>Album not found.</p>;
 
     return (
-        <>
+        <div className={styles.container}>
             <header className={styles.header}>
                 <h1>{album.title}</h1>
                 <p>{album.description}</p>
@@ -154,14 +155,7 @@ export default function AlbumPage() {
                     <p>This album is empty. Admins can upload photos.</p>
                 )}
             </div>
-        </>
+            <BottomNav />
+        </div>
     );
-}
-
-export async function getServerSideProps() {
-    return {
-        props: {
-            showHeader: false,
-        },
-    };
 }

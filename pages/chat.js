@@ -45,7 +45,7 @@ export default function ChatLobby() {
     group.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (authLoading || loading) {
+  if (authLoading) {
     return <p>Loading...</p>;
   }
 
@@ -61,17 +61,20 @@ export default function ChatLobby() {
           <a className={adminStyles.button}>Create Chat</a>
         </Link>
       </header>
-      <div className={styles.container}>
-        <div className={styles.searchContainer}>
-          <input
-            type="text"
-            placeholder="Search chats..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className={styles.searchInput}
-          />
-        </div>
-        {error && <p className={adminStyles.error}>{error}</p>}
+      <div className={styles.searchContainer}>
+        <input
+          type="text"
+          placeholder="Search chats..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className={styles.searchInput}
+        />
+      </div>
+      {loading ? (
+        <p>Loading chats...</p>
+      ) : error ? (
+        <p className={adminStyles.error}>{error}</p>
+      ) : (
         <div className={adminStyles.tableContainer}>
           <ul className={adminStyles.userTable}>
             {/* Static link to the General chat */}
@@ -97,15 +100,7 @@ export default function ChatLobby() {
             )}
           </ul>
         </div>
-      </div>
+      )}
     </>
   );
-}
-
-export async function getStaticProps() {
-    return {
-        props: {
-            showHeader: false,
-        },
-    };
 }

@@ -18,7 +18,6 @@ export default function Layout({ children, title, showHeader = true }) {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
-      {/* Conditionally render a header if needed */}
       {showHeader && (
         <header className={styles.header}>
           {/* You can make the header dynamic based on props */}

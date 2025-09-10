@@ -8,7 +8,6 @@ const withAuth = (WrappedComponent) => {
     const router = useRouter();
 
     useEffect(() => {
-      console.log('withAuth - loading:', loading, 'isAuthenticated:', isAuthenticated);
       if (!loading && !isAuthenticated) {
         router.push('/account');
       }

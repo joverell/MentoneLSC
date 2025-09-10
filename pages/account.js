@@ -6,6 +6,7 @@ import { storage } from '../src/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import homeStyles from '../styles/Home.module.css';
 import formStyles from '../styles/Form.module.css';
+import BottomNav from '../components/BottomNav';
 
 export default function Account() {
   const { user, isAuthenticated, loading, logout, login, loginWithGoogle, register, fetchUser } = useAuth();
@@ -51,12 +52,6 @@ export default function Account() {
       });
     }
   }, [user]);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      setFormMode('login');
-    }
-  }, [isAuthenticated]);
 
   const handleProfileChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -268,14 +263,17 @@ export default function Account() {
   };
 
   return (
-    <>
+    <div className={homeStyles.pageContainer}>
       <Head>
         <title>{getPageTitle()} - Mentone LSC Hub</title>
       </Head>
       <header className={homeStyles.header}>
         <h1>{getPageTitle()}</h1>
       </header>
-      {renderContent()}
-    </>
+      <div className={homeStyles.container}>
+        {renderContent()}
+      </div>
+      <BottomNav />
+    </div>
   );
 }
